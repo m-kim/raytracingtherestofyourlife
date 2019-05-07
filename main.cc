@@ -121,15 +121,12 @@ int main() {
   cols.Allocate(nx*ny);
   vtkm::cont::ArrayHandleConstant<vec3> zero(vec3(0,0,0), nx*ny);
   vtkm::cont::ArrayCopy(zero, cols);
-  for (int s =0; s<ns; s++){
-    for (int j = ny-1; j >= 0; j--) {
-        for (int i = 0; i < nx; i++) {
-            float u = float(i+drand48())/ float(nx);
-            float v = float(j+drand48())/ float(ny);
-            uvs.GetPortalControl().Set(j*nx +i, vtkm::Vec<vtkm::Float32,2>(u,v));
 
-        }
-    }
+  for (int s =0; s<ns; s++){
+    UVGen uvgen(nx, ny, s);
+    vtkm::worklet::AutoDispatcherMapField<UVGen>(
+          UVGen(nx,ny, s)).Invoke(uvs);
+
     for (int i=0; i<rays.GetNumberOfValues(); i++){
       auto uv = uvs.GetPortalConstControl().Get(i);
       rays.GetPortalControl().Set(i, cam->get_ray(uv));
