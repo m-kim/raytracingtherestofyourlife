@@ -114,6 +114,8 @@ int main() {
   vtkm::cont::ArrayHandle<ray> rays;
   rays.Allocate(nx*ny);
 
+  vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32, 2>> uvs;
+  uvs.Allocate(nx*ny);
 
   vtkm::cont::ArrayHandle<vec3> cols;
   cols.Allocate(nx*ny);
@@ -124,8 +126,13 @@ int main() {
         for (int i = 0; i < nx; i++) {
             float u = float(i+drand48())/ float(nx);
             float v = float(j+drand48())/ float(ny);
-            rays.GetPortalControl().Set(j*nx +i, cam->get_ray(u,v));
+            uvs.GetPortalControl().Set(j*nx +i, vtkm::Vec<vtkm::Float32,2>(u,v));
+
         }
+    }
+    for (int i=0; i<rays.GetNumberOfValues(); i++){
+      auto uv = uvs.GetPortalConstControl().Get(i);
+      rays.GetPortalControl().Set(i, cam->get_ray(uv));
     }
     for (int i=0; i<rays.GetNumberOfValues(); i++){
         //vec3 p = r.point_at_parameter(2.0);

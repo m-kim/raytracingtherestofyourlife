@@ -41,11 +41,11 @@ class camera {
         }
 
         // new: add time to construct ray
-        ray get_ray(float s, float t) const {
+        ray get_ray(vtkm::Vec<vtkm::Float32,2> st) const {
             vec3 rd = lens_radius*random_in_unit_disk();
             vec3 offset = u * rd[0] + v * rd[1];
             float time = time0 + drand48()*(time1-time0);
-            return ray(origin + offset, lower_left_corner + s*horizontal + t*vertical - origin - offset, time);
+            return ray(origin + offset, lower_left_corner + st[0]*horizontal + st[1]*vertical - origin - offset, time);
         }
 
         vec3 origin;
