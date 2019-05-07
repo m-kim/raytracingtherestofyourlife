@@ -13,7 +13,7 @@
 #define MATERIALH
 
 struct hit_record;
-
+#include <memory>
 #include "ray.h"
 #include "hitable.h"
 #include "texture.h"
@@ -51,7 +51,7 @@ struct scatter_record
     ray specular_ray;
     bool is_specular;
     vec3 attenuation;
-    pdf *pdf_ptr;
+    std::shared_ptr<pdf> pdf_ptr;
 };
 
 class material  {
@@ -134,7 +134,7 @@ class lambertian : public material {
         bool scatter(const ray& r_in, const hit_record& hrec, scatter_record& srec) const {
             srec.is_specular = false;
             srec.attenuation = albedo->value(hrec.u, hrec.v, hrec.p);
-            srec.pdf_ptr = new cosine_pdf(hrec.normal);
+            srec.pdf_ptr = std::make_shared<cosine_pdf>(hrec.normal);
             return true;
         }
         texture *albedo;

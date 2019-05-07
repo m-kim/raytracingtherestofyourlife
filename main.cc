@@ -46,10 +46,9 @@ vec3 color(const ray& r, hitable *world, hitable *light_shape, int depth) {
             }
             else {
                 hitable_pdf plight(light_shape, hrec.p);
-                mixture_pdf p(&plight, srec.pdf_ptr);
+                mixture_pdf p(&plight, srec.pdf_ptr.get());
                 ray scattered = ray(hrec.p, p.generate(), r.time());
                 float pdf_val = p.value(scattered.direction());
-                delete srec.pdf_ptr;
                 return emitted + srec.attenuation*hrec.mat_ptr->scattering_pdf(r, hrec, scattered)*color(scattered, world, light_shape, depth+1) / pdf_val;
             }
         }
