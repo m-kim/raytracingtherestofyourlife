@@ -79,12 +79,12 @@ class dielectric : public material {
              if (dot(r_in.direction(), hrec.normal) > 0) {
                   outward_normal = -hrec.normal;
                   ni_over_nt = ref_idx;
-                  cosine = ref_idx * dot(r_in.direction(), hrec.normal) / r_in.direction().length();
+                  cosine = ref_idx * dot(r_in.direction(), hrec.normal) * vtkm::RMagnitude(r_in.direction());
              }
              else {
                   outward_normal = hrec.normal;
                   ni_over_nt = 1.0 / ref_idx;
-                  cosine = -dot(r_in.direction(), hrec.normal) / r_in.direction().length();
+                  cosine = -dot(r_in.direction(), hrec.normal) * vtkm::RMagnitude(r_in.direction());
              }
              if (refract(r_in.direction(), outward_normal, ni_over_nt, refracted)) {
                 reflect_prob = schlick(cosine, ref_idx);

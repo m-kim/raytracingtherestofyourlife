@@ -15,7 +15,9 @@
 #include <tuple>
 #include <JSONPNGConvert.h>
 #include <lodepng.h>
-
+#include <vtkm/cont/ArrayHandleConstant.h>
+#include <vtkm/cont/ArrayCopy.h>
+#include "Worklets.h"
 #include "sphere.h"
 #include "moving_sphere.h"
 #include "hitable_list.h"
@@ -31,17 +33,6 @@
 #include "stb_image.h"
 #include "pdf.h"
 
-
-template <typename T, std::size_t ... Is>
-constexpr auto gft_helper (std::index_sequence<Is...> const &)
-   -> decltype(std::make_tuple( ((void)Is, std::declval<T>())... ));
-
-template <typename T, std::size_t N>
-constexpr auto get_fixed_tuple ()
-  -> decltype(gft_helper<T>(std::make_index_sequence<N>{}));
-
-template <typename T, std::size_t N>
-using tuple_fixed_type = decltype(get_fixed_tuple<T, N>());
 
 inline vec3 de_nan(const vec3& c) {
     vec3 temp = c;
@@ -120,46 +111,44 @@ int main() {
   a[1] = glass_sphere;
   hitable_list hlist(a,2);
 
-  auto ray_tup = tuple_fixed_type<ray, ns>{};
-  std::vector<decltype(ray_tup)> rays(nx*ny);
+  vtkm::cont::ArrayHandle<ray> rays;
+  rays.Allocate(nx*ny);
 
 
-  for (int j = ny-1; j >= 0; j--) {
-      for (int i = 0; i < nx; i++) {
-          for (int s=0; s < ns; s++) {
-              float u = float(i+drand48())/ float(nx);
-              float v = float(j+drand48())/ float(ny);
-              std::apply([&](auto&&... r) {
-                  ((r = cam->get_ray(u,v)), ...); }, ray_tup);
-
-          }
-          rays[j*nx + i] = ray_tup;
-      }
-  }
-  std::vector<vec3> cols;
-  cols.reserve(nx*ny);
-  for (auto &r_tup: rays){
-      //vec3 p = r.point_at_parameter(2.0);
-      vec3 col(0,0,0);
-      std::apply([&](auto&&... r) {
-                 ((col += de_nan(color(r, world, &hlist, 0))), ...); },
-             r_tup);
-      cols.push_back(col);
+  vtkm::cont::ArrayHandle<vec3> cols;
+  cols.Allocate(nx*ny);
+  vtkm::cont::ArrayHandleConstant<vec3> zero(vec3(0,0,0), nx*ny);
+  vtkm::cont::ArrayCopy(zero, cols);
+  for (int s =0; s<ns; s++){
+    for (int j = ny-1; j >= 0; j--) {
+        for (int i = 0; i < nx; i++) {
+            float u = float(i+drand48())/ float(nx);
+            float v = float(j+drand48())/ float(ny);
+            rays.GetPortalControl().Set(j*nx +i, cam->get_ray(u,v));
+        }
+    }
+    for (int i=0; i<rays.GetNumberOfValues(); i++){
+        //vec3 p = r.point_at_parameter(2.0);
+      auto col = cols.GetPortalConstControl().Get(i);
+      auto ray = rays.GetPortalConstControl().Get(i);
+      cols.GetPortalControl().Set(i, col + de_nan(color(ray, world, &hlist, 0)));
+    }
   }
 
   std::vector<std::uint8_t> ImageBuffer;
   ImageBuffer.reserve(nx*ny*4);
 
-  for (auto &col: cols){
-      col /= float(ns);
-      col = vec3( sqrt(col[0]), sqrt(col[1]), sqrt(col[2]) );
-      int ir = int(255.99*col[0]);
-      int ig = int(255.99*col[1]);
-      int ib = int(255.99*col[2]);
-      ImageBuffer.push_back(ir);
-      ImageBuffer.push_back(ig);
-      ImageBuffer.push_back(ib);
-      ImageBuffer.push_back(255);
+  for (int i=0; i<cols.GetNumberOfValues(); i++){
+    auto col = cols.GetPortalConstControl().Get(i);
+    col = col / float(ns);
+    col = vec3( sqrt(col[0]), sqrt(col[1]), sqrt(col[2]) );
+    int ir = int(255.99*col[0]);
+    int ig = int(255.99*col[1]);
+    int ib = int(255.99*col[2]);
+    ImageBuffer.push_back(ir);
+    ImageBuffer.push_back(ig);
+    ImageBuffer.push_back(ib);
+    ImageBuffer.push_back(255);
   }
 
 //  std::vector<std::uint8_t> PngBuffer;

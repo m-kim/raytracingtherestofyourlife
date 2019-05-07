@@ -18,8 +18,8 @@
 class material;
 
 void get_sphere_uv(const vec3& p, float& u, float& v) {
-    float phi = atan2(p.z(), p.x());
-    float theta = asin(p.y());
+    float phi = atan2(p[2], p[0]);
+    float theta = asin(p[1]);
     u = 1-(phi + M_PI) / (2*M_PI);
     v = (theta + M_PI/2) / M_PI;
 }
@@ -111,9 +111,9 @@ rotate_y::rotate_y(hitable *p, float angle) : ptr(p) {
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 2; j++) {
             for (int k = 0; k < 2; k++) {
-                float x = i*bbox.max().x() + (1-i)*bbox.min().x();
-                float y = j*bbox.max().y() + (1-j)*bbox.min().y();
-                float z = k*bbox.max().z() + (1-k)*bbox.min().z();
+                float x = i*bbox.max()[0] + (1-i)*bbox.min()[0];
+                float y = j*bbox.max()[1] + (1-j)*bbox.min()[1];
+                float z = k*bbox.max()[2] + (1-k)*bbox.min()[2];
                 float newx = cos_theta*x + sin_theta*z;
                 float newz = -sin_theta*x + cos_theta*z;
                 vec3 tester(newx, y, newz);

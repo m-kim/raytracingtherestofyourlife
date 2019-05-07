@@ -34,12 +34,12 @@ inline float perlin_interp(vec3 c[2][2][2], float u, float v, float w) {
 class perlin {
     public:
         float noise(const vec3& p) const {
-            float u = p.x() - floor(p.x());
-            float v = p.y() - floor(p.y());
-            float w = p.z() - floor(p.z());
-            int i = floor(p.x());
-            int j = floor(p.y());
-            int k = floor(p.z());
+            float u = p[0] - floor(p[0]);
+            float v = p[1] - floor(p[1]);
+            float w = p[2] - floor(p[2]);
+            int i = floor(p[0]);
+            int j = floor(p[1]);
+            int k = floor(p[2]);
             vec3 c[2][2][2];
             for (int di=0; di < 2; di++)
                 for (int dj=0; dj < 2; dj++)
@@ -54,7 +54,7 @@ class perlin {
             for (int i = 0; i < depth; i++) {
                 accum += weight*noise(temp_p);
                 weight *= 0.5;
-                temp_p *= 2;
+                temp_p = temp_p * 2;
             }
             return fabs(accum);
         }

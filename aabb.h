@@ -40,16 +40,16 @@ class aabb {
         }
 
         float area() const {
-               float a = _max.x() - _min.x();
-               float b = _max.y() - _min.y();
-               float c = _max.z() - _min.z();
+               float a = _max[0] - _min[0];
+               float b = _max[1] - _min[1];
+               float c = _max[2] - _min[2];
                return 2*(a*b + b*c + c*a);
         }
 
         int longest_axis() const {
-               float a = _max.x() - _min.x();
-               float b = _max.y() - _min.y();
-               float c = _max.z() - _min.z();
+               float a = _max[0] - _min[0];
+               float b = _max[1] - _min[1];
+               float c = _max[2] - _min[2];
                if (a > b && a > c)
                    return 0;
                else if (b > c)
@@ -63,12 +63,12 @@ class aabb {
 };
 
 aabb surrounding_box(aabb box0, aabb box1) {
-    vec3 small( fmin(box0.min().x(), box1.min().x()),
-                fmin(box0.min().y(), box1.min().y()),
-                fmin(box0.min().z(), box1.min().z()));
-    vec3 big  ( fmax(box0.max().x(), box1.max().x()),
-                fmax(box0.max().y(), box1.max().y()),
-                fmax(box0.max().z(), box1.max().z()));
+    vec3 small( fmin(box0.min()[0], box1.min()[0]),
+                fmin(box0.min()[1], box1.min()[1]),
+                fmin(box0.min()[2], box1.min()[2]));
+    vec3 big  ( fmax(box0.max()[0], box1.max()[0]),
+                fmax(box0.max()[1], box1.max()[1]),
+                fmax(box0.max()[2], box1.max()[2]));
     return aabb(small,big);
 }
 
