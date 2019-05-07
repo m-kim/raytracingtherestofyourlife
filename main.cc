@@ -10,6 +10,12 @@
 //==================================================================================================
 
 #include <iostream>
+#include <limits>
+#include <vector>
+#include <tuple>
+#include <JSONPNGConvert.h>
+#include <lodepng.h>
+
 #include "sphere.h"
 #include "moving_sphere.h"
 #include "hitable_list.h"
@@ -25,6 +31,18 @@
 #include "stb_image.h"
 #include "pdf.h"
 
+
+template <typename T, std::size_t ... Is>
+constexpr auto gft_helper (std::index_sequence<Is...> const &)
+   -> decltype(std::make_tuple( ((void)Is, std::declval<T>())... ));
+
+template <typename T, std::size_t N>
+constexpr auto get_fixed_tuple ()
+  -> decltype(gft_helper<T>(std::make_index_sequence<N>{}));
+
+template <typename T, std::size_t N>
+using tuple_fixed_type = decltype(get_fixed_tuple<T, N>());
+
 inline vec3 de_nan(const vec3& c) {
     vec3 temp = c;
     if (!(temp[0] == temp[0])) temp[0] = 0;
@@ -37,7 +55,7 @@ inline vec3 de_nan(const vec3& c) {
 
 vec3 color(const ray& r, hitable *world, hitable *light_shape, int depth) {
     hit_record hrec;
-    if (world->hit(r, 0.001, MAXFLOAT, hrec)) {
+    if (world->hit(r, 0.001, std::numeric_limits<float>::max(), hrec)) {
         scatter_record srec;
         vec3 emitted = hrec.mat_ptr->emitted(r, hrec, hrec.u, hrec.v, hrec.p);
         if (depth < 50 && hrec.mat_ptr->scatter(r, hrec, srec)) {
@@ -87,38 +105,65 @@ void cornell_box(hitable **scene, camera **cam, float aspect) {
 }
 
 int main() {
-    int nx = 500;
-    int ny = 500;
-    int ns = 10;
-    std::cout << "P3\n" << nx << " " << ny << "\n255\n";
-    hitable *world;
-    camera *cam;
-    float aspect = float(ny) / float(nx);
-    cornell_box(&world, &cam, aspect);
-    hitable *light_shape = new xz_rect(213, 343, 227, 332, 554, 0);
-    hitable *glass_sphere = new sphere(vec3(190, 90, 190), 90, 0);
-    hitable *a[2];
-    a[0] = light_shape;
-    a[1] = glass_sphere;
-    hitable_list hlist(a,2);
+  constexpr int nx = 128;
+  constexpr int ny = 128;
+  constexpr int ns = 10;
+  //std::cout << "P3\n" << nx << " " << ny << "\n255\n";
+  hitable *world;
+  camera *cam;
+  constexpr float aspect = float(ny) / float(nx);
+  cornell_box(&world, &cam, aspect);
+  hitable *light_shape = new xz_rect(213, 343, 227, 332, 554, 0);
+  hitable *glass_sphere = new sphere(vec3(190, 90, 190), 90, 0);
+  hitable *a[2];
+  a[0] = light_shape;
+  a[1] = glass_sphere;
+  hitable_list hlist(a,2);
 
-    for (int j = ny-1; j >= 0; j--) {
-        for (int i = 0; i < nx; i++) {
-            vec3 col(0, 0, 0);
-            for (int s=0; s < ns; s++) {
-                float u = float(i+drand48())/ float(nx);
-                float v = float(j+drand48())/ float(ny);
-                ray r = cam->get_ray(u, v);
-                vec3 p = r.point_at_parameter(2.0);
-                col += de_nan(color(r, world, &hlist, 0));
-            }
-            col /= float(ns);
-            col = vec3( sqrt(col[0]), sqrt(col[1]), sqrt(col[2]) );
-            int ir = int(255.99*col[0]);
-            int ig = int(255.99*col[1]);
-            int ib = int(255.99*col[2]);
-            std::cout << ir << " " << ig << " " << ib << "\n";
-        }
-    }
+  auto ray_tup = tuple_fixed_type<ray, ns>{};
+  std::vector<decltype(ray_tup)> rays(nx*ny);
+
+
+  for (int j = ny-1; j >= 0; j--) {
+      for (int i = 0; i < nx; i++) {
+          for (int s=0; s < ns; s++) {
+              float u = float(i+drand48())/ float(nx);
+              float v = float(j+drand48())/ float(ny);
+              std::apply([&](auto&&... r) {
+                  ((r = cam->get_ray(u,v)), ...); }, ray_tup);
+
+          }
+          rays[j*nx + i] = ray_tup;
+      }
+  }
+  std::vector<vec3> cols;
+  cols.reserve(nx*ny);
+  for (auto &r_tup: rays){
+      //vec3 p = r.point_at_parameter(2.0);
+      vec3 col(0,0,0);
+      std::apply([&](auto&&... r) {
+                 ((col += de_nan(color(r, world, &hlist, 0))), ...); },
+             r_tup);
+      cols.push_back(col);
+  }
+
+  std::vector<std::uint8_t> ImageBuffer;
+  ImageBuffer.reserve(nx*ny*4);
+
+  for (auto &col: cols){
+      col /= float(ns);
+      col = vec3( sqrt(col[0]), sqrt(col[1]), sqrt(col[2]) );
+      int ir = int(255.99*col[0]);
+      int ig = int(255.99*col[1]);
+      int ib = int(255.99*col[2]);
+      ImageBuffer.push_back(ir);
+      ImageBuffer.push_back(ig);
+      ImageBuffer.push_back(ib);
+      ImageBuffer.push_back(255);
+  }
+
+//  std::vector<std::uint8_t> PngBuffer;
+//  lodepng::encode(PngBuffer, ImageBuffer, nx, ny);
+  lodepng::encode("output.png", ImageBuffer, nx,ny);
 }
 
