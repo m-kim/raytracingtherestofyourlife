@@ -17,6 +17,8 @@
 #include <lodepng.h>
 #include <vtkm/cont/ArrayHandleConstant.h>
 #include <vtkm/cont/ArrayCopy.h>
+#include <vtkm/rendering/raytracing/Camera.h>
+
 #include "Worklets.h"
 #include "sphere.h"
 #include "moving_sphere.h"
@@ -122,14 +124,31 @@ int main() {
   vtkm::cont::ArrayHandleConstant<vec3> zero(vec3(0,0,0), nx*ny);
   vtkm::cont::ArrayCopy(zero, cols);
 
+  vtkm::cont::ArrayHandle<vtkm::Float32> DirX, DirY, DirZ;
+  DirX.Allocate(nx*ny); DirY.Allocate(nx*ny); DirZ.Allocate(nx*ny);
+  vtkm::cont::ArrayHandle<vtkm::Id> PixelIdx;
+  PixelIdx.Allocate(nx*ny);
   for (int s =0; s<ns; s++){
     UVGen uvgen(nx, ny, s);
     vtkm::worklet::AutoDispatcherMapField<UVGen>(
-          UVGen(nx,ny, s)).Invoke(uvs);
+          uvgen).Invoke(uvs);
+
+    RayGen raygen(nx,ny, 40,40,
+                  vtkm::Vec<vtkm::Float32,3>(0,0,1),
+                  vtkm::Vec<vtkm::Float32,3>(0,1,0),
+                  0, nx, 0, 0, ns);
+    vtkm::worklet::AutoDispatcherMapField<RayGen>(raygen)
+          .Invoke(DirX, DirY, DirZ, PixelIdx);
 
     for (int i=0; i<rays.GetNumberOfValues(); i++){
       auto uv = uvs.GetPortalConstControl().Get(i);
-      rays.GetPortalControl().Set(i, cam->get_ray(uv));
+      //rays.GetPortalControl().Set(i, cam->get_ray(uv));
+      vec3 lookfrom(278, 278, -800);
+      auto x= DirX.GetPortalControl().Get(i);
+      auto y= DirY.GetPortalControl().Get(i);
+      auto z= DirZ.GetPortalControl().Get(i);
+      vec3 dir(x,y,z);
+      rays.GetPortalControl().Set(i, ray(lookfrom, dir));
     }
     for (int i=0; i<rays.GetNumberOfValues(); i++){
         //vec3 p = r.point_at_parameter(2.0);
