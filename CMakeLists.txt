@@ -12,7 +12,7 @@ target_include_directories(CornellBox PUBLIC /home/mark/local/anaconda3/envs/cli
 target_include_directories(CornellBox PUBLIC /home/mark/local/mark-vtk-m/include/vtkm-1.0/)
 
 set_target_properties(CornellBox PROPERTIES
-  CXX_STANDARD 17)
+  CXX_STANDARD 14)
 
 
 target_link_libraries(CornellBox PUBLIC

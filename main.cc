@@ -45,36 +45,7 @@ inline vec3 de_nan(const vec3& c) {
 }
 
 
-#if 0
-vec3 color(const ray& r, hitable *world, hitable *light_shape, int depth) {
-    hit_record hrec;
-    if (world->hit(r, 0.001, std::numeric_limits<float>::max(), hrec)) {
-        scatter_record srec;
-        vec3 emitted = hrec.mat_ptr->emitted(r, hrec, hrec.u, hrec.v, hrec.p);
-        if (depth < 50 && hrec.mat_ptr->scatter(r, hrec, srec)) {
-            if (srec.is_specular) {
-                return srec.attenuation * color(srec.specular_ray, world, light_shape, depth+1);
-              //return std::make_tuple(3, srec.attenuation, vec3(0,0,0), srec.specular_ray);
-            }
-            else {
-                hitable_pdf plight(light_shape, hrec.p);
-                mixture_pdf p(&plight, srec.pdf_ptr.get());
-                ray scattered = ray(hrec.p, p.generate(), r.time());
-                float pdf_val = p.value(scattered.direction());
-                return emitted + srec.attenuation*hrec.mat_ptr->scattering_pdf(r, hrec, scattered)*color(scattered, world, light_shape, depth+1) / pdf_val;
-                //return std::make_tuple(2, srec.attenuation*hrec.mat_ptr->scattering_pdf(r, hrec, scattered),
-                //                       emitted, scattered);
-            }
-        }
-        else
-            return emitted;
-          //return std::make_tuple(1, vec3(1.0f), emitted, r);
-    }
-    else
-        return vec3(0,0,0);
-      //return std::make_tuple(0, vec3(1.0f), vec3(0,0,0), r);
-}
-#else
+
 auto color(const ray& r, hitable *world, hitable *light_shape) {
     hit_record hrec;
     if (world->hit(r, 0.001, std::numeric_limits<float>::max(), hrec)) {
@@ -99,7 +70,6 @@ auto color(const ray& r, hitable *world, hitable *light_shape) {
     else
       return std::make_tuple(0, vec3(1.0f), vec3(0,0,0), r);
 }
-#endif
 
 void cornell_box(hitable **scene, camera **cam, float aspect) {
     int i = 0;
@@ -188,26 +158,27 @@ int main() {
         //vec3 p = r.point_at_parameter(2.0);
       auto col = cols.GetPortalConstControl().Get(i);
       auto ray = rays.GetPortalConstControl().Get(i);
-#if 0
-      cols.GetPortalControl().Set(i, col + color(ray, world, &hlist,0));
-#else
       vtkm::Int8 state;
-      vec3 attenuation(1.0f);
-      vec3 emitted(0.f);
+      std::vector<vec3> attenuation;
+      std::vector<vec3> emitted;
+      attenuation.reserve(50);
+      emitted.reserve(50);
+      vec3 att, em;
+      for (int depth=0; depth<50; depth++){
 
-      for (int depth=0; depth<49; depth++){
+        std::tie(state, att, em, ray) = color(ray, world, &hlist);
+        attenuation.push_back(att);
+        emitted.push_back(em);
 
-        auto out = color(ray, world, &hlist);
-
-        emitted = emitted + attenuation * de_nan(std::get<2>(out));
-        if (std::get<0>(out) < 2){
+        if (state < 2){
           break;
         }
-        ray = std::get<3>(out);
-        attenuation = std::get<1>(out);
       }
-      cols.GetPortalControl().Set(i, col + emitted);
-#endif
+      vec3 sum = emitted[emitted.size() -1];
+      for (int depth = emitted.size()-2; depth >=0; depth--){
+        sum = emitted[depth]  + attenuation[depth] * sum;
+      }
+      cols.GetPortalControl().Set(i, col+sum);
     }
   }
 
