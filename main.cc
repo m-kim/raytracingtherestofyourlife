@@ -45,6 +45,7 @@ inline vec3 de_nan(const vec3& c) {
 }
 
 
+std::vector<pdf*> pdf_ptrs;
 
 template<typename MatType, typename TextureType>
 auto color(const ray& r, const hit_record & hrec, hitable *light_shape, MatType &mat, TextureType &tex) {
@@ -56,8 +57,9 @@ auto color(const ray& r, const hit_record & hrec, hitable *light_shape, MatType 
         return std::make_tuple(3, srec.attenuation, vec3(0,0,0), srec.specular_ray);
       }
       else {
+        pdf_ptrs[srec.pdfIdx]->SetW(hrec.normal);
           hitable_pdf plight(light_shape, hrec.p);
-          mixture_pdf p(&plight, srec.pdf_ptr.get());
+          mixture_pdf p(&plight,pdf_ptrs[srec.pdfIdx] );
           ray scattered = ray(hrec.p, p.generate(), r.time());
           float pdf_val = p.value(scattered.direction());
           return std::make_tuple(2, srec.attenuation*mat.scattering_pdf(r, hrec, scattered)/pdf_val,
@@ -71,19 +73,21 @@ auto color(const ray& r, const hit_record & hrec, hitable *light_shape, MatType 
 
 std::vector<texture*> tex_ptrs;
 std::vector<material*> mat_ptrs;
+
 void cornell_box(hitable **scene, camera **cam, float aspect) {
+  pdf_ptrs.push_back(new cosine_pdf());
     int i = 0;
     hitable **list = new hitable*[8];
-    material *red = new lambertian();
+    material *red = new lambertian(0);
     mat_ptrs.push_back(red);
     tex_ptrs.push_back(new constant_texture(vec3(0.65, 0.05, 0.05)));
-    material *white = new lambertian();
+    material *white = new lambertian(0);
     mat_ptrs.push_back(white);
     tex_ptrs.push_back(new  constant_texture(vec3(0.73, 0.73, 0.73)));
-    material *green = new lambertian();
+    material *green = new lambertian(0);
     mat_ptrs.push_back(green);
     tex_ptrs.push_back(new constant_texture(vec3(0.12, 0.45, 0.15)));
-    material *light = new diffuse_light();
+    material *light = new diffuse_light(-1);
     tex_ptrs.push_back(new constant_texture(vec3(15, 15, 15)) );
     mat_ptrs.push_back(light);
 
@@ -93,7 +97,7 @@ void cornell_box(hitable **scene, camera **cam, float aspect) {
     list[i++] = new flip_normals(new xz_rect(0, 555, 0, 555, 555, 1,1));
     list[i++] = new xz_rect(0, 555, 0, 555, 0, 1,1);
     list[i++] = new flip_normals(new xy_rect(0, 555, 0, 555, 555, 1,1));
-    material *glass = new dielectric(1.5);
+    material *glass = new dielectric(-1, 1.5);
     mat_ptrs.push_back(glass);
     list[i++] = new sphere(vec3(190, 90, 190),90 , 4, 0);
     list[i++] = new translate(new rotate_y(

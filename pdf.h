@@ -47,6 +47,8 @@ vec3 random_in_unit_sphere() {
 
 class pdf  {
     public:
+  virtual void SetW(const vec3& w) = 0;
+
         virtual float value(const vec3& direction) const = 0;
         virtual vec3 generate() const = 0;
         ~pdf() {}
@@ -55,7 +57,7 @@ class pdf  {
 
 class cosine_pdf : public pdf {
     public:
-        cosine_pdf(const vec3& w) { uvw.build_from_w(w); }
+        void SetW(const vec3& w) { uvw.build_from_w(w); }
         virtual float value(const vec3& direction) const {
             float cosine = dot(unit_vector(direction), uvw.w());
             if (cosine > 0)
@@ -71,6 +73,8 @@ class cosine_pdf : public pdf {
 
 class hitable_pdf : public pdf {
     public:
+  void SetW(const vec3& w) { }
+
         hitable_pdf(hitable *p, const vec3& origin) : ptr(p), o(origin) {}
         virtual float value(const vec3& direction) const {
             return ptr->pdf_value(o, direction);
@@ -84,6 +88,7 @@ class hitable_pdf : public pdf {
 
 class mixture_pdf : public pdf {
     public:
+  void SetW(const vec3& w) { }
         mixture_pdf(pdf *p0, pdf *p1 ) { p[0] = p0; p[1] = p1; }
         virtual float value(const vec3& direction) const {
             return 0.5 * p[0]->value(direction) + 0.5 *p[1]->value(direction);
