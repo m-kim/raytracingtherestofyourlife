@@ -202,14 +202,17 @@ int main() {
     ArrayType sumtotl;
     sumtotl.Allocate(rays.GetNumberOfValues());
     for (int i=0; i<emitted.size(); i++){
-      auto col = cols.GetPortalConstControl().Get(i);
       sumtotl.GetPortalControl().Set(i, emitted[i].GetPortalConstControl().Get(emitted[i].GetNumberOfValues() -1));
-      for (int depth = emitted[i].GetNumberOfValues()-2; depth >=0; depth--){
+    }
+    for (int depth = emitted[0].GetNumberOfValues()-2; depth >=0; depth--){
+      for (int i=0; i<emitted.size(); i++){
         auto sum = sumtotl.GetPortalConstControl().Get(i);
         sumtotl.GetPortalControl().Set(i, emitted[i].GetPortalConstControl().Get(depth) + attenuation[i].GetPortalConstControl().Get(depth) * sum);
       }
+    }
+    for (int i=0; i<emitted.size(); i++){
+      auto col = cols.GetPortalConstControl().Get(i);
       cols.GetPortalControl().Set(i, col+sumtotl.GetPortalConstControl().Get(i));
-
     }
   }
 
