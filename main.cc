@@ -50,7 +50,7 @@ template<typename MatType, typename TextureType>
 auto color(const ray& r, const hit_record & hrec, hitable *light_shape, MatType &mat, TextureType &tex) {
 
   scatter_record srec;
-  vec3 emitted = mat.emitted(r, hrec, hrec.u, hrec.v, hrec.p);
+  vec3 emitted = mat.emitted(r, hrec, tex.value(hrec.u, hrec.v, hrec.p));
   if (mat.scatter(r, hrec, srec, tex.value(hrec.u, hrec.v, hrec.p))) {
       if (srec.is_specular) {
         return std::make_tuple(3, srec.attenuation, vec3(0,0,0), srec.specular_ray);
@@ -83,12 +83,13 @@ void cornell_box(hitable **scene, camera **cam, float aspect) {
     material *green = new lambertian(2, 2);
     mat_ptrs.push_back(green);
     tex_ptrs.push_back(new constant_texture(vec3(0.12, 0.45, 0.15)));
-    material *light = new diffuse_light(3, new constant_texture(vec3(15, 15, 15)) );
+    material *light = new diffuse_light(3, 3);
+    tex_ptrs.push_back(new constant_texture(vec3(15, 15, 15)) );
     mat_ptrs.push_back(light);
 
     list[i++] = new flip_normals(new yz_rect(0, 555, 0, 555, 555, 2,2));
     list[i++] = new yz_rect(0, 555, 0, 555, 0, 0,0);
-    list[i++] = new flip_normals(new xz_rect(213, 343, 227, 332, 554, 3,0));
+    list[i++] = new flip_normals(new xz_rect(213, 343, 227, 332, 554, 3,3));
     list[i++] = new flip_normals(new xz_rect(0, 555, 0, 555, 555, 1,1));
     list[i++] = new xz_rect(0, 555, 0, 555, 0, 1,1);
     list[i++] = new flip_normals(new xy_rect(0, 555, 0, 555, 555, 1,1));
