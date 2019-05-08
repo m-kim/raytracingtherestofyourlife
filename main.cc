@@ -74,16 +74,16 @@ std::vector<material*> mat_ptrs;
 void cornell_box(hitable **scene, camera **cam, float aspect) {
     int i = 0;
     hitable **list = new hitable*[8];
-    material *red = new lambertian(0,0);
+    material *red = new lambertian();
     mat_ptrs.push_back(red);
     tex_ptrs.push_back(new constant_texture(vec3(0.65, 0.05, 0.05)));
-    material *white = new lambertian(1, 1);
+    material *white = new lambertian();
     mat_ptrs.push_back(white);
     tex_ptrs.push_back(new  constant_texture(vec3(0.73, 0.73, 0.73)));
-    material *green = new lambertian(2, 2);
+    material *green = new lambertian();
     mat_ptrs.push_back(green);
     tex_ptrs.push_back(new constant_texture(vec3(0.12, 0.45, 0.15)));
-    material *light = new diffuse_light(3, 3);
+    material *light = new diffuse_light();
     tex_ptrs.push_back(new constant_texture(vec3(15, 15, 15)) );
     mat_ptrs.push_back(light);
 
@@ -93,7 +93,7 @@ void cornell_box(hitable **scene, camera **cam, float aspect) {
     list[i++] = new flip_normals(new xz_rect(0, 555, 0, 555, 555, 1,1));
     list[i++] = new xz_rect(0, 555, 0, 555, 0, 1,1);
     list[i++] = new flip_normals(new xy_rect(0, 555, 0, 555, 555, 1,1));
-    material *glass = new dielectric(4, 1.5);
+    material *glass = new dielectric(1.5);
     mat_ptrs.push_back(glass);
     list[i++] = new sphere(vec3(190, 90, 190),90 , 4, 0);
     list[i++] = new translate(new rotate_y(
