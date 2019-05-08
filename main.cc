@@ -155,6 +155,9 @@ int main() {
     attenuation.reserve(rays.GetNumberOfValues());
     emitted.reserve(rays.GetNumberOfValues());
 
+    vtkm::cont::ArrayHandle<vtkm::UInt8> finished;
+    finished.Allocate(rays.GetNumberOfValues());
+
     for (int i=0; i<rays.GetNumberOfValues(); i++)
     {
       ArrayType a,e;
@@ -162,6 +165,8 @@ int main() {
       e.Allocate(50);
       attenuation.push_back(a);
       emitted.push_back(e);
+
+      finished.GetPortalControl().Set(i, 0);
     }
     for (int i=0; i<rays.GetNumberOfValues(); i++)
     {
@@ -170,17 +175,17 @@ int main() {
       vtkm::Int8 state;
 
       vec3 att, em;
-      bool finished = false;
       auto a = attenuation[i];
       auto e = emitted[i];
       for (int depth=0; depth<50; depth++){
         hit_record hrec;
-        if (!finished && world->hit(ray, 0.001, std::numeric_limits<float>::max(), hrec)){
+        auto fin = finished.GetPortalConstControl().Get(i);
+        if (!fin && world->hit(ray, 0.001, std::numeric_limits<float>::max(), hrec)){
           std::tie(state, att, em, ray) = color(ray, hrec, &hlist);
           a.GetPortalControl().Set(depth, att);
           e.GetPortalControl().Set(depth, em);
           if (state < 2){
-            finished = true;
+            finished.GetPortalControl().Set(i, 1 );
           }
         }
         else{
@@ -189,13 +194,17 @@ int main() {
         }
       }
     }
+
+    ArrayType sumtotl;
+    sumtotl.Allocate(rays.GetNumberOfValues());
     for (int i=0; i<emitted.size(); i++){
       auto col = cols.GetPortalConstControl().Get(i);
-      vec3 sum = emitted[i].GetPortalConstControl().Get(emitted[i].GetNumberOfValues() -1);
+      sumtotl.GetPortalControl().Set(i, emitted[i].GetPortalConstControl().Get(emitted[i].GetNumberOfValues() -1));
       for (int depth = emitted[i].GetNumberOfValues()-2; depth >=0; depth--){
-        sum = emitted[i].GetPortalConstControl().Get(depth) + attenuation[i].GetPortalConstControl().Get(depth) * sum;
+        auto sum = sumtotl.GetPortalConstControl().Get(i);
+        sumtotl.GetPortalControl().Set(i, emitted[i].GetPortalConstControl().Get(depth) + attenuation[i].GetPortalConstControl().Get(depth) * sum);
       }
-      cols.GetPortalControl().Set(i, col+sum);
+      cols.GetPortalControl().Set(i, col+sumtotl.GetPortalConstControl().Get(i));
 
     }
   }
