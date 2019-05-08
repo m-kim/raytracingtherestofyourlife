@@ -99,6 +99,8 @@ int main() {
   constexpr int nx = 128;
   constexpr int ny = 128;
   constexpr int ns = 10;
+
+  constexpr int depthcount = 50;
   //std::cout << "P3\n" << nx << " " << ny << "\n255\n";
   hitable *world;
   camera *cam;
@@ -150,10 +152,10 @@ int main() {
     }
 
     using ArrayType = vtkm::cont::ArrayHandle<vec3>;
-    std::vector<ArrayType> attenuation;
-    std::vector<ArrayType> emitted;
-    attenuation.reserve(rays.GetNumberOfValues());
-    emitted.reserve(rays.GetNumberOfValues());
+    ArrayType attenuation;
+    ArrayType emitted;
+    attenuation.Allocate(rays.GetNumberOfValues() * depthcount);
+    emitted.Allocate(rays.GetNumberOfValues() * depthcount);
 
     vtkm::cont::ArrayHandle<vtkm::UInt8> finished;
     finished.Allocate(rays.GetNumberOfValues());
@@ -161,16 +163,9 @@ int main() {
     hrecs.Allocate(rays.GetNumberOfValues());
     for (int i=0; i<rays.GetNumberOfValues(); i++)
     {
-      ArrayType a,e;
-      a.Allocate(50);
-      e.Allocate(50);
-      attenuation.push_back(a);
-      emitted.push_back(e);
-
       finished.GetPortalControl().Set(i, 0);
-
     }
-    for (int depth=0; depth<50; depth++){
+    for (int depth=0; depth<depthcount; depth++){
       for (int i=0; i<rays.GetNumberOfValues(); i++)
       {
           //vec3 p = r.point_at_parameter(2.0);
@@ -178,21 +173,19 @@ int main() {
         vtkm::Int8 state;
 
         vec3 att, em;
-        auto a = attenuation[i];
-        auto e = emitted[i];
         auto hrec = hrecs.GetPortalControl().Get(i);
         auto fin = finished.GetPortalConstControl().Get(i);
         if (!fin && world->hit(ray, 0.001, std::numeric_limits<float>::max(), hrec)){
           std::tie(state, att, em, ray) = color(ray, hrec, &hlist);
-          a.GetPortalControl().Set(depth, att);
-          e.GetPortalControl().Set(depth, em);
+          attenuation.GetPortalControl().Set(i * depthcount + depth, att);
+          emitted.GetPortalControl().Set(i * depthcount + depth, em);
           if (state < 2){
             finished.GetPortalControl().Set(i, 1 );
           }
         }
         else{
-          a.GetPortalControl().Set(depth, vec3(1.0));
-          e.GetPortalControl().Set(depth, vec3(0.0f));
+          attenuation.GetPortalControl().Set(i * depthcount + depth, vec3(1.0));
+          emitted.GetPortalControl().Set(i * depthcount + depth, vec3(0.0f));
         }
 
         rays.GetPortalControl().Set(i,ray);
@@ -201,16 +194,16 @@ int main() {
 
     ArrayType sumtotl;
     sumtotl.Allocate(rays.GetNumberOfValues());
-    for (int i=0; i<emitted.size(); i++){
-      sumtotl.GetPortalControl().Set(i, emitted[i].GetPortalConstControl().Get(emitted[i].GetNumberOfValues() -1));
+    for (int i=0; i<sumtotl.GetNumberOfValues(); i++){
+      sumtotl.GetPortalControl().Set(i, emitted.GetPortalConstControl().Get(i * depthcount + depthcount -1));
     }
-    for (int depth = emitted[0].GetNumberOfValues()-2; depth >=0; depth--){
-      for (int i=0; i<emitted.size(); i++){
+    for (int depth = depthcount-2; depth >=0; depth--){
+      for (int i=0; i<sumtotl.GetNumberOfValues(); i++){
         auto sum = sumtotl.GetPortalConstControl().Get(i);
-        sumtotl.GetPortalControl().Set(i, emitted[i].GetPortalConstControl().Get(depth) + attenuation[i].GetPortalConstControl().Get(depth) * sum);
+        sumtotl.GetPortalControl().Set(i, emitted.GetPortalConstControl().Get(i*depthcount + depth) + attenuation.GetPortalConstControl().Get(i*depthcount + depth) * sum);
       }
     }
-    for (int i=0; i<emitted.size(); i++){
+    for (int i=0; i<cols.GetNumberOfValues(); i++){
       auto col = cols.GetPortalConstControl().Get(i);
       cols.GetPortalControl().Set(i, col+sumtotl.GetPortalConstControl().Get(i));
     }
