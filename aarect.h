@@ -81,6 +81,8 @@ bool xy_rect::hit(const ray& r, float t0, float t1, hit_record& rec) const {
     rec.v = (y-y0)/(y1-y0); 
     rec.t = t;
     rec.mat_ptr = mp;
+    if (mp)
+      rec.texId = mp->texId;
     rec.p = r.point_at_parameter(t);
     rec.normal = vec3(0, 0, 1);
     return true;
@@ -99,6 +101,9 @@ bool xz_rect::hit(const ray& r, float t0, float t1, hit_record& rec) const {
     rec.v = (z-z0)/(z1-z0); 
     rec.t = t;
     rec.mat_ptr = mp;
+    if (mp)
+      rec.texId = mp->texId;
+
     rec.p = r.point_at_parameter(t);
     rec.normal = vec3(0, 1, 0);
     return true;
@@ -116,6 +121,9 @@ bool yz_rect::hit(const ray& r, float t0, float t1, hit_record& rec) const {
     rec.v = (z-z0)/(z1-z0); 
     rec.t = t;
     rec.mat_ptr = mp;
+    if (mp)
+      rec.texId = mp->texId;
+
     rec.p = r.point_at_parameter(t);
     rec.normal = vec3(1, 0, 0);
     return true;

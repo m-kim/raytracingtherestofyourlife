@@ -15,6 +15,7 @@
 #include "hitable.h"
 #include "onb.h"
 #include "pdf.h"
+#include "material.h"
 
 class sphere: public hitable  {
     public:
@@ -68,6 +69,9 @@ bool sphere::hit(const ray& r, float t_min, float t_max, hit_record& rec) const 
             get_sphere_uv((rec.p-center)/radius, rec.u, rec.v);
             rec.normal = (rec.p - center) / radius;
             rec.mat_ptr = mat_ptr;
+            if (mat_ptr)
+              rec.texId = mat_ptr->texId;
+
             return true;
         }
         temp = (-b + sqrt(b*b-a*c))/a;
@@ -77,6 +81,9 @@ bool sphere::hit(const ray& r, float t_min, float t_max, hit_record& rec) const 
             get_sphere_uv((rec.p-center)/radius, rec.u, rec.v);
             rec.normal = (rec.p - center) / radius;
             rec.mat_ptr = mat_ptr;
+            if (mat_ptr)
+              rec.texId = mat_ptr->texId;
+
             return true;
         }
     }

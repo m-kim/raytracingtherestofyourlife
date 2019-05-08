@@ -46,11 +46,12 @@ inline vec3 de_nan(const vec3& c) {
 
 
 
-auto color(const ray& r, const hit_record & hrec, hitable *light_shape) {
+template<typename TextureType>
+auto color(const ray& r, const hit_record & hrec, hitable *light_shape, TextureType &tex) {
 
   scatter_record srec;
   vec3 emitted = hrec.mat_ptr->emitted(r, hrec, hrec.u, hrec.v, hrec.p);
-  if (hrec.mat_ptr->scatter(r, hrec, srec)) {
+  if (hrec.mat_ptr->scatter(r, hrec, srec, tex.value(hrec.u, hrec.v, hrec.p))) {
       if (srec.is_specular) {
         return std::make_tuple(3, srec.attenuation, vec3(0,0,0), srec.specular_ray);
       }
@@ -68,12 +69,16 @@ auto color(const ray& r, const hit_record & hrec, hitable *light_shape) {
 
 }
 
+std::vector<texture*> tex_ptrs;
 void cornell_box(hitable **scene, camera **cam, float aspect) {
     int i = 0;
     hitable **list = new hitable*[8];
-    material *red = new lambertian( new constant_texture(vec3(0.65, 0.05, 0.05)) );
-    material *white = new lambertian( new constant_texture(vec3(0.73, 0.73, 0.73)) );
-    material *green = new lambertian( new constant_texture(vec3(0.12, 0.45, 0.15)) );
+    material *red = new lambertian(0);
+    tex_ptrs.push_back(new constant_texture(vec3(0.65, 0.05, 0.05)));
+    material *white = new lambertian(1);
+    tex_ptrs.push_back(new  constant_texture(vec3(0.73, 0.73, 0.73)));
+    material *green = new lambertian(2);
+    tex_ptrs.push_back(new constant_texture(vec3(0.12, 0.45, 0.15)));
     material *light = new diffuse_light( new constant_texture(vec3(15, 15, 15)) );
     list[i++] = new flip_normals(new yz_rect(0, 555, 0, 555, 555, green));
     list[i++] = new yz_rect(0, 555, 0, 555, 0, red);
@@ -170,7 +175,7 @@ int main() {
         auto hrec = hrecs.GetPortalControl().Get(i);
         auto fin = finished.GetPortalConstControl().Get(i);
         if (!fin && world->hit(ray, 0.001, std::numeric_limits<float>::max(), hrec)){
-          std::tie(state, att, em, ray) = color(ray, hrec, &hlist);
+          std::tie(state, att, em, ray) = color(ray, hrec, &hlist, *tex_ptrs[hrec.texId]);
           attenuation.GetPortalControl().Set(i * depthcount + depth, att);
           emitted.GetPortalControl().Set(i * depthcount + depth, em);
           if (state < 2){

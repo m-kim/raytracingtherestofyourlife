@@ -56,17 +56,20 @@ struct scatter_record
 
 class material  {
     public:
-        virtual bool scatter(const ray& r_in, const hit_record& hrec, scatter_record& srec) const {
+  material():texId(0){}
+        virtual bool scatter(const ray& r_in, const hit_record& hrec, scatter_record& srec, vec3) const {
               return false;}
         virtual float scattering_pdf(const ray& r_in, const hit_record& rec, const ray& scattered) const {
               return false;}
         virtual vec3 emitted(const ray& r_in, const hit_record& rec, float u, float v, const vec3& p) const { return vec3(0,0,0); }
+  int texId;
+
 };
 
 class dielectric : public material {
     public:
         dielectric(float ri) : ref_idx(ri) {}
-        virtual bool scatter(const ray& r_in, const hit_record& hrec, scatter_record& srec) const {
+        virtual bool scatter(const ray& r_in, const hit_record& hrec, scatter_record& srec, vec3 albedo) const {
             srec.is_specular = true;
             srec.pdf_ptr = 0;
             srec.attenuation = vec3(1.0, 1.0, 1.0);
@@ -124,20 +127,19 @@ class metal : public material {
 
 class lambertian : public material {
     public:
-        lambertian(texture *a) : albedo(a) {}
+  lambertian(int tex_id){this->texId = tex_id;}
         float scattering_pdf(const ray& r_in, const hit_record& rec, const ray& scattered) const {
             float cosine = dot(rec.normal, unit_vector(scattered.direction()));
             if (cosine < 0)
                 return 0;
             return cosine / M_PI;
         }
-        bool scatter(const ray& r_in, const hit_record& hrec, scatter_record& srec) const {
+        bool scatter(const ray& r_in, const hit_record& hrec, scatter_record& srec, vec3 albedo) const {
             srec.is_specular = false;
-            srec.attenuation = albedo->value(hrec.u, hrec.v, hrec.p);
+            srec.attenuation = albedo;
             srec.pdf_ptr = std::make_shared<cosine_pdf>(hrec.normal);
             return true;
         }
-        texture *albedo;
 };
 
 

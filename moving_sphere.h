@@ -13,7 +13,7 @@
 #define MOVINGSPHEREH
 
 #include "hitable.h"
-
+#include "material.h"
 class moving_sphere: public hitable  {
     public:
         moving_sphere() {}
@@ -55,6 +55,9 @@ bool moving_sphere::hit(const ray& r, float t_min, float t_max, hit_record& rec)
             rec.p = r.point_at_parameter(rec.t);
             rec.normal = (rec.p - center(r.time())) / radius;
             rec.mat_ptr = mat_ptr;
+            if (mat_ptr)
+              rec.texId = mat_ptr->texId;
+
             return true;
         }
         temp = (-b + sqrt(discriminant))/a;
@@ -63,6 +66,9 @@ bool moving_sphere::hit(const ray& r, float t_min, float t_max, hit_record& rec)
             rec.p = r.point_at_parameter(rec.t);
             rec.normal = (rec.p - center(r.time())) / radius;
             rec.mat_ptr = mat_ptr;
+            if (mat_ptr)
+              rec.texId = mat_ptr->texId;
+
             return true;
         }
     }
