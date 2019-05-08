@@ -149,41 +149,51 @@ int main() {
       rays.GetPortalControl().Set(i, ray(lookfrom, dir));
     }
 
-    std::vector<std::vector<vec3>> attenuation;
-    std::vector<std::vector<vec3>> emitted;
-    attenuation.resize(rays.GetNumberOfValues());
-    emitted.resize(rays.GetNumberOfValues());
+    using ArrayType = vtkm::cont::ArrayHandle<vec3>;
+    std::vector<ArrayType> attenuation;
+    std::vector<ArrayType> emitted;
+    attenuation.reserve(rays.GetNumberOfValues());
+    emitted.reserve(rays.GetNumberOfValues());
 
+    for (int i=0; i<rays.GetNumberOfValues(); i++)
+    {
+      ArrayType a,e;
+      a.Allocate(50);
+      e.Allocate(50);
+      attenuation.push_back(a);
+      emitted.push_back(e);
+    }
     for (int i=0; i<rays.GetNumberOfValues(); i++)
     {
         //vec3 p = r.point_at_parameter(2.0);
       auto ray = rays.GetPortalConstControl().Get(i);
       vtkm::Int8 state;
-      attenuation[i].reserve(50);
-      emitted[i].reserve(50);
+
       vec3 att, em;
+      bool finished = false;
+      auto a = attenuation[i];
+      auto e = emitted[i];
       for (int depth=0; depth<50; depth++){
         hit_record hrec;
-        if (world->hit(ray, 0.001, std::numeric_limits<float>::max(), hrec)){
+        if (!finished && world->hit(ray, 0.001, std::numeric_limits<float>::max(), hrec)){
           std::tie(state, att, em, ray) = color(ray, hrec, &hlist);
-          attenuation[i].push_back(att);
-          emitted[i].push_back(em);
+          a.GetPortalControl().Set(depth, att);
+          e.GetPortalControl().Set(depth, em);
           if (state < 2){
-            break;
+            finished = true;
           }
         }
         else{
-          attenuation[i].push_back(vec3(1.0));
-          emitted[i].push_back(vec3(0.0f));
-          break;
+          a.GetPortalControl().Set(depth, vec3(1.0));
+          e.GetPortalControl().Set(depth, vec3(0.0f));
         }
       }
     }
     for (int i=0; i<emitted.size(); i++){
       auto col = cols.GetPortalConstControl().Get(i);
-      vec3 sum = emitted[i][emitted[i].size() -1];
-      for (int depth = emitted[i].size()-2; depth >=0; depth--){
-        sum = emitted[i][depth]  + attenuation[i][depth] * sum;
+      vec3 sum = emitted[i].GetPortalConstControl().Get(emitted[i].GetNumberOfValues() -1);
+      for (int depth = emitted[i].GetNumberOfValues()-2; depth >=0; depth--){
+        sum = emitted[i].GetPortalConstControl().Get(depth) + attenuation[i].GetPortalConstControl().Get(depth) * sum;
       }
       cols.GetPortalControl().Set(i, col+sum);
 
