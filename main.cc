@@ -46,12 +46,12 @@ inline vec3 de_nan(const vec3& c) {
 
 
 
-template<typename TextureType>
-auto color(const ray& r, const hit_record & hrec, hitable *light_shape, TextureType &tex) {
+template<typename MatType, typename TextureType>
+auto color(const ray& r, const hit_record & hrec, hitable *light_shape, MatType &mat, TextureType &tex) {
 
   scatter_record srec;
-  vec3 emitted = hrec.mat_ptr->emitted(r, hrec, hrec.u, hrec.v, hrec.p);
-  if (hrec.mat_ptr->scatter(r, hrec, srec, tex.value(hrec.u, hrec.v, hrec.p))) {
+  vec3 emitted = mat.emitted(r, hrec, hrec.u, hrec.v, hrec.p);
+  if (mat.scatter(r, hrec, srec, tex.value(hrec.u, hrec.v, hrec.p))) {
       if (srec.is_specular) {
         return std::make_tuple(3, srec.attenuation, vec3(0,0,0), srec.specular_ray);
       }
@@ -60,7 +60,7 @@ auto color(const ray& r, const hit_record & hrec, hitable *light_shape, TextureT
           mixture_pdf p(&plight, srec.pdf_ptr.get());
           ray scattered = ray(hrec.p, p.generate(), r.time());
           float pdf_val = p.value(scattered.direction());
-          return std::make_tuple(2, srec.attenuation*hrec.mat_ptr->scattering_pdf(r, hrec, scattered)/pdf_val,
+          return std::make_tuple(2, srec.attenuation*mat.scattering_pdf(r, hrec, scattered)/pdf_val,
                                  emitted, scattered);
       }
   }
@@ -70,26 +70,33 @@ auto color(const ray& r, const hit_record & hrec, hitable *light_shape, TextureT
 }
 
 std::vector<texture*> tex_ptrs;
+std::vector<material*> mat_ptrs;
 void cornell_box(hitable **scene, camera **cam, float aspect) {
     int i = 0;
     hitable **list = new hitable*[8];
-    material *red = new lambertian(0);
+    material *red = new lambertian(0,0);
+    mat_ptrs.push_back(red);
     tex_ptrs.push_back(new constant_texture(vec3(0.65, 0.05, 0.05)));
-    material *white = new lambertian(1);
+    material *white = new lambertian(1, 1);
+    mat_ptrs.push_back(white);
     tex_ptrs.push_back(new  constant_texture(vec3(0.73, 0.73, 0.73)));
-    material *green = new lambertian(2);
+    material *green = new lambertian(2, 2);
+    mat_ptrs.push_back(green);
     tex_ptrs.push_back(new constant_texture(vec3(0.12, 0.45, 0.15)));
-    material *light = new diffuse_light( new constant_texture(vec3(15, 15, 15)) );
-    list[i++] = new flip_normals(new yz_rect(0, 555, 0, 555, 555, green));
-    list[i++] = new yz_rect(0, 555, 0, 555, 0, red);
-    list[i++] = new flip_normals(new xz_rect(213, 343, 227, 332, 554, light));
-    list[i++] = new flip_normals(new xz_rect(0, 555, 0, 555, 555, white));
-    list[i++] = new xz_rect(0, 555, 0, 555, 0, white);
-    list[i++] = new flip_normals(new xy_rect(0, 555, 0, 555, 555, white));
-    material *glass = new dielectric(1.5);
-    list[i++] = new sphere(vec3(190, 90, 190),90 , glass);
+    material *light = new diffuse_light(3, new constant_texture(vec3(15, 15, 15)) );
+    mat_ptrs.push_back(light);
+
+    list[i++] = new flip_normals(new yz_rect(0, 555, 0, 555, 555, 2,2));
+    list[i++] = new yz_rect(0, 555, 0, 555, 0, 0,0);
+    list[i++] = new flip_normals(new xz_rect(213, 343, 227, 332, 554, 3,0));
+    list[i++] = new flip_normals(new xz_rect(0, 555, 0, 555, 555, 1,1));
+    list[i++] = new xz_rect(0, 555, 0, 555, 0, 1,1);
+    list[i++] = new flip_normals(new xy_rect(0, 555, 0, 555, 555, 1,1));
+    material *glass = new dielectric(4, 1.5);
+    mat_ptrs.push_back(glass);
+    list[i++] = new sphere(vec3(190, 90, 190),90 , 4, 0);
     list[i++] = new translate(new rotate_y(
-                    new box(vec3(0, 0, 0), vec3(165, 330, 165), white),  15), vec3(265,0,295));
+                    new box(vec3(0, 0, 0), vec3(165, 330, 165), 1,1),  15), vec3(265,0,295));
     *scene = new hitable_list(list,i);
     vec3 lookfrom(278, 278, -800);
     vec3 lookat(278,278,0);
@@ -111,8 +118,8 @@ int main() {
   camera *cam;
   constexpr float aspect = float(ny) / float(nx);
   cornell_box(&world, &cam, aspect);
-  hitable *light_shape = new xz_rect(213, 343, 227, 332, 554, 0);
-  hitable *glass_sphere = new sphere(vec3(190, 90, 190), 90, 0);
+  hitable *light_shape = new xz_rect(213, 343, 227, 332, 554, 0,0);
+  hitable *glass_sphere = new sphere(vec3(190, 90, 190), 90, 0,0);
   hitable *a[2];
   a[0] = light_shape;
   a[1] = glass_sphere;
@@ -175,7 +182,7 @@ int main() {
         auto hrec = hrecs.GetPortalControl().Get(i);
         auto fin = finished.GetPortalConstControl().Get(i);
         if (!fin && world->hit(ray, 0.001, std::numeric_limits<float>::max(), hrec)){
-          std::tie(state, att, em, ray) = color(ray, hrec, &hlist, *tex_ptrs[hrec.texId]);
+          std::tie(state, att, em, ray) = color(ray, hrec, &hlist, *mat_ptrs[hrec.matId], *tex_ptrs[hrec.texId]);
           attenuation.GetPortalControl().Set(i * depthcount + depth, att);
           emitted.GetPortalControl().Set(i * depthcount + depth, em);
           if (state < 2){

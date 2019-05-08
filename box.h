@@ -18,7 +18,7 @@
 class box: public hitable  {
     public:
         box() {}
-        box(const vec3& p0, const vec3& p1, material *ptr);
+        box(const vec3& p0, const vec3& p1, int matId, int texId);
         virtual bool hit(const ray& r, float t0, float t1, hit_record& rec) const;
         virtual bool bounding_box(float t0, float t1, aabb& box) const {
                box =  aabb(pmin, pmax);
@@ -27,16 +27,16 @@ class box: public hitable  {
         hitable *list_ptr;
 };
 
-box::box(const vec3& p0, const vec3& p1, material *ptr) {
+box::box(const vec3& p0, const vec3& p1, int matId, int texId) {
     pmin = p0;
     pmax = p1;
     hitable **list = new hitable*[6];
-    list[0] = new xy_rect(p0[0], p1[0], p0[1], p1[1], p1[2], ptr);
-    list[1] = new flip_normals(new xy_rect(p0[0], p1[0], p0[1], p1[1], p0[2], ptr));
-    list[2] = new xz_rect(p0[0], p1[0], p0[2], p1[2], p1[1], ptr);
-    list[3] = new flip_normals(new xz_rect(p0[0], p1[0], p0[2], p1[2], p0[1], ptr));
-    list[4] = new yz_rect(p0[1], p1[1], p0[2], p1[2], p1[0], ptr);
-    list[5] = new flip_normals(new yz_rect(p0[1], p1[1], p0[2], p1[2], p0[0], ptr));
+    list[0] = new xy_rect(p0[0], p1[0], p0[1], p1[1], p1[2], matId, texId);
+    list[1] = new flip_normals(new xy_rect(p0[0], p1[0], p0[1], p1[1], p0[2],  matId, texId));
+    list[2] = new xz_rect(p0[0], p1[0], p0[2], p1[2], p1[1],  matId, texId);
+    list[3] = new flip_normals(new xz_rect(p0[0], p1[0], p0[2], p1[2], p0[1],  matId, texId));
+    list[4] = new yz_rect(p0[1], p1[1], p0[2], p1[2], p1[0],  matId, texId);
+    list[5] = new flip_normals(new yz_rect(p0[1], p1[1], p0[2], p1[2], p0[0],  matId, texId));
     list_ptr = new hitable_list(list,6);
 }
 

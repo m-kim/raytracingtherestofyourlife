@@ -13,23 +13,24 @@
 #define AARECTH
 
 #include "hitable.h"
+#include "material.h"
 
 class xy_rect: public hitable  {
     public:
         xy_rect() {}
-        xy_rect(float _x0, float _x1, float _y0, float _y1, float _k, material *mat) : x0(_x0), x1(_x1), y0(_y0), y1(_y1), k(_k), mp(mat) {};
+        xy_rect(float _x0, float _x1, float _y0, float _y1, float _k, int mi, int ti) : x0(_x0), x1(_x1), y0(_y0), y1(_y1), k(_k), matId(mi), texId(ti) {};
         virtual bool hit(const ray& r, float t0, float t1, hit_record& rec) const;
         virtual bool bounding_box(float t0, float t1, aabb& box) const {
                box =  aabb(vec3(x0,y0, k-0.0001), vec3(x1, y1, k+0.0001));
                return true; }
-        material  *mp;
+        int texId, matId;
         float x0, x1, y0, y1, k;
 };
 
 class xz_rect: public hitable  {
     public:
         xz_rect() {}
-        xz_rect(float _x0, float _x1, float _z0, float _z1, float _k, material *mat) : x0(_x0), x1(_x1), z0(_z0), z1(_z1), k(_k), mp(mat) {};
+        xz_rect(float _x0, float _x1, float _z0, float _z1, float _k, int mi, int ti) : x0(_x0), x1(_x1), z0(_z0), z1(_z1), k(_k), matId(mi), texId(ti) {};
         virtual bool hit(const ray& r, float t0, float t1, hit_record& rec) const;
         virtual bool bounding_box(float t0, float t1, aabb& box) const {
             box =  aabb(vec3(x0,k-0.0001,z0), vec3(x1, k+0.0001, z1));
@@ -52,17 +53,18 @@ class xz_rect: public hitable  {
         }
         material  *mp;
         float x0, x1, z0, z1, k;
+        int matId, texId;
 };
 
 class yz_rect: public hitable  {
     public:
         yz_rect() {}
-        yz_rect(float _y0, float _y1, float _z0, float _z1, float _k, material *mat) : y0(_y0), y1(_y1), z0(_z0), z1(_z1), k(_k), mp(mat) {};
+        yz_rect(float _y0, float _y1, float _z0, float _z1, float _k, int mi, int ti) : y0(_y0), y1(_y1), z0(_z0), z1(_z1), k(_k), matId(mi), texId(ti) {};
         virtual bool hit(const ray& r, float t0, float t1, hit_record& rec) const;
         virtual bool bounding_box(float t0, float t1, aabb& box) const {
                box =  aabb(vec3(k-0.0001, y0, z0), vec3(k+0.0001, y1, z1));
                return true; }
-        material  *mp;
+        int matId, texId;
         float y0, y1, z0, z1, k;
 };
 
@@ -80,9 +82,9 @@ bool xy_rect::hit(const ray& r, float t0, float t1, hit_record& rec) const {
     rec.u = (x-x0)/(x1-x0);
     rec.v = (y-y0)/(y1-y0); 
     rec.t = t;
-    rec.mat_ptr = mp;
-    if (mp)
-      rec.texId = mp->texId;
+    rec.matId = matId;
+    rec.texId = texId;
+
     rec.p = r.point_at_parameter(t);
     rec.normal = vec3(0, 0, 1);
     return true;
@@ -100,9 +102,8 @@ bool xz_rect::hit(const ray& r, float t0, float t1, hit_record& rec) const {
     rec.u = (x-x0)/(x1-x0);
     rec.v = (z-z0)/(z1-z0); 
     rec.t = t;
-    rec.mat_ptr = mp;
-    if (mp)
-      rec.texId = mp->texId;
+    rec.texId = texId;
+    rec.matId = matId;
 
     rec.p = r.point_at_parameter(t);
     rec.normal = vec3(0, 1, 0);
@@ -120,9 +121,8 @@ bool yz_rect::hit(const ray& r, float t0, float t1, hit_record& rec) const {
     rec.u = (y-y0)/(y1-y0);
     rec.v = (z-z0)/(z1-z0); 
     rec.t = t;
-    rec.mat_ptr = mp;
-    if (mp)
-      rec.texId = mp->texId;
+    rec.texId = texId;
+    rec.matId = matId;
 
     rec.p = r.point_at_parameter(t);
     rec.normal = vec3(1, 0, 0);

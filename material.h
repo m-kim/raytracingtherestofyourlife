@@ -56,19 +56,19 @@ struct scatter_record
 
 class material  {
     public:
-  material():texId(0){}
+  material(int Id):matId(Id), texId(0){}
         virtual bool scatter(const ray& r_in, const hit_record& hrec, scatter_record& srec, vec3) const {
               return false;}
         virtual float scattering_pdf(const ray& r_in, const hit_record& rec, const ray& scattered) const {
               return false;}
         virtual vec3 emitted(const ray& r_in, const hit_record& rec, float u, float v, const vec3& p) const { return vec3(0,0,0); }
-  int texId;
+  int texId, matId;
 
 };
 
 class dielectric : public material {
     public:
-        dielectric(float ri) : ref_idx(ri) {}
+        dielectric(int Id, float ri) : material(Id), ref_idx(ri) {}
         virtual bool scatter(const ray& r_in, const hit_record& hrec, scatter_record& srec, vec3 albedo) const {
             srec.is_specular = true;
             srec.pdf_ptr = 0;
@@ -110,7 +110,7 @@ class dielectric : public material {
 
 class metal : public material {
     public:
-        metal(const vec3& a, float f) : albedo(a) { if (f < 1) fuzz = f; else fuzz = 1; }
+        metal(int Id, const vec3& a, float f) : material(Id), albedo(a) { if (f < 1) fuzz = f; else fuzz = 1; }
         virtual bool scatter(const ray& r_in, const hit_record& hrec, scatter_record& srec) const {
             vec3 reflected = reflect(unit_vector(r_in.direction()), hrec.normal);
             srec.specular_ray = ray(hrec.p, reflected + fuzz*random_in_unit_sphere());
@@ -127,7 +127,7 @@ class metal : public material {
 
 class lambertian : public material {
     public:
-  lambertian(int tex_id){this->texId = tex_id;}
+  lambertian(int Id, int tex_id):material(Id) {this->texId = tex_id;}
         float scattering_pdf(const ray& r_in, const hit_record& rec, const ray& scattered) const {
             float cosine = dot(rec.normal, unit_vector(scattered.direction()));
             if (cosine < 0)
@@ -145,7 +145,7 @@ class lambertian : public material {
 
 class diffuse_light : public material  {
     public:
-        diffuse_light(texture *a) : emit(a) {}
+        diffuse_light(int Id, texture *a) : material(Id), emit(a) {}
         virtual vec3 emitted(const ray& r_in, const hit_record& rec, float u, float v, const vec3& p) const {
             if (dot(rec.normal, r_in.direction()) < 0.0)
                 return emit->value(u, v, p);
