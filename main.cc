@@ -157,7 +157,8 @@ int main() {
 
     vtkm::cont::ArrayHandle<vtkm::UInt8> finished;
     finished.Allocate(rays.GetNumberOfValues());
-
+    vtkm::cont::ArrayHandle<hit_record> hrecs;
+    hrecs.Allocate(rays.GetNumberOfValues());
     for (int i=0; i<rays.GetNumberOfValues(); i++)
     {
       ArrayType a,e;
@@ -167,18 +168,19 @@ int main() {
       emitted.push_back(e);
 
       finished.GetPortalControl().Set(i, 0);
-    }
-    for (int i=0; i<rays.GetNumberOfValues(); i++)
-    {
-        //vec3 p = r.point_at_parameter(2.0);
-      auto ray = rays.GetPortalConstControl().Get(i);
-      vtkm::Int8 state;
 
-      vec3 att, em;
-      auto a = attenuation[i];
-      auto e = emitted[i];
-      for (int depth=0; depth<50; depth++){
-        hit_record hrec;
+    }
+    for (int depth=0; depth<50; depth++){
+      for (int i=0; i<rays.GetNumberOfValues(); i++)
+      {
+          //vec3 p = r.point_at_parameter(2.0);
+        auto ray = rays.GetPortalConstControl().Get(i);
+        vtkm::Int8 state;
+
+        vec3 att, em;
+        auto a = attenuation[i];
+        auto e = emitted[i];
+        auto hrec = hrecs.GetPortalControl().Get(i);
         auto fin = finished.GetPortalConstControl().Get(i);
         if (!fin && world->hit(ray, 0.001, std::numeric_limits<float>::max(), hrec)){
           std::tie(state, att, em, ray) = color(ray, hrec, &hlist);
@@ -192,6 +194,8 @@ int main() {
           a.GetPortalControl().Set(depth, vec3(1.0));
           e.GetPortalControl().Set(depth, vec3(0.0f));
         }
+
+        rays.GetPortalControl().Set(i,ray);
       }
     }
 
