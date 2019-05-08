@@ -27,6 +27,7 @@ void get_sphere_uv(const vec3& p, float& u, float& v) {
 
 struct hit_record
 {
+  vtkm::Id hitIdx;
     float t;
     float u;
     float v;

@@ -46,29 +46,26 @@ inline vec3 de_nan(const vec3& c) {
 
 
 
-auto color(const ray& r, hitable *world, hitable *light_shape) {
-    hit_record hrec;
-    if (world->hit(r, 0.001, std::numeric_limits<float>::max(), hrec)) {
-        scatter_record srec;
-        vec3 emitted = hrec.mat_ptr->emitted(r, hrec, hrec.u, hrec.v, hrec.p);
-        if (hrec.mat_ptr->scatter(r, hrec, srec)) {
-            if (srec.is_specular) {
-              return std::make_tuple(3, srec.attenuation, vec3(0,0,0), srec.specular_ray);
-            }
-            else {
-                hitable_pdf plight(light_shape, hrec.p);
-                mixture_pdf p(&plight, srec.pdf_ptr.get());
-                ray scattered = ray(hrec.p, p.generate(), r.time());
-                float pdf_val = p.value(scattered.direction());
-                return std::make_tuple(2, srec.attenuation*hrec.mat_ptr->scattering_pdf(r, hrec, scattered)/pdf_val,
-                                       emitted, scattered);
-            }
-        }
-        else
-          return std::make_tuple(1, vec3(1.0f), emitted, r);
-    }
-    else
-      return std::make_tuple(0, vec3(1.0f), vec3(0,0,0), r);
+auto color(const ray& r, const hit_record & hrec, hitable *light_shape) {
+
+  scatter_record srec;
+  vec3 emitted = hrec.mat_ptr->emitted(r, hrec, hrec.u, hrec.v, hrec.p);
+  if (hrec.mat_ptr->scatter(r, hrec, srec)) {
+      if (srec.is_specular) {
+        return std::make_tuple(3, srec.attenuation, vec3(0,0,0), srec.specular_ray);
+      }
+      else {
+          hitable_pdf plight(light_shape, hrec.p);
+          mixture_pdf p(&plight, srec.pdf_ptr.get());
+          ray scattered = ray(hrec.p, p.generate(), r.time());
+          float pdf_val = p.value(scattered.direction());
+          return std::make_tuple(2, srec.attenuation*hrec.mat_ptr->scattering_pdf(r, hrec, scattered)/pdf_val,
+                                 emitted, scattered);
+      }
+  }
+  else
+    return std::make_tuple(1, vec3(1.0f), emitted, r);
+
 }
 
 void cornell_box(hitable **scene, camera **cam, float aspect) {
@@ -152,33 +149,44 @@ int main() {
       rays.GetPortalControl().Set(i, ray(lookfrom, dir));
     }
 
-    for (int i=0; i<rays.GetNumberOfValues(); i++)
+    std::vector<std::vector<vec3>> attenuation;
+    std::vector<std::vector<vec3>> emitted;
+    attenuation.resize(rays.GetNumberOfValues());
+    emitted.resize(rays.GetNumberOfValues());
 
+    for (int i=0; i<rays.GetNumberOfValues(); i++)
     {
         //vec3 p = r.point_at_parameter(2.0);
-      auto col = cols.GetPortalConstControl().Get(i);
       auto ray = rays.GetPortalConstControl().Get(i);
       vtkm::Int8 state;
-      std::vector<vec3> attenuation;
-      std::vector<vec3> emitted;
-      attenuation.reserve(50);
-      emitted.reserve(50);
+      attenuation[i].reserve(50);
+      emitted[i].reserve(50);
       vec3 att, em;
       for (int depth=0; depth<50; depth++){
-
-        std::tie(state, att, em, ray) = color(ray, world, &hlist);
-        attenuation.push_back(att);
-        emitted.push_back(em);
-
-        if (state < 2){
+        hit_record hrec;
+        if (world->hit(ray, 0.001, std::numeric_limits<float>::max(), hrec)){
+          std::tie(state, att, em, ray) = color(ray, hrec, &hlist);
+          attenuation[i].push_back(att);
+          emitted[i].push_back(em);
+          if (state < 2){
+            break;
+          }
+        }
+        else{
+          attenuation[i].push_back(vec3(1.0));
+          emitted[i].push_back(vec3(0.0f));
           break;
         }
       }
-      vec3 sum = emitted[emitted.size() -1];
-      for (int depth = emitted.size()-2; depth >=0; depth--){
-        sum = emitted[depth]  + attenuation[depth] * sum;
+    }
+    for (int i=0; i<emitted.size(); i++){
+      auto col = cols.GetPortalConstControl().Get(i);
+      vec3 sum = emitted[i][emitted[i].size() -1];
+      for (int depth = emitted[i].size()-2; depth >=0; depth--){
+        sum = emitted[i][depth]  + attenuation[i][depth] * sum;
       }
       cols.GetPortalControl().Set(i, col+sum);
+
     }
   }
 
