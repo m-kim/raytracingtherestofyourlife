@@ -6,6 +6,9 @@
 #include <vtkm/worklet/WorkletMapField.h>
 #include <vtkm/cont/ArrayHandleCounting.h>
 #include <vtkm/rendering/xorShift.h>
+#include "ray.h"
+
+using vec3 = vtkm::Vec<vtkm::Float32, 3>;
 
 class UVGen : public vtkm::worklet::WorkletMapField
 {
@@ -165,4 +168,34 @@ public:
   }
 
 }; // class perspective ray gen
+
+class RayLook : public vtkm::worklet::WorkletMapField
+{
+public:
+  vtkm::UInt32 RayCount;
+  VTKM_CONT
+
+  RayLook(vec3 lf)
+    : lookfrom(lf)
+  {
+  }
+
+  using ControlSignature = void(FieldIn<>, FieldIn<>, FieldIn<>, FieldIn<>, FieldOut<>);
+
+  using ExecutionSignature = void(_1, _2, _3, _4, _5);
+  template <typename Precision, typename UVType>
+  VTKM_EXEC void operator()(
+                            Precision x,
+                            Precision y,
+                            Precision z,
+                            UVType &uv,
+                            ray &r) const
+  {
+    //auto uv = uvs.GetPortalConstControl().Get(i);
+    vec3 dir(x,y,z);
+    r = ray(lookfrom, dir);
+  }
+  vec3 lookfrom;
+
+};
 #endif

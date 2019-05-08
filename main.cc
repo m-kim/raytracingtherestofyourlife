@@ -140,16 +140,10 @@ int main() {
     vtkm::worklet::AutoDispatcherMapField<RayGen>(raygen)
           .Invoke(DirX, DirY, DirZ, PixelIdx);
 
-    for (int i=0; i<rays.GetNumberOfValues(); i++){
-      auto uv = uvs.GetPortalConstControl().Get(i);
-      //rays.GetPortalControl().Set(i, cam->get_ray(uv));
-      vec3 lookfrom(278, 278, -800);
-      auto x= DirX.GetPortalControl().Get(i);
-      auto y= DirY.GetPortalControl().Get(i);
-      auto z= DirZ.GetPortalControl().Get(i);
-      vec3 dir(x,y,z);
-      rays.GetPortalControl().Set(i, ray(lookfrom, dir));
-    }
+    vec3 lookfrom(278, 278, -800);
+    RayLook rl(lookfrom);
+    vtkm::worklet::AutoDispatcherMapField<RayLook>(rl)
+          .Invoke(DirX, DirY, DirZ, uvs, rays);
 
     using ArrayType = vtkm::cont::ArrayHandle<vec3>;
     ArrayType attenuation;
