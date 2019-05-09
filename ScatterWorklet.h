@@ -65,7 +65,9 @@ public:
           newPdf.SetW(hrec.normal);
           hitable_pdf plight(light_shape, hrec.p);
           mixture_pdf p(&plight, &newPdf);
-          r_out = ray(hrec.p, p.generate(vtkm::random::xorshift::getRandF(randState),vtkm::random::xorshift::getRandF(randState)), r_in.time());
+          r_out = ray(hrec.p, p.generate(vtkm::random::xorshift::getRandF(randState),
+                                         vtkm::random::xorshift::getRandF(randState),
+                                         vtkm::random::xorshift::getRandF(randState)), r_in.time());
           float pdf_val = p.value(r_out.direction());
           atten = srec.attenuation * scattering_pdf(r_in, hrec, r_out)/pdf_val;
           //auto ret = scatter(r, srec, hrec, light_shape, mat);

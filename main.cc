@@ -91,7 +91,7 @@ void cornell_box(hitable **scene, camera **cam, float aspect) {
 int main() {
   constexpr int nx = 128;
   constexpr int ny = 128;
-  constexpr int ns = 10;
+  constexpr int ns = 100;
 
   constexpr int depthcount = 50;
   //std::cout << "P3\n" << nx << " " << ny << "\n255\n";
