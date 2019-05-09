@@ -31,8 +31,8 @@ public:
   VTKM_EXEC
   vec3 emit(const ray& r_in, const hit_record& rec, vec3 emit) const { return vec3(0,0,0); }
 
-  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8);
+  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9);
   VTKM_EXEC
   template<typename VecArrayType,
           typename ColorArrayType,
@@ -41,25 +41,23 @@ public:
                   ray &r_in,
                   hit_record &hrec,
                   scatter_record &srec,
+                  vtkm::Int8 &fin,
                   vtkm::Int8 &scattered,
                   ColorArrayType col,
                   MatTypeArray matType,
                   VecArrayType emitted,
                   VecArrayType attenuation) const
   {
+    if (!fin){
+      if (scattered){
+        auto mt = matType.Get(hrec.matId);
+        if (mt == 0){
+          vec3 em = emit(r_in, hrec, col.Get(hrec.texId));
+          scattered = scatter(r_in, hrec, srec, col.Get(hrec.texId));
+          emitted.Set(idx * depthcount + depth, em);
 
-    if (scattered){
-      auto mt = matType.Get(hrec.matId);
-      if (mt == 0){
-        vec3 em = emit(r_in, hrec, col.Get(hrec.texId));
-        scattered = scatter(r_in, hrec, srec, col.Get(hrec.texId));
-        emitted.Set(idx * depthcount + depth, em);
-
+        }
       }
-    }
-    else{
-      emitted.Set(idx * depthcount + depth, vec3(0.0f));
-      attenuation.Set(idx * depthcount + depth, vec3(1.0f));
     }
 
   }
@@ -90,8 +88,8 @@ public:
           return vec3(0,0,0);
   }
 
-  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8);
+  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9);
   VTKM_EXEC
   template<typename VecArrayType,
           typename ColorArrayType,
@@ -100,23 +98,22 @@ public:
                   ray &r_in,
                   hit_record &hrec,
                   scatter_record &srec,
+                  vtkm::Int8 &fin,
                   vtkm::Int8 &scattered,
                   ColorArrayType col,
                   MatTypeArray matType,
                   VecArrayType emitted,
                   VecArrayType attenuation) const
   {
-    if (scattered){
-      auto mt = matType.Get(hrec.matId);
-      if (mt == 1){
-        vec3 em = emit(r_in, hrec, col.Get(hrec.texId));
-        scattered = scatter(r_in, hrec, srec, col.Get(hrec.texId));
-        emitted.Set(idx * depthcount + depth, em);
+    if(!fin){
+      if (scattered){
+        auto mt = matType.Get(hrec.matId);
+        if (mt == 1){
+          vec3 em = emit(r_in, hrec, col.Get(hrec.texId));
+          scattered = scatter(r_in, hrec, srec, col.Get(hrec.texId));
+          emitted.Set(idx * depthcount + depth, em);
+        }
       }
-    }
-    else{
-      emitted.Set(idx * depthcount + depth, vec3(0.0f));
-      attenuation.Set(idx * depthcount + depth, vec3(1.0f));
     }
   }
 

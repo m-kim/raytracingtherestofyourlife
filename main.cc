@@ -209,24 +209,26 @@ int main() {
         auto r_start = rays.GetPortalConstControl().Get(i);
         auto hrec = hrecs.GetPortalControl().Get(i);
         auto sctr = scattered.GetPortalConstControl().Get(i);
+        auto fin = finished.GetPortalConstControl().Get(i);
         rs.operator()(i, r_start, hrec, sctr, tex.GetPortalControl(),
               attenuation.GetPortalControl(), emitted.GetPortalControl());
 
         auto srec = srecs.GetPortalControl().Get(i);
-        lmbWorklet.operator()(i, r_start, hrec,srec, sctr,
+        lmbWorklet.operator()(i, r_start, hrec,srec, fin, sctr,
                               tex.GetPortalControl(),
                               matType.GetPortalControl(),
                               emitted.GetPortalControl(),
                               attenuation.GetPortalControl());
-        dlWorklet.operator()(i, r_start, hrec,srec, sctr,
+        dlWorklet.operator()(i, r_start, hrec,srec,fin, sctr,
                              tex.GetPortalControl(),
                              matType.GetPortalControl(),
                              emitted.GetPortalControl(),
                              attenuation.GetPortalControl());
 
         ray ray_out;
-        pdfWorklet.operator()(i, r_start, hrec, sctr, srec, ray_out, attenuation.GetPortalControl());
+        pdfWorklet.operator()(i, r_start, hrec, fin, sctr, srec, ray_out, attenuation.GetPortalControl());
 
+        finished.GetPortalControl().Set(i, fin);
         scattered.GetPortalControl().Set(i, sctr );
         rays.GetPortalControl().Set(i,ray_out);
         hrecs.GetPortalControl().Set(i, hrec);
