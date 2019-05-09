@@ -31,8 +31,8 @@ public:
   VTKM_EXEC
   vec3 emit(const ray& r_in, const hit_record& rec, vec3 emit) const { return vec3(0,0,0); }
 
-  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9);
+  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8);
   VTKM_EXEC
   template<typename VecArrayType,
           typename ColorArrayType,
@@ -45,8 +45,7 @@ public:
                   vtkm::Int8 &scattered,
                   ColorArrayType col,
                   MatTypeArray matType,
-                  VecArrayType emitted,
-                  VecArrayType attenuation) const
+                  VecArrayType emitted) const
   {
     if (!fin){
       if (scattered){
@@ -88,8 +87,8 @@ public:
           return vec3(0,0,0);
   }
 
-  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9);
+  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8);
   VTKM_EXEC
   template<typename VecArrayType,
           typename ColorArrayType,
@@ -102,8 +101,7 @@ public:
                   vtkm::Int8 &scattered,
                   ColorArrayType col,
                   MatTypeArray matType,
-                  VecArrayType emitted,
-                  VecArrayType attenuation) const
+                  VecArrayType emitted) const
   {
     if(!fin){
       if (scattered){
@@ -171,8 +169,8 @@ public:
   VTKM_EXEC
   vec3 emit(const ray& r_in, const hit_record& rec, vec3 emit) const { return vec3(0,0,0); }
 
-  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9);
+  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8);
   VTKM_EXEC
   template<typename VecArrayType,
           typename ColorArrayType,
@@ -185,8 +183,7 @@ public:
                   vtkm::Int8 &scattered,
                   ColorArrayType col,
                   MatTypeArray matType,
-                  VecArrayType emitted,
-                  VecArrayType attenuation) const
+                  VecArrayType emitted) const
   {
     if (!fin){
       if (scattered){

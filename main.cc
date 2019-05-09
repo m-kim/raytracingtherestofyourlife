@@ -171,15 +171,15 @@ int main() {
 
       vtkm::worklet::AutoDispatcherMapField<LambertianWorklet>(lmbWorklet)
           .Invoke(rays, hrecs, srecs, finished, scattered,
-                  tex, matType, emitted, attenuation);
+                  tex, matType, emitted);
 
       vtkm::worklet::AutoDispatcherMapField<DiffuseLightWorklet>(dlWorklet)
           .Invoke(rays, hrecs, srecs, finished, scattered,
-                  tex, matType, emitted, attenuation);
+                  tex, matType, emitted);
 
       vtkm::worklet::AutoDispatcherMapField<DielectricWorklet>(deWorklet)
             .Invoke(rays, hrecs, srecs, finished, scattered,
-                    tex, matType, emitted, attenuation);
+                    tex, matType, emitted);
 
       vtkm::worklet::AutoDispatcherMapField<PDFCosineWorklet>(pdfWorklet)
             .Invoke(rays, hrecs, srecs, finished, scattered, rays, attenuation);
