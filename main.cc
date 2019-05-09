@@ -72,24 +72,26 @@ auto color(const ray& r, const hit_record & hrec, const hitable *light_shape, Ma
 
 }
 
-std::vector<texture*> tex_ptrs;
 std::vector<material*> mat_ptrs;
+vtkm::cont::ArrayHandle<vec3> tex;
 
 void cornell_box(hitable **scene, camera **cam, float aspect) {
+  tex.Allocate(4);
+  tex.GetPortalControl().Set(0, vec3(0.65, 0.05, 0.05));
+  tex.GetPortalControl().Set(1, vec3(0.73, 0.73, 0.73));
+  tex.GetPortalControl().Set(2, vec3(0.12, 0.45, 0.15));
+  tex.GetPortalControl().Set(3, vec3(15, 15, 15));
+
   pdf_ptrs.push_back(new cosine_pdf());
     int i = 0;
     hitable **list = new hitable*[8];
     material *red = new lambertian(0);
     mat_ptrs.push_back(red);
-    tex_ptrs.push_back(new constant_texture(vec3(0.65, 0.05, 0.05)));
     material *white = new lambertian(0);
     mat_ptrs.push_back(white);
-    tex_ptrs.push_back(new  constant_texture(vec3(0.73, 0.73, 0.73)));
     material *green = new lambertian(0);
     mat_ptrs.push_back(green);
-    tex_ptrs.push_back(new constant_texture(vec3(0.12, 0.45, 0.15)));
     material *light = new diffuse_light(-1);
-    tex_ptrs.push_back(new constant_texture(vec3(15, 15, 15)) );
     mat_ptrs.push_back(light);
 
     list[i++] = new flip_normals(new yz_rect(0, 555, 0, 555, 555, 2,2));
@@ -180,7 +182,7 @@ int main() {
     }
 
     for (int depth=0; depth<depthcount; depth++){
-      RayShade rs(world, hlist, depthcount, depth, mat_ptrs, tex_ptrs, pdf_ptrs);
+      RayShade rs(world, hlist, depthcount, depth, mat_ptrs, pdf_ptrs);
 
 #if 0
       vtkm::worklet::AutoDispatcherMapField<RayShade>(rs)
@@ -191,7 +193,7 @@ int main() {
         auto ray = rays.GetPortalConstControl().Get(i);
         auto hrec = hrecs.GetPortalControl().Get(i);
         auto fin = finished.GetPortalConstControl().Get(i);
-        rs.operator()(i, ray, hrec, fin,
+        rs.operator()(i, ray, hrec, fin, tex.GetPortalControl(),
               attenuation.GetPortalControl(), emitted.GetPortalControl());
         finished.GetPortalControl().Set(i, fin );
         rays.GetPortalControl().Set(i,ray);

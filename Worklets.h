@@ -211,14 +211,12 @@ public:
            int dc,
            int d,
            std::vector<material*> mp,
-           std::vector<texture*> tp,
            std::vector<pdf*> p)
     :world(w)
     ,hlist(hl)
     ,depthcount(dc)
     ,depth(d)
     ,mat_ptrs(mp)
-    ,tex_ptrs(tp)
     ,pdf_ptrs(p)
   {
   }
@@ -242,11 +240,11 @@ public:
   }
   VTKM_EXEC
   template<typename MatType, typename TextureType>
-  auto color(const ray& r, const hit_record & hrec, const hitable *light_shape, MatType &mat, TextureType &tex) const {
+  auto color(const ray& r, const hit_record & hrec, const hitable *light_shape, MatType &mat, TextureType tex) const {
 
     scatter_record srec;
-    vec3 emitted = mat.emitted(r, hrec, tex.value(hrec.u, hrec.v, hrec.p));
-    if (mat.scatter(r, hrec, srec, tex.value(hrec.u, hrec.v, hrec.p))) {
+    vec3 emitted = mat.emitted(r, hrec, tex);
+    if (mat.scatter(r, hrec, srec, tex)) {
         if (srec.is_specular) {
           return std::make_tuple(3, srec.attenuation, vec3(0,0,0), srec.specular_ray);
         }
@@ -261,13 +259,14 @@ public:
   }
 
   using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>,
-  WholeArrayInOut<>, WholeArrayInOut<>);
+  WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
 
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6);
   VTKM_EXEC
-  template<typename VecArrayType>
+  template<typename VecArrayType, typename ColorArrayType>
   void operator()(vtkm::Id idx,
             ray &ray_io, hit_record &hrec, vtkm::UInt8 &fin,
+                  ColorArrayType col,
             VecArrayType attenuation,
              VecArrayType emitted) const
   {
@@ -275,7 +274,7 @@ public:
     vec3 att, em;
 
     if (!fin && world->hit(ray_io, 0.001, std::numeric_limits<float>::max(), hrec)){
-      std::tie(state, att, em, ray_io) = color(ray_io, hrec, &hlist, *mat_ptrs[hrec.matId], *tex_ptrs[hrec.texId]);
+      std::tie(state, att, em, ray_io) = color(ray_io, hrec, &hlist, *mat_ptrs[hrec.matId], col.Get(hrec.texId));
       attenuation.Set(idx * depthcount + depth, att);
       emitted.Set(idx * depthcount + depth, em);
       if (state < 2){
@@ -288,7 +287,6 @@ public:
     }
   }
 
-  std::vector<texture*> tex_ptrs;
   std::vector<material*> mat_ptrs;
   std::vector<pdf*> pdf_ptrs;
 
