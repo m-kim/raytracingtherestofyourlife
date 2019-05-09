@@ -161,9 +161,9 @@ int main() {
 
     for (int depth=0; depth<depthcount; depth++){
       RayShade rs(world, depthcount, depth);
-      LambertianWorklet lmbWorklet(0, depthcount, depth);
-      DiffuseLightWorklet dlWorklet(-1, depthcount ,depth);
-      DielectricWorklet deWorklet(-1, depthcount ,depth, 1.5);
+      LambertianWorklet lmbWorklet( depthcount, depth);
+      DiffuseLightWorklet dlWorklet(depthcount ,depth);
+      DielectricWorklet deWorklet( depthcount ,depth, 1.5);
       PDFCosineWorklet pdfWorklet(depthcount, depth, &hlist);
 #if 1
       vtkm::worklet::AutoDispatcherMapField<RayShade>(rs)

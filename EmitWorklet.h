@@ -14,9 +14,8 @@ class LambertianWorklet : public vtkm::worklet::WorkletMapField
 {
 public:
   VTKM_CONT
-  LambertianWorklet(int id, int dc, int d)
-      :pdfIdx(id)
-      , depthcount(dc)
+  LambertianWorklet(int dc, int d)
+      : depthcount(dc)
       , depth(d)
   {
   }
@@ -25,7 +24,6 @@ public:
   bool scatter(const ray& r_in, const hit_record& hrec, scatter_record& srec, vec3 albedo) const {
       srec.is_specular = false;
       srec.attenuation = albedo;
-      srec.pdfIdx = pdfIdx;//std::make_shared<cosine_pdf>(hrec.normal);
       return true;
   }
   VTKM_EXEC
@@ -62,16 +60,14 @@ public:
   }
 
   const int depth, depthcount;
-  int pdfIdx;
 };
 
 class DiffuseLightWorklet : public vtkm::worklet::WorkletMapField
 {
 public:
   VTKM_CONT
-  DiffuseLightWorklet(int id, int dc, int d)
-    :pdfIdx(id)
-    , depthcount(dc)
+  DiffuseLightWorklet(int dc, int d)
+    : depthcount(dc)
     , depth(d)
   {
   }
@@ -116,16 +112,14 @@ public:
   }
 
   const int depth, depthcount;
-  int pdfIdx;
 
 };
 class DielectricWorklet : public vtkm::worklet::WorkletMapField
 {
 public:
   VTKM_CONT
-  DielectricWorklet(int id, int dc, int d, float rid)
-      :pdfIdx(id)
-      , depthcount(dc)
+  DielectricWorklet(int dc, int d, float rid)
+      : depthcount(dc)
       , depth(d)
       , ref_idx(rid)
   {
@@ -134,7 +128,6 @@ public:
   VTKM_EXEC
   bool scatter(const ray& r_in, const hit_record& hrec, scatter_record& srec, vec3 albedo) const {
       srec.is_specular = true;
-      srec.pdfIdx = pdfIdx;
       srec.attenuation = vec3(1.0, 1.0, 1.0);
       vec3 outward_normal;
        vec3 reflected = reflect(r_in.direction(), hrec.normal);
@@ -200,7 +193,6 @@ public:
   }
 
   const int depth, depthcount;
-  int pdfIdx;
   float ref_idx;
 };
 
