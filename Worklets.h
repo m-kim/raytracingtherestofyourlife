@@ -223,7 +223,23 @@ public:
   {
   }
 
+  VTKM_EXEC
+  template<typename MatType>
+  auto scatter(const ray &r,
+               const scatter_record &srec,
+               const hit_record &hrec,
+               const hitable *light_shape,
+               MatType &mat) const
+  {
+    pdf_ptrs[srec.pdfIdx]->SetW(hrec.normal);
+    hitable_pdf plight(light_shape, hrec.p);
+    mixture_pdf p(&plight,pdf_ptrs[srec.pdfIdx] );
+    ray scattered = ray(hrec.p, p.generate(), r.time());
+    float pdf_val = p.value(scattered.direction());
+    return std::make_tuple(mat.scattering_pdf(r, hrec, scattered)/pdf_val,
+                             scattered);
 
+  }
   VTKM_EXEC
   template<typename MatType, typename TextureType>
   auto color(const ray& r, const hit_record & hrec, const hitable *light_shape, MatType &mat, TextureType &tex) const {
@@ -235,13 +251,8 @@ public:
           return std::make_tuple(3, srec.attenuation, vec3(0,0,0), srec.specular_ray);
         }
         else {
-          pdf_ptrs[srec.pdfIdx]->SetW(hrec.normal);
-            hitable_pdf plight(light_shape, hrec.p);
-            mixture_pdf p(&plight,pdf_ptrs[srec.pdfIdx] );
-            ray scattered = ray(hrec.p, p.generate(), r.time());
-            float pdf_val = p.value(scattered.direction());
-            return std::make_tuple(2, srec.attenuation*mat.scattering_pdf(r, hrec, scattered)/pdf_val,
-                                   emitted, scattered);
+          auto ret = scatter(r, srec, hrec, light_shape, mat);
+          return std::make_tuple(2, srec.attenuation*std::get<0>(ret), emitted, std::get<1>(ret));
         }
     }
     else
