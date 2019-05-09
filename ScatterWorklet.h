@@ -29,16 +29,16 @@ public:
       return cosine / M_PI;
   }
 
-  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>);
+  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>);
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7);
   VTKM_EXEC
   template<typename VecArrayType>
   void operator()(vtkm::Id idx,
                   ray &r_in,
                   hit_record &hrec,
+                  scatter_record &srec,
                   vtkm::Int8 &fin,
                   vtkm::Int8 &is_scattered,
-                  scatter_record &srec,
                   ray &r_out,
                   VecArrayType attenuation) const
   {

@@ -201,9 +201,24 @@ int main() {
       DiffuseLightWorklet dlWorklet(-1, depthcount ,depth);
       DielectricWorklet deWorklet(-1, depthcount ,depth, 1.5);
       PDFCosineWorklet pdfWorklet(depthcount, depth, &hlist);
-#if 0
+#if 1
       vtkm::worklet::AutoDispatcherMapField<RayShade>(rs)
-            .Invoke(rays, hrecs, finished, attenuation, emitted);
+            .Invoke(rays, hrecs, scattered, tex,  attenuation, emitted);
+
+      vtkm::worklet::AutoDispatcherMapField<LambertianWorklet>(lmbWorklet)
+          .Invoke(rays, hrecs, srecs, finished, scattered,
+                  tex, matType, emitted, attenuation);
+
+      vtkm::worklet::AutoDispatcherMapField<DiffuseLightWorklet>(dlWorklet)
+          .Invoke(rays, hrecs, srecs, finished, scattered,
+                  tex, matType, emitted, attenuation);
+
+      vtkm::worklet::AutoDispatcherMapField<DielectricWorklet>(deWorklet)
+            .Invoke(rays, hrecs, srecs, finished, scattered,
+                    tex, matType, emitted, attenuation);
+
+      vtkm::worklet::AutoDispatcherMapField<PDFCosineWorklet>(pdfWorklet)
+            .Invoke(rays, hrecs, srecs, finished, scattered, rays, attenuation);
 #else
 #pragma omp parallel for
       for (int i=0; i<rays.GetNumberOfValues(); i++){
@@ -232,7 +247,7 @@ int main() {
                              attenuation.GetPortalControl());
 
         ray ray_out;
-        pdfWorklet.operator()(i, r_start, hrec, fin, sctr, srec, ray_out, attenuation.GetPortalControl());
+        pdfWorklet.operator()(i, r_start, hrec, srec, fin, sctr, ray_out, attenuation.GetPortalControl());
 
         finished.GetPortalControl().Set(i, fin);
         scattered.GetPortalControl().Set(i, sctr );
