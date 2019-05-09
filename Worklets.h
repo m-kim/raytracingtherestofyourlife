@@ -207,55 +207,12 @@ class RayShade : public vtkm::worklet::WorkletMapField
 public:
   VTKM_CONT
   RayShade(hitable *w,
-           hitable_list hl,
            int dc,
-           int d,
-           std::vector<material*> mp,
-           std::vector<pdf*> p)
+           int d)
     :world(w)
-    ,hlist(hl)
     ,depthcount(dc)
     ,depth(d)
-    ,mat_ptrs(mp)
-    ,pdf_ptrs(p)
   {
-  }
-
-  VTKM_EXEC
-  template<typename MatType>
-  auto scatter(const ray &r,
-               const scatter_record &srec,
-               const hit_record &hrec,
-               const hitable *light_shape,
-               MatType &mat) const
-  {
-    pdf_ptrs[srec.pdfIdx]->SetW(hrec.normal);
-    hitable_pdf plight(light_shape, hrec.p);
-    mixture_pdf p(&plight,pdf_ptrs[srec.pdfIdx] );
-    ray scattered = ray(hrec.p, p.generate(), r.time());
-    float pdf_val = p.value(scattered.direction());
-    return std::make_tuple(mat.scattering_pdf(r, hrec, scattered)/pdf_val,
-                             scattered);
-
-  }
-  VTKM_EXEC
-  template<typename MatType, typename TextureType>
-  auto color(const ray& r, const hit_record & hrec, const hitable *light_shape, MatType &mat, TextureType tex) const {
-
-    scatter_record srec;
-    vec3 emitted = mat.emitted(r, hrec, tex);
-    if (mat.scatter(r, hrec, srec, tex)) {
-        if (srec.is_specular) {
-          return std::make_tuple(3, srec.attenuation, vec3(0,0,0), srec.specular_ray);
-        }
-        else {
-          auto ret = scatter(r, srec, hrec, light_shape, mat);
-          return std::make_tuple(2, srec.attenuation*std::get<0>(ret), emitted, std::get<1>(ret));
-        }
-    }
-    else
-      return std::make_tuple(1, vec3(1.0f), emitted, r);
-
   }
 
   using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>,
@@ -271,22 +228,6 @@ public:
                   VecArrayType attenuation,
                    VecArrayType emitted) const
   {
-    vtkm::Int8 state;
-    vec3 att, em;
-#if 0
-    if (!fin && world->hit(ray_io, 0.001, std::numeric_limits<float>::max(), hrec)){
-      std::tie(state, att, em, ray_io) = color(ray_io, hrec, &hlist, *mat_ptrs[hrec.matId], col.Get(hrec.texId));
-      attenuation.Set(idx * depthcount + depth, att);
-      emitted.Set(idx * depthcount + depth, em);
-      if (state < 2){
-        fin = 1;
-      }
-    }
-    else{
-      attenuation.Set(idx * depthcount + depth, vec3(1.0));
-      emitted.Set(idx * depthcount + depth, vec3(0.0f));
-    }
-#else
     if (scattered && world->hit(ray_io, 0.001, std::numeric_limits<float>::max(), hrec)){
 
     }
@@ -295,14 +236,9 @@ public:
       attenuation.Set(idx * depthcount + depth, vec3(1.0));
       emitted.Set(idx * depthcount + depth, vec3(0.0f));
     }
-#endif
   }
 
-  std::vector<material*> mat_ptrs;
-  std::vector<pdf*> pdf_ptrs;
-
   hitable *world;
-  hitable_list hlist;
   int depthcount;
   int depth;
 

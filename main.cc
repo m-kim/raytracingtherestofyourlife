@@ -47,33 +47,8 @@ inline vec3 de_nan(const vec3& c) {
 }
 
 
-std::vector<pdf*> pdf_ptrs;
 
-template<typename MatType, typename TextureType>
-auto color(const ray& r, const hit_record & hrec, const hitable *light_shape, MatType &mat, TextureType &tex) {
 
-  scatter_record srec;
-  vec3 emitted = mat.emitted(r, hrec, tex.value(hrec.u, hrec.v, hrec.p));
-  if (mat.scatter(r, hrec, srec, tex.value(hrec.u, hrec.v, hrec.p))) {
-      if (srec.is_specular) {
-        return std::make_tuple(3, srec.attenuation, vec3(0,0,0), srec.specular_ray);
-      }
-      else {
-        pdf_ptrs[srec.pdfIdx]->SetW(hrec.normal);
-          hitable_pdf plight(light_shape, hrec.p);
-          mixture_pdf p(&plight,pdf_ptrs[srec.pdfIdx] );
-          ray scattered = ray(hrec.p, p.generate(), r.time());
-          float pdf_val = p.value(scattered.direction());
-          return std::make_tuple(2, srec.attenuation*mat.scattering_pdf(r, hrec, scattered)/pdf_val,
-                                 emitted, scattered);
-      }
-  }
-  else
-    return std::make_tuple(1, vec3(1.0f), emitted, r);
-
-}
-
-std::vector<material*> mat_ptrs;
 vtkm::cont::ArrayHandle<vec3> tex;
 vtkm::cont::ArrayHandle<int> matType;
 void cornell_box(hitable **scene, camera **cam, float aspect) {
@@ -90,17 +65,8 @@ void cornell_box(hitable **scene, camera **cam, float aspect) {
   matType.GetPortalControl().Set(3, 1); //light
   matType.GetPortalControl().Set(4, 2); //dielectric
 
-  pdf_ptrs.push_back(new cosine_pdf());
     int i = 0;
     hitable **list = new hitable*[8];
-    material *red = new lambertian(0);
-    mat_ptrs.push_back(red);
-    material *white = new lambertian(0);
-    mat_ptrs.push_back(white);
-    material *green = new lambertian(0);
-    mat_ptrs.push_back(green);
-    material *light = new diffuse_light(-1);
-    mat_ptrs.push_back(light);
 
     list[i++] = new flip_normals(new yz_rect(0, 555, 0, 555, 555, 2,2));
     list[i++] = new yz_rect(0, 555, 0, 555, 0, 0,0);
@@ -108,8 +74,6 @@ void cornell_box(hitable **scene, camera **cam, float aspect) {
     list[i++] = new flip_normals(new xz_rect(0, 555, 0, 555, 555, 1,1));
     list[i++] = new xz_rect(0, 555, 0, 555, 0, 1,1);
     list[i++] = new flip_normals(new xy_rect(0, 555, 0, 555, 555, 1,1));
-    material *glass = new dielectric(-1, 1.5);
-    mat_ptrs.push_back(glass);
     list[i++] = new sphere(vec3(190, 90, 190),90 , 4, 0);
     list[i++] = new translate(new rotate_y(
                     new box(vec3(0, 0, 0), vec3(165, 330, 165), 1,1),  15), vec3(265,0,295));
@@ -196,7 +160,7 @@ int main() {
     srecs.Allocate(rays.GetNumberOfValues());
 
     for (int depth=0; depth<depthcount; depth++){
-      RayShade rs(world, hlist, depthcount, depth, mat_ptrs, pdf_ptrs);
+      RayShade rs(world, depthcount, depth);
       LambertianWorklet lmbWorklet(0, depthcount, depth);
       DiffuseLightWorklet dlWorklet(-1, depthcount ,depth);
       DielectricWorklet deWorklet(-1, depthcount ,depth, 1.5);
