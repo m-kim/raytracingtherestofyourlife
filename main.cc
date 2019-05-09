@@ -35,7 +35,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include "pdf.h"
-
+#include "EmitWorklet.h"
+#include "ScatterWorklet.h"
 
 inline vec3 de_nan(const vec3& c) {
     vec3 temp = c;
@@ -74,13 +75,20 @@ auto color(const ray& r, const hit_record & hrec, const hitable *light_shape, Ma
 
 std::vector<material*> mat_ptrs;
 vtkm::cont::ArrayHandle<vec3> tex;
-
+vtkm::cont::ArrayHandle<int> matType;
 void cornell_box(hitable **scene, camera **cam, float aspect) {
   tex.Allocate(4);
   tex.GetPortalControl().Set(0, vec3(0.65, 0.05, 0.05));
   tex.GetPortalControl().Set(1, vec3(0.73, 0.73, 0.73));
   tex.GetPortalControl().Set(2, vec3(0.12, 0.45, 0.15));
   tex.GetPortalControl().Set(3, vec3(15, 15, 15));
+
+  matType.Allocate(5);
+  matType.GetPortalControl().Set(0, 0); //lambertian
+  matType.GetPortalControl().Set(1, 0); //lambertian
+  matType.GetPortalControl().Set(2, 0); //lambertian
+  matType.GetPortalControl().Set(3, 1); //light
+  matType.GetPortalControl().Set(4, 1); //light
 
   pdf_ptrs.push_back(new cosine_pdf());
     int i = 0;
@@ -102,7 +110,7 @@ void cornell_box(hitable **scene, camera **cam, float aspect) {
     list[i++] = new flip_normals(new xy_rect(0, 555, 0, 555, 555, 1,1));
     material *glass = new dielectric(-1, 1.5);
     mat_ptrs.push_back(glass);
-    list[i++] = new sphere(vec3(190, 90, 190),90 , 4, 0);
+//    list[i++] = new sphere(vec3(190, 90, 190),90 , 4, 0);
     list[i++] = new translate(new rotate_y(
                     new box(vec3(0, 0, 0), vec3(165, 330, 165), 1,1),  15), vec3(265,0,295));
     *scene = new hitable_list(list,i);
@@ -172,33 +180,57 @@ int main() {
     attenuation.Allocate(rays.GetNumberOfValues() * depthcount);
     emitted.Allocate(rays.GetNumberOfValues() * depthcount);
 
-    vtkm::cont::ArrayHandle<vtkm::UInt8> finished;
+    vtkm::cont::ArrayHandle<vtkm::Int8> scattered;
+    scattered.Allocate(rays.GetNumberOfValues());
+    vtkm::cont::ArrayHandle<vtkm::Int8> finished;
     finished.Allocate(rays.GetNumberOfValues());
     vtkm::cont::ArrayHandle<hit_record> hrecs;
     hrecs.Allocate(rays.GetNumberOfValues());
     for (int i=0; i<rays.GetNumberOfValues(); i++)
     {
+      scattered.GetPortalControl().Set(i, 1);
       finished.GetPortalControl().Set(i, 0);
     }
 
+    vtkm::cont::ArrayHandle<scatter_record> srecs;
+    srecs.Allocate(rays.GetNumberOfValues());
+
     for (int depth=0; depth<depthcount; depth++){
       RayShade rs(world, hlist, depthcount, depth, mat_ptrs, pdf_ptrs);
-
+      LambertianWorklet lmbWorklet(0, depthcount, depth);
+      DiffuseLightWorklet dlWorklet(-1, depthcount ,depth);
+      PDFCosineWorklet pdfWorklet(depthcount, depth, &hlist);
 #if 0
       vtkm::worklet::AutoDispatcherMapField<RayShade>(rs)
             .Invoke(rays, hrecs, finished, attenuation, emitted);
 #else
 #pragma omp parallel for
       for (int i=0; i<rays.GetNumberOfValues(); i++){
-        auto ray = rays.GetPortalConstControl().Get(i);
+        auto r_start = rays.GetPortalConstControl().Get(i);
         auto hrec = hrecs.GetPortalControl().Get(i);
-        auto fin = finished.GetPortalConstControl().Get(i);
-        rs.operator()(i, ray, hrec, fin, tex.GetPortalControl(),
+        auto sctr = scattered.GetPortalConstControl().Get(i);
+        rs.operator()(i, r_start, hrec, sctr, tex.GetPortalControl(),
               attenuation.GetPortalControl(), emitted.GetPortalControl());
-        finished.GetPortalControl().Set(i, fin );
-        rays.GetPortalControl().Set(i,ray);
+
+        auto srec = srecs.GetPortalControl().Get(i);
+        lmbWorklet.operator()(i, r_start, hrec,srec, sctr,
+                              tex.GetPortalControl(),
+                              matType.GetPortalControl(),
+                              emitted.GetPortalControl(),
+                              attenuation.GetPortalControl());
+        dlWorklet.operator()(i, r_start, hrec,srec, sctr,
+                             tex.GetPortalControl(),
+                             matType.GetPortalControl(),
+                             emitted.GetPortalControl(),
+                             attenuation.GetPortalControl());
+
+        ray ray_out;
+        pdfWorklet.operator()(i, r_start, hrec, sctr, srec, ray_out, attenuation.GetPortalControl());
+
+        scattered.GetPortalControl().Set(i, sctr );
+        rays.GetPortalControl().Set(i,ray_out);
         hrecs.GetPortalControl().Set(i, hrec);
-        rays.GetPortalControl().Set(i, ray);
+        srecs.GetPortalControl().Set(i, srec);
       }
 #endif
     }
@@ -206,7 +238,8 @@ int main() {
     ArrayType sumtotl;
     sumtotl.Allocate(rays.GetNumberOfValues());
     for (int i=0; i<sumtotl.GetNumberOfValues(); i++){
-      sumtotl.GetPortalControl().Set(i, emitted.GetPortalConstControl().Get(i * depthcount + depthcount -1));
+      auto val = emitted.GetPortalConstControl().Get(i * depthcount + depthcount -1);
+      sumtotl.GetPortalControl().Set(i, val);
     }
     for (int depth = depthcount-2; depth >=0; depth--){
       for (int i=0; i<sumtotl.GetNumberOfValues(); i++){

@@ -265,14 +265,15 @@ public:
   VTKM_EXEC
   template<typename VecArrayType, typename ColorArrayType>
   void operator()(vtkm::Id idx,
-            ray &ray_io, hit_record &hrec, vtkm::UInt8 &fin,
+                  ray &ray_io, hit_record &hrec,
+                  vtkm::Int8 &scattered,
                   ColorArrayType col,
-            VecArrayType attenuation,
-             VecArrayType emitted) const
+                  VecArrayType attenuation,
+                   VecArrayType emitted) const
   {
     vtkm::Int8 state;
     vec3 att, em;
-
+#if 0
     if (!fin && world->hit(ray_io, 0.001, std::numeric_limits<float>::max(), hrec)){
       std::tie(state, att, em, ray_io) = color(ray_io, hrec, &hlist, *mat_ptrs[hrec.matId], col.Get(hrec.texId));
       attenuation.Set(idx * depthcount + depth, att);
@@ -285,6 +286,16 @@ public:
       attenuation.Set(idx * depthcount + depth, vec3(1.0));
       emitted.Set(idx * depthcount + depth, vec3(0.0f));
     }
+#else
+    if (scattered && world->hit(ray_io, 0.001, std::numeric_limits<float>::max(), hrec)){
+
+    }
+    else{
+      scattered = 0;
+      attenuation.Set(idx * depthcount + depth, vec3(1.0));
+      emitted.Set(idx * depthcount + depth, vec3(0.0f));
+    }
+#endif
   }
 
   std::vector<material*> mat_ptrs;
