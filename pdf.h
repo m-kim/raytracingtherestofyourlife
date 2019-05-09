@@ -13,10 +13,8 @@
 #define PDFH
 #include "onb.h"
 
-
-inline vec3 random_cosine_direction() {
-    float r1 = drand48();
-    float r2 = drand48();
+//r1 and r2 should be random values
+inline vec3 random_cosine_direction(float r1, float r2) {
     float z = sqrt(1-r2);
     float phi = 2*M_PI*r1;
     float x = cos(phi)*2*sqrt(r2);
@@ -24,9 +22,15 @@ inline vec3 random_cosine_direction() {
     return vec3(x, y, z);
 }
 
-inline vec3 random_to_sphere(float radius, float distance_squared) {
-    float r1 = drand48();
-    float r2 = drand48();
+//inline vec3 random_cosine_direction() {
+//    float r1 = drand48();
+//    float r2 = drand48();
+//    return random_cosine_direction(r1,r2);
+//}
+
+inline vec3 random_to_sphere(float radius, float distance_squared, float r1, float r2) {
+//    float r1 = drand48();
+//    float r2 = drand48();
     float z = 1 + r2*(sqrt(1-radius*radius/distance_squared) - 1);
     float phi = 2*M_PI*r1;
     float x = cos(phi)*sqrt(1-z*z);
@@ -35,13 +39,13 @@ inline vec3 random_to_sphere(float radius, float distance_squared) {
 }
 
 
-vec3 random_in_unit_sphere() {
-    vec3 p;
-    do {
-        p = 2.0*vec3(drand48(),drand48(),drand48()) - vec3(1,1,1);
-    } while (dot(p,p) >= 1.0);
-    return p;
-}
+//vec3 random_in_unit_sphere() {
+//    vec3 p;
+//    do {
+//        p = 2.0*vec3(drand48(),drand48(),drand48()) - vec3(1,1,1);
+//    } while (dot(p,p) >= 1.0);
+//    return p;
+//}
 
 
 
@@ -50,7 +54,7 @@ class pdf  {
   virtual void SetW(const vec3& w) = 0;
 
         virtual float value(const vec3& direction) const = 0;
-        virtual vec3 generate() const = 0;
+        virtual vec3 generate(float, float) const = 0;
         ~pdf() {}
 };
 
@@ -65,8 +69,8 @@ class cosine_pdf : public pdf {
             else
                 return 0;
         }
-        virtual vec3 generate() const  {
-            return uvw.local(random_cosine_direction());
+        virtual vec3 generate(float r1, float r2) const  {
+            return uvw.local(random_cosine_direction(r1,r2));
         }
         onb uvw;
 };
@@ -79,8 +83,8 @@ class hitable_pdf : public pdf {
         virtual float value(const vec3& direction) const {
             return ptr->pdf_value(o, direction);
         }
-        virtual vec3 generate() const {
-            return ptr->random(o);
+        virtual vec3 generate(float r1, float r2) const {
+            return ptr->random(o, r1, r2);
         }
         vec3 o;
         const hitable *ptr;
@@ -93,11 +97,11 @@ class mixture_pdf : public pdf {
         virtual float value(const vec3& direction) const {
             return 0.5 * p[0]->value(direction) + 0.5 *p[1]->value(direction);
         }
-        virtual vec3 generate() const {
+        virtual vec3 generate(float r1, float r2) const {
             if (drand48() < 0.5)
-                return p[0]->generate();
+                return p[0]->generate(r1, r2);
             else
-                return p[1]->generate();
+                return p[1]->generate(r1, r2);
         }
         pdf *p[2];
 };

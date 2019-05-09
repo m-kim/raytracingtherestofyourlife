@@ -47,8 +47,8 @@ class xz_rect: public hitable  {
             else
                 return 0;
         }
-        virtual vec3 random(const vec3& o) const { 
-            vec3 random_point = vec3(x0 + drand48()*(x1-x0), k,  z0 + drand48()*(z1-z0)); 
+        virtual vec3 random(const vec3& o, float r1, float r2) const {
+            vec3 random_point = vec3(x0 + r1*(x1-x0), k,  z0 + r2*(z1-z0));
             return random_point - o;
         }
         material  *mp;

@@ -118,15 +118,16 @@ class DielectricWorklet : public vtkm::worklet::WorkletMapField
 {
 public:
   VTKM_CONT
-  DielectricWorklet(int dc, int d, float rid)
+  DielectricWorklet(int dc, int d, float rid, vtkm::UInt32 rc)
       : depthcount(dc)
       , depth(d)
       , ref_idx(rid)
+      , RayCount(rc)
   {
   }
 
   VTKM_EXEC
-  bool scatter(const ray& r_in, const hit_record& hrec, scatter_record& srec, vec3 albedo) const {
+  bool scatter(const ray& r_in, const hit_record& hrec, scatter_record& srec, vec3 albedo, double _rand) const {
       srec.is_specular = true;
       srec.attenuation = vec3(1.0, 1.0, 1.0);
       vec3 outward_normal;
@@ -151,7 +152,7 @@ public:
        else {
           reflect_prob = 1.0;
        }
-       if (drand48() < reflect_prob) {
+       if (_rand < reflect_prob) {
           srec.specular_ray = ray(hrec.p, reflected);
        }
        else {
@@ -182,8 +183,14 @@ public:
       if (scattered){
         auto mt = matType.Get(hrec.matId);
         if (mt == 2){
+          vtkm::Vec<vtkm::UInt32, 4> randState;
+          randState[0] = vtkm::random::xorshift::getRand32(idx*1) + 1;
+          randState[1] = vtkm::random::xorshift::getRand32(idx*2) + 2;
+          randState[2] = vtkm::random::xorshift::getRand32(idx*3) + 3;
+          randState[3] = vtkm::random::xorshift::getRand32(idx*4) + 4; //arbitrary random state based off number of rays being shot through
+
           vec3 em = emit(r_in, hrec, col.Get(hrec.texId));
-          scattered = scatter(r_in, hrec, srec, col.Get(hrec.texId));
+          scattered = scatter(r_in, hrec, srec, col.Get(hrec.texId), vtkm::random::xorshift::getRandF(randState));
           emitted.Set(idx * depthcount + depth, em);
 
         }
@@ -194,6 +201,8 @@ public:
 
   const int depth, depthcount;
   float ref_idx;
+  const vtkm::UInt32 RayCount;
+
 };
 
 #endif

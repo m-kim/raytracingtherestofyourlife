@@ -24,7 +24,7 @@ class sphere: public hitable  {
         virtual bool hit(const ray& r, float tmin, float tmax, hit_record& rec) const;
         virtual bool bounding_box(float t0, float t1, aabb& box) const;
         virtual float  pdf_value(const vec3& o, const vec3& v) const;
-        virtual vec3 random(const vec3& o) const;
+        virtual vec3 random(const vec3& o, float r1, float r2) const;
         vec3 center;
         float radius;
 
@@ -42,12 +42,12 @@ float sphere::pdf_value(const vec3& o, const vec3& v) const {
         return 0;
 }
 
-vec3 sphere::random(const vec3& o) const {
+vec3 sphere::random(const vec3& o, float r1, float r2) const {
      vec3 direction = center - o;
      float distance_squared = MagnitudeSquared(direction);
      onb uvw;
      uvw.build_from_w(direction);
-     return uvw.local(random_to_sphere(radius, distance_squared));
+     return uvw.local(random_to_sphere(radius, distance_squared, r1,r2));
 }
 
 

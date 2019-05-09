@@ -163,8 +163,8 @@ int main() {
       RayShade rs(world, depthcount, depth);
       LambertianWorklet lmbWorklet( depthcount, depth);
       DiffuseLightWorklet dlWorklet(depthcount ,depth);
-      DielectricWorklet deWorklet( depthcount ,depth, 1.5);
-      PDFCosineWorklet pdfWorklet(depthcount, depth, &hlist);
+      DielectricWorklet deWorklet( depthcount ,depth, 1.5, rays.GetNumberOfValues());
+      PDFCosineWorklet pdfWorklet(depthcount, depth, &hlist, rays.GetNumberOfValues());
 #if 1
       vtkm::worklet::AutoDispatcherMapField<RayShade>(rs)
             .Invoke(rays, hrecs, scattered, tex,  attenuation, emitted);
