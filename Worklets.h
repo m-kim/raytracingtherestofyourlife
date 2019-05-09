@@ -206,11 +206,20 @@ class RayShade : public vtkm::worklet::WorkletMapField
 {
 public:
   VTKM_CONT
-  RayShade(hitable *w, hitable_list hl, int dc, int d)
+  RayShade(hitable *w,
+           hitable_list hl,
+           int dc,
+           int d,
+           std::vector<material*> mp,
+           std::vector<texture*> tp,
+           std::vector<pdf*> p)
     :world(w)
     ,hlist(hl)
     ,depthcount(dc)
     ,depth(d)
+    ,mat_ptrs(mp)
+    ,tex_ptrs(tp)
+    ,pdf_ptrs(p)
   {
   }
 

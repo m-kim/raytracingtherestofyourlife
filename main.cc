@@ -113,32 +113,7 @@ void cornell_box(hitable **scene, camera **cam, float aspect) {
                       vfov, aspect, aperture, dist_to_focus, 0.0, 1.0);
 }
 
-template<typename VecArrayType>
-void shade(ray &ray_io, hit_record &hrec, vtkm::UInt8 &fin,
-          VecArrayType attenuation,
-           VecArrayType emitted,
-           hitable *world,
-           hitable_list hlist,
-           int idx,
-           int depthcount,
-           int depth)
-{
-  vtkm::Int8 state;
-  vec3 att, em;
 
-  if (!fin && world->hit(ray_io, 0.001, std::numeric_limits<float>::max(), hrec)){
-    std::tie(state, att, em, ray_io) = color(ray_io, hrec, &hlist, *mat_ptrs[hrec.matId], *tex_ptrs[hrec.texId]);
-    attenuation.Set(idx * depthcount + depth, att);
-    emitted.Set(idx * depthcount + depth, em);
-    if (state < 2){
-      fin = 1;
-    }
-  }
-  else{
-    attenuation.Set(idx * depthcount + depth, vec3(1.0));
-    emitted.Set(idx * depthcount + depth, vec3(0.0f));
-  }
-}
 int main() {
   constexpr int nx = 128;
   constexpr int ny = 128;
@@ -203,29 +178,15 @@ int main() {
     {
       finished.GetPortalControl().Set(i, 0);
     }
-#pragma omp parallel for
-    for (int depth=0; depth<depthcount; depth++){
-//      for (int i=0; i<rays.GetNumberOfValues(); i++)
-//      {
-//          //vec3 p = r.point_at_parameter(2.0);
-//        auto ray = rays.GetPortalConstControl().Get(i);
-//        auto hrec = hrecs.GetPortalControl().Get(i);
-//        auto fin = finished.GetPortalConstControl().Get(i);
-//        shade(ray, hrec, fin,
-//              attenuation.GetPortalControl(), emitted.GetPortalControl(),
-//              world, hlist, i, depthcount, depth);
-//        finished.GetPortalControl().Set(i, fin );
-//        rays.GetPortalControl().Set(i,ray);
-//        hrecs.GetPortalControl().Set(i, hrec);
-//        rays.GetPortalControl().Set(i, ray);
-//      }
 
-      RayShade rs(world, hlist, depthcount, depth);
-      rs.mat_ptrs = mat_ptrs;
-      rs.pdf_ptrs = pdf_ptrs;
-      rs.tex_ptrs = tex_ptrs;
-//      vtkm::worklet::AutoDispatcherMapField<RayShade>(rs)
-//            .Invoke(rays, hrecs, finished, attenuation, emitted);
+    for (int depth=0; depth<depthcount; depth++){
+      RayShade rs(world, hlist, depthcount, depth, mat_ptrs, tex_ptrs, pdf_ptrs);
+
+#if 0
+      vtkm::worklet::AutoDispatcherMapField<RayShade>(rs)
+            .Invoke(rays, hrecs, finished, attenuation, emitted);
+#else
+#pragma omp parallel for
       for (int i=0; i<rays.GetNumberOfValues(); i++){
         auto ray = rays.GetPortalConstControl().Get(i);
         auto hrec = hrecs.GetPortalControl().Get(i);
@@ -236,8 +197,8 @@ int main() {
         rays.GetPortalControl().Set(i,ray);
         hrecs.GetPortalControl().Set(i, hrec);
         rays.GetPortalControl().Set(i, ray);
-
       }
+#endif
     }
 
     ArrayType sumtotl;
