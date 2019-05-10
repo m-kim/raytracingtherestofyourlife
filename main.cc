@@ -20,6 +20,7 @@
 #include <vtkm/rendering/raytracing/Camera.h>
 #include <vtkm/cont/internal/DeviceAdapterAlgorithmGeneral.h>
 #include <omp.h>
+#include <vtkm/cont/Algorithm.h>
 
 #include "Worklets.h"
 #include "sphere.h"
@@ -124,6 +125,50 @@ struct BinarySliceTransformKernel : vtkm::exec::FunctorBase
       outIndex, this->BinaryOperator(this->InPortal1.Get(newIndex1), this->InPortal2.Get(newIndex2)));
   }
 };
+template <
+          typename InPortalType1,
+          typename InPortalType2,
+          typename OutPortalType,
+          typename BinaryFunctor>
+struct BinarySliceTransformIdxKernel : vtkm::exec::FunctorBase
+{
+  InPortalType1 InPortal1;
+  InPortalType2 InPortal2;
+  OutPortalType OutPortal;
+  BinaryFunctor BinaryOperator;
+  vtkm::Id idxBegin1, idxBegin2, idxEnd1, idxEnd2, idxOutBegin, idxOutEnd;
+  VTKM_CONT
+  BinarySliceTransformIdxKernel(const std::tuple<vtkm::Id, vtkm::Id> idx1,
+                        const InPortalType1& inPortal1,
+                             const std::tuple<vtkm::Id, vtkm::Id> idx2,
+                        const InPortalType2& inPortal2,
+                             const std::tuple<vtkm::Id, vtkm::Id> outIdx,
+                        const OutPortalType& outPortal,
+                        BinaryFunctor binaryOperator)
+    : idxBegin1(std::get<0>(idx1))
+    , idxBegin2(std::get<0>(idx2))
+    , idxOutBegin(std::get<0>(outIdx))
+    , idxEnd1(std::get<1>(idx1))
+    , idxEnd2(std::get<1>(idx2))
+    , idxOutEnd(std::get<1>(outIdx))
+    , InPortal1(inPortal1)
+    , InPortal2(inPortal2)
+    , OutPortal(outPortal)
+    , BinaryOperator(binaryOperator)
+  {
+  }
+
+  VTKM_SUPPRESS_EXEC_WARNINGS
+  VTKM_EXEC
+  void operator()(vtkm::Id index) const
+  {
+    auto newIndex1 = idxBegin1 + index;
+    auto newIndex2 = idxBegin2 + index;
+    auto outIndex = idxOutBegin + index;
+    this->OutPortal.Set(
+      outIndex, this->BinaryOperator(this->InPortal1.Get(newIndex1), this->InPortal2.Get(newIndex2)));
+  }
+};
 
 template <class DerivedAlgorithm, class DeviceAdapterTag>
 struct MyAlgorithms
@@ -179,6 +224,33 @@ public:
                                BinaryFunctorType> kernel(index1Portal, input1Portal, index2Portal, input2Portal, outIndexPortal, outputPortal, binaryOperator);
     DerivedAlgorithm::Schedule(kernel, inSize);
   }
+  template <
+            typename InputType1,
+            typename InputType2,
+            typename OutputType,
+            typename BinaryFunctorType>
+  VTKM_CONT static void SliceTransform(
+                            std::tuple<vtkm::Id, vtkm::Id> idx1,
+                            const InputType1& input1,
+                            std::tuple<vtkm::Id, vtkm::Id> idx2,
+                            const InputType2& input2,
+                            std::tuple<vtkm::Id, vtkm::Id> outIdx,
+                             OutputType& output,
+                            BinaryFunctorType binaryOperator)
+  {
+    const vtkm::Id inSize = output.GetNumberOfValues();
+    auto input1Portal  = input1.PrepareForInput(DeviceAdapterTag());
+    auto input2Portal = input2.PrepareForInput(DeviceAdapterTag());
+    auto outputPortal = output.PrepareForOutput(inSize, DeviceAdapterTag());
+
+    BinarySliceTransformIdxKernel<
+                               decltype(input1Portal),
+                               decltype(input2Portal),
+                               decltype(outputPortal),
+                               BinaryFunctorType> kernel(idx1, input1Portal, idx2, input2Portal, outIdx, outputPortal, binaryOperator);
+    DerivedAlgorithm::Schedule(kernel, inSize);
+  }
+
   template <typename T, typename U, class CIn, class COut>
   VTKM_CONT static void SliceCopy(
                             const vtkm::cont::ArrayHandle<vtkm::Id> &index,
@@ -397,58 +469,42 @@ int main() {
     sumtotl.Allocate(rays.GetNumberOfValues());
 
 
-    //vtkm::Id freqSum = DeviceAlgorithms::Reduce(binArray, initFreqSumValue, vtkm::Sum());
-
     CountType sum_cnting(0, 1, rays.GetNumberOfValues());
-    CountType ah_cnt((depthcount - 1) * rays.GetNumberOfValues(), 1, rays.GetNumberOfValues());
     MyAlgos::SliceTransform<
-        CountType,
         decltype(emitted),
-        CountType,
         decltype(zero),
-        CountType,
         decltype(sumtotl),
         decltype(vtkm::Sum())>
-        (ah_cnt, emitted, sum_cnting, zero, sum_cnting, sumtotl, vtkm::Sum());
+        (std::make_tuple((depthcount-1)*canvasSize, (depthcount-1)*canvasSize + canvasSize), emitted,
+         std::make_tuple(0, canvasSize), zero,
+         std::make_tuple(0, canvasSize), sumtotl, vtkm::Sum());
 
-//    for (int i=0; i<sumtotl.GetNumberOfValues(); i++){
-//      auto val = emitted.GetPortalConstControl().Get(i + canvasSize * (depthcount -1));
-//      sumtotl.GetPortalControl().Set(i, val);
-//    }
 
 
     for (int depth = depthcount-2; depth >=0; depth--){
       CountType cnting(depth * rays.GetNumberOfValues(), 1, rays.GetNumberOfValues());
       MyAlgos::SliceTransform<
-          CountType,
           decltype(attenuation),
-          CountType,
           decltype(sumtotl),
-          CountType,
           decltype(sumtotl),
           decltype(vtkm::Multiply())>
-          (cnting, attenuation, sum_cnting, sumtotl, sum_cnting, sumtotl, vtkm::Multiply());
+          (std::make_tuple(depth*canvasSize, depth*canvasSize + canvasSize), attenuation,
+           std::make_tuple(0, canvasSize), sumtotl,
+           std::make_tuple(0, canvasSize), sumtotl, vtkm::Multiply());
 
       MyAlgos::SliceTransform<
-          CountType,
           decltype(emitted),
-          CountType,
           decltype(sumtotl),
-          CountType,
           decltype(sumtotl),
           decltype(vtkm::Sum())>
-          (cnting, emitted, sum_cnting, sumtotl, sum_cnting, sumtotl, vtkm::Sum());
+          (std::make_tuple(depth*canvasSize, depth*canvasSize + canvasSize), emitted,
+           std::make_tuple(0, canvasSize), sumtotl,
+           std::make_tuple(0, canvasSize), sumtotl, vtkm::Sum());
 
-//      for (int i=0; i<sumtotl.GetNumberOfValues(); i++){
-//        auto sum = sumtotl.GetPortalConstControl().Get(i);
-//        sumtotl.GetPortalControl().Set(i, emitted.GetPortalConstControl().Get(i+canvasSize * depth) + attenuation.GetPortalConstControl().Get(i+canvasSize * depth) * sum);
-//      }
+
     }
 
-    for (int i=0; i<cols.GetNumberOfValues(); i++){
-      auto col = cols.GetPortalConstControl().Get(i);
-      cols.GetPortalControl().Set(i, col+sumtotl.GetPortalConstControl().Get(i));
-    }
+    vtkm::cont::Algorithm::Transform(cols, sumtotl, cols, vtkm::Sum());
   }
 
   std::vector<std::uint8_t> ImageBuffer;
