@@ -405,7 +405,6 @@ int main() {
       DiffuseLightWorklet dlWorklet(canvasSize ,depth);
       DielectricWorklet deWorklet( canvasSize ,depth, 1.5, rays.GetNumberOfValues());
       PDFCosineWorklet pdfWorklet(canvasSize, depth, &hlist, rays.GetNumberOfValues());
-#if 1
       vtkm::worklet::AutoDispatcherMapField<RayShade>(rs)
             .Invoke(rays, hrecs, scattered, tex,  attenuation, emitted);
 
@@ -423,43 +422,6 @@ int main() {
 
       vtkm::worklet::AutoDispatcherMapField<PDFCosineWorklet>(pdfWorklet)
             .Invoke(rays, hrecs, srecs, finished, scattered, rays, attenuation);
-#else
-#pragma omp parallel for
-      for (int i=0; i<rays.GetNumberOfValues(); i++){
-        auto r_start = rays.GetPortalConstControl().Get(i);
-        auto hrec = hrecs.GetPortalControl().Get(i);
-        auto sctr = scattered.GetPortalConstControl().Get(i);
-        auto fin = finished.GetPortalConstControl().Get(i);
-        rs.operator()(i, r_start, hrec, sctr, tex.GetPortalControl(),
-              attenuation.GetPortalControl(), emitted.GetPortalControl());
-
-        auto srec = srecs.GetPortalControl().Get(i);
-        lmbWorklet.operator()(i, r_start, hrec,srec, fin, sctr,
-                              tex.GetPortalControl(),
-                              matType.GetPortalControl(),
-                              emitted.GetPortalControl(),
-                              attenuation.GetPortalControl());
-        dlWorklet.operator()(i, r_start, hrec,srec,fin, sctr,
-                             tex.GetPortalControl(),
-                             matType.GetPortalControl(),
-                             emitted.GetPortalControl(),
-                             attenuation.GetPortalControl());
-        deWorklet.operator()(i, r_start, hrec,srec,fin, sctr,
-                             tex.GetPortalControl(),
-                             matType.GetPortalControl(),
-                             emitted.GetPortalControl(),
-                             attenuation.GetPortalControl());
-
-        ray ray_out;
-        pdfWorklet.operator()(i, r_start, hrec, srec, fin, sctr, ray_out, attenuation.GetPortalControl());
-
-        finished.GetPortalControl().Set(i, fin);
-        scattered.GetPortalControl().Set(i, sctr );
-        rays.GetPortalControl().Set(i,ray_out);
-        hrecs.GetPortalControl().Set(i, hrec);
-        srecs.GetPortalControl().Set(i, srec);
-      }
-#endif
     }
 
     using MyAlgos = MyAlgorithms<vtkm::cont::DeviceAdapterAlgorithm<VTKM_DEFAULT_DEVICE_ADAPTER_TAG>, VTKM_DEFAULT_DEVICE_ADAPTER_TAG>;
