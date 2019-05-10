@@ -67,14 +67,12 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   WholeArrayInOut<>,
-  WholeArrayInOut<>,
-  WholeArrayInOut<>,
   WholeArrayInOut<>
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12);
 
   VTKM_EXEC
-  template<typename VecArrayType,
+  template<
           typename MatTypeArrayType,
           typename ColTypeArrayType>
   void operator()(vtkm::Id idx,
@@ -87,10 +85,8 @@ public:
                   int matIdx,
                   int texIdx,
                   MatTypeArrayType matType,
-                  ColTypeArrayType texType,
-                  VecArrayType attenuation,
-                   VecArrayType emitted
-                  ) const
+                  ColTypeArrayType texType
+                ) const
   {
     if (scattered){
       auto matId = matType.Get(matIdx);
@@ -171,14 +167,12 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   WholeArrayInOut<>,
-  WholeArrayInOut<>,
-  WholeArrayInOut<>,
   WholeArrayInOut<>
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12);
 
   VTKM_EXEC
-  template<typename VecArrayType,
+  template<
           typename MatTypeArrayType,
           typename ColTypeArrayType>
   void operator()(vtkm::Id idx,
@@ -191,9 +185,7 @@ public:
                   int matIdx,
                   int texIdx,
                   MatTypeArrayType matType,
-                  ColTypeArrayType texType,
-                  VecArrayType attenuation,
-                   VecArrayType emitted
+                  ColTypeArrayType texType
                   ) const
   {
     if (scattered){
@@ -277,14 +269,12 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   WholeArrayInOut<>,
-  WholeArrayInOut<>,
-  WholeArrayInOut<>,
   WholeArrayInOut<>
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12);
 
   VTKM_EXEC
-  template<typename VecArrayType,
+  template<
           typename MatTypeArrayType,
           typename ColTypeArrayType>
   void operator()(vtkm::Id idx,
@@ -297,9 +287,7 @@ public:
                   int matIdx,
                   int texIdx,
                   MatTypeArrayType matType,
-                  ColTypeArrayType texType,
-                  VecArrayType attenuation,
-                   VecArrayType emitted
+                  ColTypeArrayType texType
                   ) const
   {
     auto matId = matType.Get(matIdx);
@@ -315,6 +303,109 @@ public:
     }
   }
 
+  int canvasSize;
+  int depth;
+  float tmin, tmax;
+  bool flip;
+};
+
+class SphereIntersecttWorklet : public vtkm::worklet::WorkletMapField
+{
+public:
+  VTKM_CONT
+  SphereIntersecttWorklet(
+           int cs,
+           int d,
+      bool _f = false,
+      float _tmin = 0.001,
+      float _tmax = std::numeric_limits<float>::max()
+      )
+    :canvasSize(cs)
+    ,depth(d)
+    ,tmin(_tmin)
+    ,tmax(_tmax)
+    , flip(_f)
+  {
+  }
+  VTKM_EXEC
+  bool hit(const ray& r,  hit_record& rec,
+           vec3 center, float radius,
+           int matId, int texId) const {
+      vec3 oc = r.origin() - center;
+      float a = dot(r.direction(), r.direction());
+      float b = dot(oc, r.direction());
+      float c = dot(oc, oc) - radius*radius;
+      float discriminant = b*b - a*c;
+      if (discriminant > 0) {
+          float temp = (-b - sqrt(b*b-a*c))/a;
+          if (temp < tmin && temp > tmin) {
+              rec.t = temp;
+              rec.p = r.point_at_parameter(rec.t);
+              get_sphere_uv((rec.p-center)/radius, rec.u, rec.v);
+              rec.normal = (rec.p - center) / radius;
+              rec.matId = matId;
+              rec.texId = texId;
+
+              return true;
+          }
+          temp = (-b + sqrt(b*b-a*c))/a;
+          if (temp < tmax && temp > tmin) {
+              rec.t = temp;
+              rec.p = r.point_at_parameter(rec.t);
+              get_sphere_uv((rec.p-center)/radius, rec.u, rec.v);
+              rec.normal = (rec.p - center) / radius;
+              rec.matId = matId;
+              rec.texId = texId;
+
+              return true;
+          }
+      }
+      return false;
+  }
+
+  using ControlSignature = void(FieldInOut<>,
+  FieldInOut<>,
+  FieldInOut<>,
+  FieldInOut<>,
+  FieldInOut<>,
+  FieldInOut<>,
+  FieldInOut<>,
+  FieldInOut<>,
+  FieldInOut<>,
+  FieldInOut<>,
+  WholeArrayInOut<>,
+  WholeArrayInOut<>
+  );
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12);
+
+  VTKM_EXEC
+  template<
+          typename MatTypeArrayType,
+          typename ColTypeArrayType>
+  void operator()(vtkm::Id idx,
+                  ray &ray_io,
+                  hit_record &hrec,
+                  vtkm::Int8 &scattered,
+                  vtkm::Int8 &rayHit,
+                  vec3 &pt1,
+                  vec3 &pt2,
+                  int matIdx,
+                  int texIdx,
+                  MatTypeArrayType matType,
+                  ColTypeArrayType texType
+                  ) const
+  {
+    if (scattered){
+      auto matId = matType.Get(matIdx);
+      auto texId = texType.Get(texIdx);
+      float y0 = pt1[1];
+      float y1 = pt2[1];
+      float z0 = pt1[2];
+      float z1 = pt2[2];
+      float k = pt1[0];
+      rayHit |= hit(ray_io, hrec, pt1, pt2[0],matId,texId);
+    }
+  }
   int canvasSize;
   int depth;
   float tmin, tmax;

@@ -399,6 +399,7 @@ void cornell_box(hitable **scene, camera **cam, float aspect) {
     matIdx.GetPortalControl().Set(i, 4);
     texIdx.GetPortalControl().Set(i, 0);
     pts.GetPortalControl().Set(i*2, vec3(190,90,190));
+    pts.GetPortalControl().Set(i*2+1, vec3(90,0,0));
     list[i++] = new sphere(vec3(190, 90, 190),90 , 4, 0);
 
     matIdx.GetPortalControl().Set(i, 1);
@@ -510,6 +511,7 @@ int main() {
       XYRectWorklet xy(canvasSize, depth, true);
       XZRectWorklet xz(canvasSize, depth, true);
       YZRectWorklet yz(canvasSize, depth, true);
+      SphereIntersecttWorklet sphereIntersect(canvasSize, depth, true);
       MyAlgos::Copy<vtkm::Int8, vtkm::Int8, StorageTag>(0, hitArray);
 
       for (int i=0; i<rays.GetNumberOfValues(); i++){
@@ -517,13 +519,23 @@ int main() {
         auto hrec = hrecs.GetPortalConstControl().Get(i);
         auto sctr = scattered.GetPortalConstControl().Get(i);
         auto hit = hitArray.GetPortalControl().Get(i);
-        auto pt1 = pts.GetPortalConstControl().Get(10);
-        auto pt2 = pts.GetPortalConstControl().Get(11);
-        auto mId = matIdx.GetPortalConstControl().Get(5);
-        auto tId = texIdx.GetPortalConstControl().Get(5);
+
+
+
+        auto pt1 = pts.GetPortalConstControl().Get(12);
+        auto pt2 = pts.GetPortalConstControl().Get(13);
+        auto mId = matIdx.GetPortalConstControl().Get(6);
+        auto tId = texIdx.GetPortalConstControl().Get(6);
+        sphereIntersect.operator ()(i, r_in, hrec, sctr,hit, pt1, pt2, mId, tId,
+                                    matType.GetPortalControl(),
+                                    texType.GetPortalControl());
+        pt1 = pts.GetPortalConstControl().Get(10);
+        pt2 = pts.GetPortalConstControl().Get(11);
+        mId = matIdx.GetPortalConstControl().Get(5);
+        tId = texIdx.GetPortalConstControl().Get(5);
         xy.operator ()(i, r_in, hrec,sctr, hit, pt1, pt2, mId, tId,
             matType.GetPortalConstControl(),
-            texType.GetPortalConstControl(), attenuation.GetPortalControl(), emitted.GetPortalControl());
+            texType.GetPortalConstControl());
 
         for (int j=0; j<3; j++){
           auto pt1 = pts.GetPortalConstControl().Get(j*2);
@@ -533,7 +545,7 @@ int main() {
 
           yz.operator()(i, r_in, hrec,sctr, hit, pt1, pt2, mId, tId,
               matType.GetPortalConstControl(),
-              texType.GetPortalConstControl(), attenuation.GetPortalControl(), emitted.GetPortalControl());
+              texType.GetPortalConstControl());
 
         }
         for (int j=3; j<5; j++){
@@ -544,7 +556,7 @@ int main() {
 
           xz.operator()(i, r_in, hrec,sctr, hit, pt1,pt2, mId, tId,
               matType.GetPortalConstControl(),
-              texType.GetPortalConstControl(), attenuation.GetPortalControl(), emitted.GetPortalControl());
+              texType.GetPortalConstControl());
 
         }
         if (!(sctr && hit)){
