@@ -16,13 +16,13 @@
 #include <JSONPNGConvert.h>
 #include <lodepng.h>
 #include <vtkm/cont/ArrayHandleConstant.h>
-#include <vtkm/cont/ArrayCopy.h>
 #include <vtkm/rendering/raytracing/Camera.h>
 #include <vtkm/cont/internal/DeviceAdapterAlgorithmGeneral.h>
 #include <omp.h>
 #include <vtkm/cont/Algorithm.h>
-
+#include <fstream>
 #include "Worklets.h"
+#include "SurfaceWorklets.h"
 #include "sphere.h"
 #include "moving_sphere.h"
 #include "hitable_list.h"
@@ -79,6 +79,32 @@ struct SliceCopyKernel
   void SetErrorMessageBuffer(const vtkm::exec::internal::ErrorMessageBuffer&) {}
 };
 
+template <class T, class OutputPortalType>
+struct CopyKernel
+{
+  const T Value;
+  OutputPortalType OutputPortal;
+
+  VTKM_CONT
+  CopyKernel(T val,
+             OutputPortalType outputPortal)
+    : Value(val)
+    , OutputPortal(outputPortal)
+  {
+  }
+
+  VTKM_SUPPRESS_EXEC_WARNINGS
+  VTKM_EXEC_CONT
+  void operator()(vtkm::Id index) const
+  {
+    this->OutputPortal.Set(
+      index,
+      this->Value);
+  }
+
+  VTKM_CONT
+  void SetErrorMessageBuffer(const vtkm::exec::internal::ErrorMessageBuffer&) {}
+};
 template <typename IndexType1,
           typename InPortalType1,
           typename IndexType2,
@@ -268,6 +294,17 @@ public:
     DerivedAlgorithm::Schedule(kernel, inSize);
   }
 
+  template <typename T, typename U, class COut>
+  VTKM_CONT static void Copy(
+                            T input,
+                             vtkm::cont::ArrayHandle<U, COut>& output)
+  {
+    const vtkm::Id inSize = output.GetNumberOfValues();
+    auto outputPortal = output.PrepareForOutput(inSize, DeviceAdapterTag());
+
+    CopyKernel<T, decltype(outputPortal)> kernel(input, outputPortal);
+    DerivedAlgorithm::Schedule(kernel, inSize);
+  }
 };
 inline vec3 de_nan(const vec3& c) {
     vec3 temp = c;
@@ -288,7 +325,12 @@ struct Append
 };
 
 vtkm::cont::ArrayHandle<vec3> tex;
-vtkm::cont::ArrayHandle<int> matType;
+vtkm::cont::ArrayHandle<vtkm::Id> matIdx;
+vtkm::cont::ArrayHandle<vtkm::Id> texIdx;
+vtkm::cont::ArrayHandle<int> matType, texType;
+vtkm::cont::ArrayHandle<vec3> pts;
+vtkm::cont::ArrayHandle<vec3> norms;
+
 void cornell_box(hitable **scene, camera **cam, float aspect) {
   tex.Allocate(4);
   tex.GetPortalControl().Set(0, vec3(0.65, 0.05, 0.05));
@@ -303,19 +345,68 @@ void cornell_box(hitable **scene, camera **cam, float aspect) {
   matType.GetPortalControl().Set(3, 1); //light
   matType.GetPortalControl().Set(4, 2); //dielectric
 
+  texType.Allocate(5);
+  texType.GetPortalControl().Set(0, 0); //lambertian
+  texType.GetPortalControl().Set(1, 0); //lambertian
+  texType.GetPortalControl().Set(2, 0); //lambertian
+  texType.GetPortalControl().Set(3, 1); //light
+  texType.GetPortalControl().Set(4, 2); //dielectric
+
+  matIdx.Allocate(8);
+  texIdx.Allocate(8);
+
+  pts.Allocate(16);
+  norms.Allocate(16);
     int i = 0;
     hitable **list = new hitable*[8];
 
+    matIdx.GetPortalControl().Set(i, 2);
+    texIdx.GetPortalControl().Set(i, 2);
+    pts.GetPortalControl().Set(i*2, vec3(555,0,0));
+    pts.GetPortalControl().Set(i*2+1, vec3(555,555,555));
     list[i++] = new flip_normals(new yz_rect(0, 555, 0, 555, 555, 2,2));
+
+    matIdx.GetPortalControl().Set(i, 0);
+    texIdx.GetPortalControl().Set(i, 0);
+    pts.GetPortalControl().Set(i*2, vec3(0,0,0));
+    pts.GetPortalControl().Set(i*2+1, vec3(0,555,555));
     list[i++] = new yz_rect(0, 555, 0, 555, 0, 0,0);
+
+    matIdx.GetPortalControl().Set(i, 3);
+    texIdx.GetPortalControl().Set(i, 3);
+    pts.GetPortalControl().Set(i*2, vec3(213,554,227));
+    pts.GetPortalControl().Set(i*2+1, vec3(343,554,332));
     list[i++] = new flip_normals(new xz_rect(213, 343, 227, 332, 554, 3,3));
+
+    matIdx.GetPortalControl().Set(i, 1);
+    texIdx.GetPortalControl().Set(i, 1);
+    pts.GetPortalControl().Set(i*2, vec3(0,555,0));
+    pts.GetPortalControl().Set(i*2+1, vec3(555,555,555));
     list[i++] = new flip_normals(new xz_rect(0, 555, 0, 555, 555, 1,1));
+
+    matIdx.GetPortalControl().Set(i, 1);
+    texIdx.GetPortalControl().Set(i, 1);
+    pts.GetPortalControl().Set(i*2, vec3(0,0,0));
+    pts.GetPortalControl().Set(i*2+1, vec3(555,0,555));
     list[i++] = new xz_rect(0, 555, 0, 555, 0, 1,1);
+
+    matIdx.GetPortalControl().Set(i, 1);
+    texIdx.GetPortalControl().Set(i, 1);
+    pts.GetPortalControl().Set(i*2, vec3(0,0,555));
+    pts.GetPortalControl().Set(i*2+1, vec3(555,555,555));
     list[i++] = new flip_normals(new xy_rect(0, 555, 0, 555, 555, 1,1));
+
+    matIdx.GetPortalControl().Set(i, 4);
+    texIdx.GetPortalControl().Set(i, 0);
+    pts.GetPortalControl().Set(i*2, vec3(190,90,190));
     list[i++] = new sphere(vec3(190, 90, 190),90 , 4, 0);
+
+    matIdx.GetPortalControl().Set(i, 1);
+    texIdx.GetPortalControl().Set(i, 1);
     list[i++] = new translate(new rotate_y(
                     new box(vec3(0, 0, 0), vec3(165, 330, 165), 1,1),  15), vec3(265,0,295));
     *scene = new hitable_list(list,i);
+
     vec3 lookfrom(278, 278, -800);
     vec3 lookat(278,278,0);
     float dist_to_focus = 10.0;
@@ -327,11 +418,14 @@ void cornell_box(hitable **scene, camera **cam, float aspect) {
 
 
 int main() {
+  using MyAlgos = MyAlgorithms<vtkm::cont::DeviceAdapterAlgorithm<VTKM_DEFAULT_DEVICE_ADAPTER_TAG>, VTKM_DEFAULT_DEVICE_ADAPTER_TAG>;
+  using StorageTag = vtkm::cont::StorageTagBasic;
+
   constexpr int nx = 128;
   constexpr int ny = 128;
   constexpr int ns = 100;
 
-  constexpr int depthcount = 50;
+  constexpr int depthcount = 1;
   auto canvasSize = nx*ny;
 
   //std::cout << "P3\n" << nx << " " << ny << "\n255\n";
@@ -352,15 +446,34 @@ int main() {
   vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32, 2>> uvs;
   uvs.Allocate(nx*ny);
 
+  vtkm::cont::ArrayHandleConstant<vec3> zero(vec3(0.0f), nx*ny);
   vtkm::cont::ArrayHandle<vec3> cols;
   cols.Allocate(nx*ny);
-  vtkm::cont::ArrayHandleConstant<vec3> zero(vec3(0,0,0), nx*ny);
-  vtkm::cont::ArrayCopy(zero, cols);
+  MyAlgos::Copy<vec3, vec3, StorageTag>(vec3(0.0f), cols);
 
   vtkm::cont::ArrayHandle<vtkm::Float32> DirX, DirY, DirZ;
   DirX.Allocate(nx*ny); DirY.Allocate(nx*ny); DirZ.Allocate(nx*ny);
   vtkm::cont::ArrayHandle<vtkm::Id> PixelIdx;
   PixelIdx.Allocate(nx*ny);
+
+  vtkm::cont::ArrayHandle<scatter_record> srecs;
+  vtkm::cont::ArrayHandle<vtkm::Int8> scattered, hitArray, finished;
+
+  vtkm::cont::ArrayHandle<hit_record> hrecs;
+
+  using ArrayType = vtkm::cont::ArrayHandle<vec3>;
+  ArrayType attenuation;
+  ArrayType emitted;
+  attenuation.Allocate(rays.GetNumberOfValues() * depthcount);
+  emitted.Allocate(rays.GetNumberOfValues() * depthcount);
+  scattered.Allocate(rays.GetNumberOfValues());
+  hitArray.Allocate(rays.GetNumberOfValues());
+  finished.Allocate(rays.GetNumberOfValues());
+  hrecs.Allocate(rays.GetNumberOfValues());
+  srecs.Allocate(rays.GetNumberOfValues());
+  ArrayType sumtotl;
+  sumtotl.Allocate(rays.GetNumberOfValues());
+
   for (int s =0; s<ns; s++){
     UVGen uvgen(nx, ny, s);
     vtkm::worklet::AutoDispatcherMapField<UVGen>(
@@ -378,35 +491,83 @@ int main() {
     vtkm::worklet::AutoDispatcherMapField<RayLook>(rl)
           .Invoke(DirX, DirY, DirZ, uvs, rays);
 
-    using ArrayType = vtkm::cont::ArrayHandle<vec3>;
-    ArrayType attenuation;
-    ArrayType emitted;
-    attenuation.Allocate(rays.GetNumberOfValues() * depthcount);
-    emitted.Allocate(rays.GetNumberOfValues() * depthcount);
 
-    vtkm::cont::ArrayHandle<vtkm::Int8> scattered;
-    scattered.Allocate(rays.GetNumberOfValues());
-    vtkm::cont::ArrayHandle<vtkm::Int8> finished;
-    finished.Allocate(rays.GetNumberOfValues());
-    vtkm::cont::ArrayHandle<hit_record> hrecs;
-    hrecs.Allocate(rays.GetNumberOfValues());
-    for (int i=0; i<rays.GetNumberOfValues(); i++)
-    {
-      scattered.GetPortalControl().Set(i, 1);
-      finished.GetPortalControl().Set(i, 0);
-    }
 
-    vtkm::cont::ArrayHandle<scatter_record> srecs;
-    srecs.Allocate(rays.GetNumberOfValues());
+    MyAlgos::Copy<vtkm::Int8, vtkm::Int8, StorageTag>(1, scattered);
+    MyAlgos::Copy<vtkm::Int8, vtkm::Int8, StorageTag>(0, finished);
+
 
     for (int depth=0; depth<depthcount; depth++){
-      RayShade rs(world, canvasSize, depth);
+//      float tmin = 0.001;
+//      float tmax = std::numeric_limits<float>::max();
+//      RayShade rs(world, canvasSize, depth);
+//      vtkm::worklet::AutoDispatcherMapField<RayShade>(rs)
+//            .Invoke(rays, hrecs, scattered, tex,  attenuation, emitted);
+
+      std::fstream tmp;
+      tmp.open("wtf.pnm", std::fstream::out);
+      tmp << "P3\n" << nx << " " << ny << "\n255\n";
+      XYRectWorklet xy(canvasSize, depth, true);
+      XZRectWorklet xz(canvasSize, depth, true);
+      YZRectWorklet yz(canvasSize, depth, true);
+      MyAlgos::Copy<vtkm::Int8, vtkm::Int8, StorageTag>(0, hitArray);
+
+      for (int i=0; i<rays.GetNumberOfValues(); i++){
+        auto r_in = rays.GetPortalConstControl().Get(i);
+        auto hrec = hrecs.GetPortalConstControl().Get(i);
+        auto sctr = scattered.GetPortalConstControl().Get(i);
+        auto hit = hitArray.GetPortalControl().Get(i);
+        auto pt1 = pts.GetPortalConstControl().Get(10);
+        auto pt2 = pts.GetPortalConstControl().Get(11);
+        auto mId = matIdx.GetPortalConstControl().Get(5);
+        auto tId = texIdx.GetPortalConstControl().Get(5);
+        xy.operator ()(i, r_in, hrec,sctr, hit, pt1, pt2, mId, tId,
+            matType.GetPortalConstControl(),
+            texType.GetPortalConstControl(), attenuation.GetPortalControl(), emitted.GetPortalControl());
+
+        for (int j=0; j<3; j++){
+          auto pt1 = pts.GetPortalConstControl().Get(j*2);
+          auto pt2 = pts.GetPortalConstControl().Get(j*2+1);
+          auto mId = matIdx.GetPortalConstControl().Get(j);
+          auto tId = texIdx.GetPortalConstControl().Get(j);
+
+          yz.operator()(i, r_in, hrec,sctr, hit, pt1, pt2, mId, tId,
+              matType.GetPortalConstControl(),
+              texType.GetPortalConstControl(), attenuation.GetPortalControl(), emitted.GetPortalControl());
+
+        }
+        for (int j=3; j<5; j++){
+          auto pt1 = pts.GetPortalConstControl().Get(j*2);
+          auto pt2 = pts.GetPortalConstControl().Get(j*2+1);
+          auto mId = matIdx.GetPortalConstControl().Get(j);
+          auto tId = texIdx.GetPortalConstControl().Get(j);
+
+          xz.operator()(i, r_in, hrec,sctr, hit, pt1,pt2, mId, tId,
+              matType.GetPortalConstControl(),
+              texType.GetPortalConstControl(), attenuation.GetPortalControl(), emitted.GetPortalControl());
+
+        }
+        if (!(sctr && hit)){
+          sctr = false;
+          attenuation.GetPortalControl().Set(i + canvasSize * depth, vec3(1.0));
+          emitted.GetPortalControl().Set(i + canvasSize * depth, vec3(0.0f));
+        }
+
+        if (sctr){
+          tmp << "255 255 255" << std::endl;
+        }
+        else
+          tmp << "0 0 0 " << std::endl;
+        hrecs.GetPortalControl().Set(i, hrec);
+        scattered.GetPortalControl().Set(i,sctr);
+      }
+      tmp.close();
       LambertianWorklet lmbWorklet( canvasSize, depth);
       DiffuseLightWorklet dlWorklet(canvasSize ,depth);
       DielectricWorklet deWorklet( canvasSize ,depth, 1.5, rays.GetNumberOfValues());
       PDFCosineWorklet pdfWorklet(canvasSize, depth, &hlist, rays.GetNumberOfValues());
-      vtkm::worklet::AutoDispatcherMapField<RayShade>(rs)
-            .Invoke(rays, hrecs, scattered, tex,  attenuation, emitted);
+//      vtkm::worklet::AutoDispatcherMapField<XYRectWorklet>(xy)
+//            .Invoke(rays, hrecs, scattered, tex,  attenuation, emitted);
 
       vtkm::worklet::AutoDispatcherMapField<LambertianWorklet>(lmbWorklet)
           .Invoke(rays, hrecs, srecs, finished, scattered,
@@ -424,14 +585,9 @@ int main() {
             .Invoke(rays, hrecs, srecs, finished, scattered, rays, attenuation);
     }
 
-    using MyAlgos = MyAlgorithms<vtkm::cont::DeviceAdapterAlgorithm<VTKM_DEFAULT_DEVICE_ADAPTER_TAG>, VTKM_DEFAULT_DEVICE_ADAPTER_TAG>;
-    using StorageTag = vtkm::cont::StorageTagBasic;
     using CountType = vtkm::cont::ArrayHandleCounting<vtkm::Id>;
-    ArrayType sumtotl;
-    sumtotl.Allocate(rays.GetNumberOfValues());
 
 
-    CountType sum_cnting(0, 1, rays.GetNumberOfValues());
     MyAlgos::SliceTransform<
         decltype(emitted),
         decltype(zero),
@@ -444,7 +600,6 @@ int main() {
 
 
     for (int depth = depthcount-2; depth >=0; depth--){
-      CountType cnting(depth * rays.GetNumberOfValues(), 1, rays.GetNumberOfValues());
       MyAlgos::SliceTransform<
           decltype(attenuation),
           decltype(sumtotl),
