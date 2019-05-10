@@ -14,8 +14,8 @@ class PDFCosineWorklet : public vtkm::worklet::WorkletMapField
 {
 public:
   VTKM_CONT
-  PDFCosineWorklet( int dc, int d, hitable *ls, vtkm::UInt32 rc)
-      : depthcount(dc)
+  PDFCosineWorklet( int cs, int d, hitable *ls, vtkm::UInt32 rc)
+      : canvasSize(cs)
       , depth(d)
       , light_shape(ls)
       , RayCount(rc)
@@ -46,7 +46,9 @@ public:
                   VecArrayType attenuation) const
   {
     if (!fin){
-      vec3 atten;
+      vec3 atten(1.0);
+      r_out = r_in;
+
       if (is_scattered){
         if (srec.is_specular) {
           atten = srec.attenuation;
@@ -92,16 +94,12 @@ public:
 #endif
         }
       }
-      else{
-        atten = vec3(1.0);
-        r_out = r_in;
-      }
-      attenuation.Set(idx * depthcount + depth, atten);
+      attenuation.Set(canvasSize * depth + idx, atten);
     }
     fin = !is_scattered;
   }
 
-  const int depth, depthcount;
+  const int depth, canvasSize;
   hitable *light_shape;
   vtkm::UInt32 RayCount;
 };

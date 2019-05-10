@@ -94,6 +94,8 @@ int main() {
   constexpr int ns = 100;
 
   constexpr int depthcount = 50;
+  auto canvasSize = nx*ny;
+
   //std::cout << "P3\n" << nx << " " << ny << "\n255\n";
   hitable *world;
   camera *cam;
@@ -160,11 +162,11 @@ int main() {
     srecs.Allocate(rays.GetNumberOfValues());
 
     for (int depth=0; depth<depthcount; depth++){
-      RayShade rs(world, depthcount, depth);
-      LambertianWorklet lmbWorklet( depthcount, depth);
-      DiffuseLightWorklet dlWorklet(depthcount ,depth);
-      DielectricWorklet deWorklet( depthcount ,depth, 1.5, rays.GetNumberOfValues());
-      PDFCosineWorklet pdfWorklet(depthcount, depth, &hlist, rays.GetNumberOfValues());
+      RayShade rs(world, canvasSize, depth);
+      LambertianWorklet lmbWorklet( canvasSize, depth);
+      DiffuseLightWorklet dlWorklet(canvasSize ,depth);
+      DielectricWorklet deWorklet( canvasSize ,depth, 1.5, rays.GetNumberOfValues());
+      PDFCosineWorklet pdfWorklet(canvasSize, depth, &hlist, rays.GetNumberOfValues());
 #if 1
       vtkm::worklet::AutoDispatcherMapField<RayShade>(rs)
             .Invoke(rays, hrecs, scattered, tex,  attenuation, emitted);
@@ -225,13 +227,13 @@ int main() {
     ArrayType sumtotl;
     sumtotl.Allocate(rays.GetNumberOfValues());
     for (int i=0; i<sumtotl.GetNumberOfValues(); i++){
-      auto val = emitted.GetPortalConstControl().Get(i * depthcount + depthcount -1);
+      auto val = emitted.GetPortalConstControl().Get(i + canvasSize * (depthcount -1));
       sumtotl.GetPortalControl().Set(i, val);
     }
     for (int depth = depthcount-2; depth >=0; depth--){
       for (int i=0; i<sumtotl.GetNumberOfValues(); i++){
         auto sum = sumtotl.GetPortalConstControl().Get(i);
-        sumtotl.GetPortalControl().Set(i, emitted.GetPortalConstControl().Get(i*depthcount + depth) + attenuation.GetPortalConstControl().Get(i*depthcount + depth) * sum);
+        sumtotl.GetPortalControl().Set(i, emitted.GetPortalConstControl().Get(i+canvasSize * depth) + attenuation.GetPortalConstControl().Get(i+canvasSize * depth) * sum);
       }
     }
     for (int i=0; i<cols.GetNumberOfValues(); i++){

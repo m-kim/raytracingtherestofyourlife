@@ -14,8 +14,8 @@ class LambertianWorklet : public vtkm::worklet::WorkletMapField
 {
 public:
   VTKM_CONT
-  LambertianWorklet(int dc, int d)
-      : depthcount(dc)
+  LambertianWorklet(int cs, int d)
+      : canvasSize(cs)
       , depth(d)
   {
   }
@@ -51,7 +51,7 @@ public:
         if (mt == 0){
           vec3 em = emit(r_in, hrec, col.Get(hrec.texId));
           scattered = scatter(r_in, hrec, srec, col.Get(hrec.texId));
-          emitted.Set(idx * depthcount + depth, em);
+          emitted.Set(canvasSize * depth + idx, em);
 
         }
       }
@@ -59,15 +59,15 @@ public:
 
   }
 
-  const int depth, depthcount;
+  const int depth, canvasSize;
 };
 
 class DiffuseLightWorklet : public vtkm::worklet::WorkletMapField
 {
 public:
   VTKM_CONT
-  DiffuseLightWorklet(int dc, int d)
-    : depthcount(dc)
+  DiffuseLightWorklet(int cs, int d)
+    : canvasSize(cs)
     , depth(d)
   {
   }
@@ -105,21 +105,21 @@ public:
         if (mt == 1){
           vec3 em = emit(r_in, hrec, col.Get(hrec.texId));
           scattered = scatter(r_in, hrec, srec, col.Get(hrec.texId));
-          emitted.Set(idx * depthcount + depth, em);
+          emitted.Set(canvasSize * depth + idx, em);
         }
       }
     }
   }
 
-  const int depth, depthcount;
+  const int depth, canvasSize;
 
 };
 class DielectricWorklet : public vtkm::worklet::WorkletMapField
 {
 public:
   VTKM_CONT
-  DielectricWorklet(int dc, int d, float rid, vtkm::UInt32 rc)
-      : depthcount(dc)
+  DielectricWorklet(int cs, int d, float rid, vtkm::UInt32 rc)
+      : canvasSize(cs)
       , depth(d)
       , ref_idx(rid)
       , RayCount(rc)
@@ -191,7 +191,7 @@ public:
 
           vec3 em = emit(r_in, hrec, col.Get(hrec.texId));
           scattered = scatter(r_in, hrec, srec, col.Get(hrec.texId), vtkm::random::xorshift::getRandF(randState));
-          emitted.Set(idx * depthcount + depth, em);
+          emitted.Set(canvasSize * depth + idx, em);
 
         }
       }
@@ -199,7 +199,7 @@ public:
 
   }
 
-  const int depth, depthcount;
+  const int depth, canvasSize;
   float ref_idx;
   const vtkm::UInt32 RayCount;
 

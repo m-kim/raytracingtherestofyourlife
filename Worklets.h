@@ -207,11 +207,12 @@ class RayShade : public vtkm::worklet::WorkletMapField
 public:
   VTKM_CONT
   RayShade(hitable *w,
-           int dc,
+           int cs,
            int d)
     :world(w)
-    ,depthcount(dc)
+    ,canvasSize(cs)
     ,depth(d)
+
   {
   }
 
@@ -233,14 +234,13 @@ public:
     }
     else{
       scattered = 0;
-      attenuation.Set(idx * depthcount + depth, vec3(1.0));
-      emitted.Set(idx * depthcount + depth, vec3(0.0f));
+      attenuation.Set(idx + canvasSize * depth, vec3(1.0));
+      emitted.Set(idx + canvasSize * depth, vec3(0.0f));
     }
   }
 
   hitable *world;
-  int depthcount;
+  int canvasSize;
   int depth;
-
 };
 #endif
