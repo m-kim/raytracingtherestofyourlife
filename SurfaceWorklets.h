@@ -8,12 +8,10 @@ public:
   VTKM_CONT
   XYRectWorklet(
            int cs,
-           int d,
-      bool _f = false
+           int d
       )
     :canvasSize(cs)
     ,depth(d)
-    , flip(_f)
   {
   }
 
@@ -30,7 +28,8 @@ public:
           float y1,
           float k,
           int matId,
-          int texId) const
+          int texId,
+          vtkm::Int8 flip) const
   {
       float t = (k-r.origin()[2]) / r.direction()[2];
       if (t < tmin || t > tmax){
@@ -60,56 +59,60 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
+  WholeArrayInOut<>,
+  WholeArrayInOut<>,
+  WholeArrayInOut<>,
+  WholeArrayInOut<>,
+  WholeArrayInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13);
 
   VTKM_EXEC
-  template<
+  template<typename PtArrayType,
+          typename IndexType,
+          typename FlippedType,
           typename MatTypeArrayType,
           typename ColTypeArrayType>
   void operator()(vtkm::Id idx,
                   ray &ray_io,
                   hit_record &hrec,
-                  float &tmin, float &tmax,
+                  float &tmin,
+                  float &tmax,
                   vtkm::Int8 &scattered,
                   vtkm::Int8 &rayHit,
-                  vec3 pt1,
-                  vec3 pt2,
-                  int matIdx,
-                  int texIdx,
+                  PtArrayType pt1,
+                  PtArrayType pt2,
+                  IndexType matIdx,
+                  IndexType texIdx,
+                  FlippedType flipped,
                   MatTypeArrayType matType,
                   ColTypeArrayType texType
-                ) const
+                  ) const
   {
     if (scattered){
-      float x0 = pt1[0];
-      float x1 = pt2[0];
-      float y0 = pt1[1];
-      float y1 = pt2[1];
-      float k = pt1[2];
-      hit_record  temp_rec;
-      auto h = hit(ray_io, temp_rec, tmin, tmax,
-                   x0,x1,y0,y1,k,matIdx,texIdx);
-      if (h){
+      for (int i=0; i<matIdx.GetNumberOfValues(); i++){
+        float x0 = pt1.Get(i)[0];
+        float x1 = pt2.Get(i)[0];
+        float z0 = pt1.Get(i)[2];
+        float z1 = pt2.Get(i)[2];
+        float k = pt1.Get(i)[1];
+        hit_record  temp_rec;
+        auto h =  hit(ray_io, temp_rec, tmin, tmax,
+                      x0,x1,z0,z1,k,matIdx.Get(i),texIdx.Get(i),flipped.Get(i));
+        if (h){
 
-        tmax = temp_rec.t;
-        hrec = temp_rec;
+          tmax = temp_rec.t;
+          hrec = temp_rec;
+        }
+        rayHit |= h;
+
       }
-      rayHit |= h;
     }
   }
-
   int canvasSize;
   int depth;
-  bool flip;
 };
 
 class XZRectWorklet : public vtkm::worklet::WorkletMapField
@@ -118,12 +121,10 @@ public:
   VTKM_CONT
   XZRectWorklet(
            int cs,
-           int d,
-      bool _f = false
+           int d
       )
     :canvasSize(cs)
     ,depth(d)
-    , flip(_f)
   {
   }
   VTKM_EXEC
@@ -133,7 +134,8 @@ public:
                   float x0, float x1, float z0, float z1,
                   float k,
                   int matId,
-                  int texId) const
+                  int texId,
+           vtkm::Int8 flip) const
   {
     float t = (k-r.origin()[1]) / r.direction()[1];
     if (t < tmin || t > tmax)
@@ -161,56 +163,61 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
+  WholeArrayInOut<>,
+  WholeArrayInOut<>,
+  WholeArrayInOut<>,
+  WholeArrayInOut<>,
+  WholeArrayInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13);
 
   VTKM_EXEC
-  template<
+  template<typename PtArrayType,
+          typename IndexType,
+          typename FlippedType,
           typename MatTypeArrayType,
           typename ColTypeArrayType>
   void operator()(vtkm::Id idx,
                   ray &ray_io,
                   hit_record &hrec,
-                  float &tmin, float &tmax,
+                  float &tmin,
+                  float &tmax,
                   vtkm::Int8 &scattered,
                   vtkm::Int8 &rayHit,
-                  vec3 &pt1,
-                  vec3 &pt2,
-                  int matIdx,
-                  int texIdx,
+                  PtArrayType pt1,
+                  PtArrayType pt2,
+                  IndexType matIdx,
+                  IndexType texIdx,
+                  FlippedType flipped,
                   MatTypeArrayType matType,
                   ColTypeArrayType texType
                   ) const
   {
     if (scattered){
-      float x0 = pt1[0];
-      float x1 = pt2[0];
-      float z0 = pt1[2];
-      float z1 = pt2[2];
-      float k = pt1[1];
-      hit_record  temp_rec;
-      auto h =  hit(ray_io, temp_rec, tmin, tmax,
-                    x0,x1,z0,z1,k,matIdx,texIdx);
-      if (h){
+      for (int i=0; i<matIdx.GetNumberOfValues(); i++){
+        float x0 = pt1.Get(i)[0];
+        float x1 = pt2.Get(i)[0];
+        float z0 = pt1.Get(i)[2];
+        float z1 = pt2.Get(i)[2];
+        float k = pt1.Get(i)[1];
+        hit_record  temp_rec;
+        auto h =  hit(ray_io, temp_rec, tmin, tmax,
+                      x0,x1,z0,z1,k,matIdx.Get(i),texIdx.Get(i),flipped.Get(i));
+        if (h){
 
-        tmax = temp_rec.t;
-        hrec = temp_rec;
+          tmax = temp_rec.t;
+          hrec = temp_rec;
+        }
+        rayHit |= h;
+
       }
-      rayHit |= h;
     }
   }
 
   int canvasSize;
   int depth;
-  bool flip;
 };
 class YZRectWorklet : public vtkm::worklet::WorkletMapField
 {
@@ -218,12 +225,10 @@ public:
   VTKM_CONT
   YZRectWorklet(
            int cs,
-           int d,
-      bool _f = false
+           int d
       )
     :canvasSize(cs)
     ,depth(d)
-    , flip(_f)
   {
   }
 
@@ -235,7 +240,8 @@ public:
             float y0, float y1, float z0, float z1,
             float k,
             int matId,
-            int texId) const
+            int texId,
+           vtkm::Int8 flip) const
   {
     float t = (k-r.origin()[0]) / r.direction()[0];
     if (t < tmin || t > tmax){
@@ -266,57 +272,60 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
+  WholeArrayInOut<>,
+  WholeArrayInOut<>,
+  WholeArrayInOut<>,
+  WholeArrayInOut<>,
+  WholeArrayInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13);
 
   VTKM_EXEC
-  template<
+  template<typename PtArrayType,
+            typename IndexType,
+          typename FlippedType,
           typename MatTypeArrayType,
           typename ColTypeArrayType>
   void operator()(vtkm::Id idx,
                   ray &ray_io,
                   hit_record &hrec,
-                  float &tmin, float &tmax,
+                  float &tmin,
+                  float &tmax,
                   vtkm::Int8 &scattered,
                   vtkm::Int8 &rayHit,
-                  vec3 &pt1,
-                  vec3 &pt2,
-                  int matIdx,
-                  int texIdx,
+                  PtArrayType pt1,
+                  PtArrayType pt2,
+                  IndexType matIdx,
+                  IndexType texIdx,
+                  FlippedType flipped,
                   MatTypeArrayType matType,
                   ColTypeArrayType texType
                   ) const
   {
     if (scattered){
-      float y0 = pt1[1];
-      float y1 = pt2[1];
-      float z0 = pt1[2];
-      float z1 = pt2[2];
-      float k = pt1[0];
-      hit_record  temp_rec;
-      auto h =  hit(ray_io, temp_rec, tmin, tmax,
-                    y0,y1,z0,z1,k,matIdx,texIdx);
-      if (h){
+      for (int i=0; i<pt1.GetNumberOfValues(); i++){
+        float y0 = pt1.Get(i)[1];
+        float y1 = pt2.Get(i)[1];
+        float z0 = pt1.Get(i)[2];
+        float z1 = pt2.Get(i)[2];
+        float k = pt1.Get(i)[0];
+        hit_record temp_rec;
+        auto h =  hit(ray_io, temp_rec, tmin, tmax,
+                      y0,y1,z0,z1,k,matIdx.Get(i),texIdx.Get(i), flipped.Get(i));
+        if (h){
 
-        tmax = temp_rec.t;
-        hrec = temp_rec;
+          tmax = temp_rec.t;
+          hrec = temp_rec;
+        }
+        rayHit |= h;
       }
-      rayHit |= h;
     }
   }
 
   int canvasSize;
   int depth;
-
-  bool flip;
 };
 
 class SphereIntersecttWorklet : public vtkm::worklet::WorkletMapField
@@ -325,12 +334,9 @@ public:
   VTKM_CONT
   SphereIntersecttWorklet(
            int cs,
-           int d,
-      bool _f = false
-      )
+           int d)
     :canvasSize(cs)
     ,depth(d)
-    , flip(_f)
   {
   }
   VTKM_EXEC
@@ -369,60 +375,57 @@ public:
       return false;
   }
 
+
   using ControlSignature = void(FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
+  WholeArrayInOut<>,
+  WholeArrayInOut<>,
+  WholeArrayInOut<>,
+  WholeArrayInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12);
 
   VTKM_EXEC
-  template<
+  template<typename PtArrayType,
+            typename IndexType,
           typename MatTypeArrayType,
           typename ColTypeArrayType>
   void operator()(vtkm::Id idx,
                   ray &ray_io,
                   hit_record &hrec,
-                  float &tmin, float &tmax,
+                  float &tmin,
+                  float &tmax,
                   vtkm::Int8 &scattered,
                   vtkm::Int8 &rayHit,
-                  vec3 &pt1,
-                  vec3 &pt2,
-                  int matIdx,
-                  int texIdx,
+                  PtArrayType pt1,
+                  PtArrayType pt2,
+                  IndexType matIdx,
+                  IndexType texIdx,
                   MatTypeArrayType matType,
                   ColTypeArrayType texType
                   ) const
   {
     if (scattered){
-      float y0 = pt1[1];
-      float y1 = pt2[1];
-      float z0 = pt1[2];
-      float z1 = pt2[2];
-      float k = pt1[0];
-      hit_record  temp_rec;
-      auto h =   hit(ray_io, temp_rec, tmin, tmax, pt1, pt2[0],matIdx,texIdx);
-      if (h){
+      for (int i=0; i<pt1.GetNumberOfValues(); i++){
+        hit_record  temp_rec;
+        auto h =   hit(ray_io, temp_rec, tmin, tmax,
+                       pt1.Get(i), pt2.Get(i)[0],matIdx.Get(i),texIdx.Get(i));
+        if (h){
 
-        tmax = temp_rec.t;
-        hrec = temp_rec;
+          tmax = temp_rec.t;
+          hrec = temp_rec;
+        }
+        rayHit |= h;
       }
-      rayHit |= h;
-
     }
   }
   int canvasSize;
   int depth;
-  bool flip;
 };
 #endif

@@ -325,11 +325,14 @@ struct Append
 };
 
 vtkm::cont::ArrayHandle<vec3> tex;
-vtkm::cont::ArrayHandle<vtkm::Id> matIdx;
-vtkm::cont::ArrayHandle<vtkm::Id> texIdx;
-vtkm::cont::ArrayHandle<int> matType, texType;
-vtkm::cont::ArrayHandle<vec3> pts;
+vtkm::cont::ArrayHandle<vtkm::Id> matIdx[5];
+vtkm::cont::ArrayHandle<vtkm::Id> texIdx[5];
+vtkm::cont::ArrayHandle<int> matType, texType, flipped[5];
+vtkm::cont::ArrayHandle<vec3> pts1[5], pts2[5];
 vtkm::cont::ArrayHandle<vec3> norms;
+
+std::vector<vtkm::cont::ArrayHandle<vec3>> ptsArray;
+std::vector<int> cellTypeArray;
 
 void cornell_box(hitable **scene, camera **cam, float aspect) {
   tex.Allocate(4);
@@ -352,58 +355,96 @@ void cornell_box(hitable **scene, camera **cam, float aspect) {
   texType.GetPortalControl().Set(3, 3); //light
   texType.GetPortalControl().Set(4, 0); //dielectric
 
-  matIdx.Allocate(8);
-  texIdx.Allocate(8);
 
-  pts.Allocate(16);
+  cellTypeArray.resize(5);
   norms.Allocate(16);
     int i = 0;
     hitable **list = new hitable*[8];
 
-    matIdx.GetPortalControl().Set(i, 2);
-    texIdx.GetPortalControl().Set(i, 2);
-    pts.GetPortalControl().Set(i*2, vec3(555,0,0));
-    pts.GetPortalControl().Set(i*2+1, vec3(555,555,555));
+    flipped[0].Allocate(2);
+    matIdx[0].Allocate(2);
+    texIdx[0].Allocate(2);
+    pts1[0].Allocate(2);
+    pts2[0].Allocate(2);
+    cellTypeArray[0] = 0;
+    matIdx[0].GetPortalControl().Set(0, 2);
+    texIdx[0].GetPortalControl().Set(0, 2);
+    pts1[0].GetPortalControl().Set(0, vec3(555,0,0));
+    pts2[0].GetPortalControl().Set(0, vec3(555,555,555));
+    flipped[0].GetPortalControl().Set(0, 1);
     list[i++] = new flip_normals(new yz_rect(0, 555, 0, 555, 555, 2,2));
 
-    matIdx.GetPortalControl().Set(i, 0);
-    texIdx.GetPortalControl().Set(i, 0);
-    pts.GetPortalControl().Set(i*2, vec3(0,0,0));
-    pts.GetPortalControl().Set(i*2+1, vec3(0,555,555));
+
+    matIdx[0].GetPortalControl().Set(1, 0);
+    texIdx[0].GetPortalControl().Set(1, 0);
+    pts1[0].GetPortalControl().Set(1, vec3(0,0,0));
+    pts2[0].GetPortalControl().Set(1, vec3(0,555,555));
+    flipped[0].GetPortalControl().Set(1, 0);
     list[i++] = new yz_rect(0, 555, 0, 555, 0, 0,0);
 
-    matIdx.GetPortalControl().Set(i, 3);
-    texIdx.GetPortalControl().Set(i, 3);
-    pts.GetPortalControl().Set(i*2, vec3(213,554,227));
-    pts.GetPortalControl().Set(i*2+1, vec3(343,554,332));
+    flipped[1].Allocate(3);
+    matIdx[1].Allocate(3);
+    texIdx[1].Allocate(3);
+    pts1[1].Allocate(3);
+    pts2[1].Allocate(3);
+    cellTypeArray[1] =  1;
+    matIdx[1].GetPortalControl().Set(0, 3);
+    texIdx[1].GetPortalControl().Set(0, 3);
+    pts1[1].GetPortalControl().Set(0, vec3(213,554,227));
+    pts2[1].GetPortalControl().Set(0, vec3(343,554,332));
+    flipped[1].GetPortalControl().Set(0, 1);
     list[i++] = new flip_normals(new xz_rect(213, 343, 227, 332, 554, 3,3));
 
-    matIdx.GetPortalControl().Set(i, 1);
-    texIdx.GetPortalControl().Set(i, 1);
-    pts.GetPortalControl().Set(i*2, vec3(0,555,0));
-    pts.GetPortalControl().Set(i*2+1, vec3(555,555,555));
+    matIdx[1].GetPortalControl().Set(1, 1);
+    texIdx[1].GetPortalControl().Set(1, 1);
+    pts1[1].GetPortalControl().Set(1, vec3(0,555,0));
+    pts2[1].GetPortalControl().Set(1, vec3(555,555,555));
+    flipped[1].GetPortalControl().Set(1, 1);
     list[i++] = new flip_normals(new xz_rect(0, 555, 0, 555, 555, 1,1));
 
-    matIdx.GetPortalControl().Set(i, 1);
-    texIdx.GetPortalControl().Set(i, 1);
-    pts.GetPortalControl().Set(i*2, vec3(0,0,0));
-    pts.GetPortalControl().Set(i*2+1, vec3(555,0,555));
+    matIdx[1].GetPortalControl().Set(2, 1);
+    texIdx[1].GetPortalControl().Set(2, 1);
+    pts1[1].GetPortalControl().Set(2, vec3(0,0,0));
+    pts2[1].GetPortalControl().Set(2, vec3(555,0,555));
+    flipped[1].GetPortalControl().Set(2, 0);
     list[i++] = new xz_rect(0, 555, 0, 555, 0, 1,1);
 
-    matIdx.GetPortalControl().Set(i, 1);
-    texIdx.GetPortalControl().Set(i, 1);
-    pts.GetPortalControl().Set(i*2, vec3(0,0,555));
-    pts.GetPortalControl().Set(i*2+1, vec3(555,555,555));
+    flipped[2].Allocate(1);
+    matIdx[2].Allocate(1);
+    texIdx[2].Allocate(1);
+    pts1[2].Allocate(1);
+    pts2[2].Allocate(1);
+    cellTypeArray[2] =  2;
+    matIdx[2].GetPortalControl().Set(0, 1);
+    texIdx[2].GetPortalControl().Set(0, 1);
+    pts1[2].GetPortalControl().Set(0, vec3(0,0,555));
+    pts2[2].GetPortalControl().Set(0, vec3(555,555,555));
+    flipped[2].GetPortalControl().Set(0, 1);
     list[i++] = new flip_normals(new xy_rect(0, 555, 0, 555, 555, 1,1));
 
-    matIdx.GetPortalControl().Set(i, 4);
-    texIdx.GetPortalControl().Set(i, 0);
-    pts.GetPortalControl().Set(i*2, vec3(190,90,190));
-    pts.GetPortalControl().Set(i*2+1, vec3(90,0,0));
+
+    flipped[3].Allocate(1);
+    matIdx[3].Allocate(1);
+    texIdx[3].Allocate(1);
+    pts1[3].Allocate(1);
+    pts2[3].Allocate(1);
+    cellTypeArray[3] =  3;
+    matIdx[3].GetPortalControl().Set(0, 4);
+    texIdx[3].GetPortalControl().Set(0, 0);
+    pts1[3].GetPortalControl().Set(0, vec3(190,90,190));
+    pts2[3].GetPortalControl().Set(0, vec3(90,0,0));
+    flipped[3].GetPortalControl().Set(0, 0);
     list[i++] = new sphere(vec3(190, 90, 190),90 , 4, 0);
 
-    matIdx.GetPortalControl().Set(i, 1);
-    texIdx.GetPortalControl().Set(i, 1);
+    flipped[4].Allocate(1);
+    matIdx[4].Allocate(1);
+    texIdx[4].Allocate(1);
+    pts1[4].Allocate(1);
+    pts2[4].Allocate(1);
+    cellTypeArray[4] =  4;
+    matIdx[4].GetPortalControl().Set(0, 1);
+    texIdx[4].GetPortalControl().Set(0, 1);
+    flipped[4].GetPortalControl().Set(0, 0);
     list[i++] = new translate(new rotate_y(
                     new box(vec3(0, 0, 0), vec3(165, 330, 165), 1,1),  15), vec3(265,0,295));
     *scene = new hitable_list(list,i);
@@ -509,25 +550,59 @@ int main() {
 //      vtkm::worklet::AutoDispatcherMapField<RayShade>(rs)
 //            .Invoke(rays, hrecs, scattered, tex,  attenuation, emitted);
 
-      SphereIntersecttWorklet sphereIntersect(canvasSize, depth, true);
       MyAlgos::Copy<vtkm::Int8, vtkm::Int8, StorageTag>(0, hitArray);
       LambertianWorklet lmbWorklet( canvasSize, depth);
       DiffuseLightWorklet dlWorklet(canvasSize ,depth);
       DielectricWorklet deWorklet( canvasSize ,depth, 1.5, rays.GetNumberOfValues());
       PDFCosineWorklet pdfWorklet(canvasSize, depth, &hlist, rays.GetNumberOfValues());
 
+      for (int i=0; i<cellTypeArray.size(); i++){
+        if (cellTypeArray[i] == 0){
+          YZRectWorklet yz(canvasSize, depth);
+            vtkm::worklet::AutoDispatcherMapField<YZRectWorklet>(yz)
+                .Invoke(rays, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
+                        matIdx[i], texIdx[i],flipped[i],
+                        matType, texType);
+        }
+        else if (cellTypeArray[i] == 1){
+          XZRectWorklet xz(canvasSize, depth);
+          vtkm::worklet::AutoDispatcherMapField<XZRectWorklet>(xz)
+              .Invoke(rays, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
+                      matIdx[i], texIdx[i],flipped[i],
+                      matType, texType);
+
+
+        }
+        else if (cellTypeArray[i] == 2){
+          //xy
+          XYRectWorklet xy(canvasSize, depth);
+          vtkm::worklet::AutoDispatcherMapField<XYRectWorklet>(xy)
+              .Invoke(rays, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
+                      matIdx[i], texIdx[i],flipped[i],
+                      matType, texType);
+
+        }
+        else if (cellTypeArray[i] == 3){
+          SphereIntersecttWorklet sphereIntersect(canvasSize, depth);
+          vtkm::worklet::AutoDispatcherMapField<SphereIntersecttWorklet>(sphereIntersect)
+              .Invoke(rays, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
+                      matIdx[i], texIdx[i],
+                      matType, texType);
+
+        }
+      }
+#if 0
       for (int i=0; i<rays.GetNumberOfValues(); i++){
 
         auto r_in = rays.GetPortalConstControl().Get(i);
         auto hrec = hrecs.GetPortalConstControl().Get(i);
         auto sctr = scattered.GetPortalConstControl().Get(i);
         auto hit = hitArray.GetPortalControl().Get(i);
-#if 0
-        rs.operator()(i, r_in, hrec, sctr, tex.GetPortalControl(), attenuation.GetPortalControl(), emitted.GetPortalControl());
-        hrecs.GetPortalControl().Set(i, hrec);
-        scattered.GetPortalControl().Set(i,sctr);
 
-#else
+//        rs.operator()(i, r_in, hrec, sctr, tex.GetPortalControl(), attenuation.GetPortalControl(), emitted.GetPortalControl());
+//        hrecs.GetPortalControl().Set(i, hrec);
+//        scattered.GetPortalControl().Set(i,sctr);
+
         auto _tmin = tmin.GetPortalControl().Get(i);
         auto _tmax = closest.GetPortalControl().Get(i);
 
@@ -589,19 +664,18 @@ int main() {
         xz2.operator()(i, r_in, hrec, _tmin, _tmax,sctr, hit, pt1,pt2, mId, tId,
             matType.GetPortalConstControl(),
             texType.GetPortalConstControl());
-
+#endif
+      for (int i=0; i<rays.GetNumberOfValues(); i++){
+        auto sctr = scattered.GetPortalControl().Get(i);
+        auto hit = hitArray.GetPortalControl().Get(i);
         if (!(sctr && hit)){
           sctr = false;
           attenuation.GetPortalControl().Set(i + canvasSize * depth, vec3(1.0));
           emitted.GetPortalControl().Set(i + canvasSize * depth, vec3(0.0f));
         }
 
-#endif
-
-        hrecs.GetPortalControl().Set(i, hrec);
         scattered.GetPortalControl().Set(i,sctr);
       }
-
       vtkm::worklet::AutoDispatcherMapField<LambertianWorklet>(lmbWorklet)
           .Invoke(rays, hrecs, srecs, finished, scattered,
                   tex, matType, emitted);
