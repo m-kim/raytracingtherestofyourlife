@@ -63,18 +63,15 @@ public:
   WholeArrayInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>,
-  WholeArrayInOut<>,
-  WholeArrayInOut<>,
   WholeArrayInOut<>
+
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
 
   VTKM_EXEC
   template<typename PtArrayType,
           typename IndexType,
-          typename FlippedType,
-          typename MatTypeArrayType,
-          typename ColTypeArrayType>
+          typename FlippedType>
   void operator()(vtkm::Id idx,
                   ray &ray_io,
                   hit_record &hrec,
@@ -86,9 +83,7 @@ public:
                   PtArrayType pt2,
                   IndexType matIdx,
                   IndexType texIdx,
-                  FlippedType flipped,
-                  MatTypeArrayType matType,
-                  ColTypeArrayType texType
+                  FlippedType flipped
                   ) const
   {
     if (scattered){
@@ -167,18 +162,14 @@ public:
   WholeArrayInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>,
-  WholeArrayInOut<>,
-  WholeArrayInOut<>,
   WholeArrayInOut<>
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
 
   VTKM_EXEC
   template<typename PtArrayType,
           typename IndexType,
-          typename FlippedType,
-          typename MatTypeArrayType,
-          typename ColTypeArrayType>
+          typename FlippedType>
   void operator()(vtkm::Id idx,
                   ray &ray_io,
                   hit_record &hrec,
@@ -190,9 +181,7 @@ public:
                   PtArrayType pt2,
                   IndexType matIdx,
                   IndexType texIdx,
-                  FlippedType flipped,
-                  MatTypeArrayType matType,
-                  ColTypeArrayType texType
+                  FlippedType flipped
                   ) const
   {
     if (scattered){
@@ -276,18 +265,14 @@ public:
   WholeArrayInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>,
-  WholeArrayInOut<>,
-  WholeArrayInOut<>,
   WholeArrayInOut<>
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
 
   VTKM_EXEC
   template<typename PtArrayType,
             typename IndexType,
-          typename FlippedType,
-          typename MatTypeArrayType,
-          typename ColTypeArrayType>
+          typename FlippedType>
   void operator()(vtkm::Id idx,
                   ray &ray_io,
                   hit_record &hrec,
@@ -299,9 +284,7 @@ public:
                   PtArrayType pt2,
                   IndexType matIdx,
                   IndexType texIdx,
-                  FlippedType flipped,
-                  MatTypeArrayType matType,
-                  ColTypeArrayType texType
+                  FlippedType flipped
                   ) const
   {
     if (scattered){
@@ -385,17 +368,13 @@ public:
   WholeArrayInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>,
-  WholeArrayInOut<>,
-  WholeArrayInOut<>,
   WholeArrayInOut<>
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10);
 
   VTKM_EXEC
   template<typename PtArrayType,
-            typename IndexType,
-          typename MatTypeArrayType,
-          typename ColTypeArrayType>
+            typename IndexType>
   void operator()(vtkm::Id idx,
                   ray &ray_io,
                   hit_record &hrec,
@@ -406,9 +385,7 @@ public:
                   PtArrayType pt1,
                   PtArrayType pt2,
                   IndexType matIdx,
-                  IndexType texIdx,
-                  MatTypeArrayType matType,
-                  ColTypeArrayType texType
+                  IndexType texIdx
                   ) const
   {
     if (scattered){

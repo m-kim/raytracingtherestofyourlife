@@ -561,15 +561,13 @@ int main() {
           YZRectWorklet yz(canvasSize, depth);
             vtkm::worklet::AutoDispatcherMapField<YZRectWorklet>(yz)
                 .Invoke(rays, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
-                        matIdx[i], texIdx[i],flipped[i],
-                        matType, texType);
+                        matIdx[i], texIdx[i],flipped[i]);
         }
         else if (cellTypeArray[i] == 1){
           XZRectWorklet xz(canvasSize, depth);
           vtkm::worklet::AutoDispatcherMapField<XZRectWorklet>(xz)
               .Invoke(rays, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
-                      matIdx[i], texIdx[i],flipped[i],
-                      matType, texType);
+                      matIdx[i], texIdx[i],flipped[i]);
 
 
         }
@@ -578,16 +576,14 @@ int main() {
           XYRectWorklet xy(canvasSize, depth);
           vtkm::worklet::AutoDispatcherMapField<XYRectWorklet>(xy)
               .Invoke(rays, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
-                      matIdx[i], texIdx[i],flipped[i],
-                      matType, texType);
+                      matIdx[i], texIdx[i],flipped[i]);
 
         }
         else if (cellTypeArray[i] == 3){
           SphereIntersecttWorklet sphereIntersect(canvasSize, depth);
           vtkm::worklet::AutoDispatcherMapField<SphereIntersecttWorklet>(sphereIntersect)
               .Invoke(rays, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
-                      matIdx[i], texIdx[i],
-                      matType, texType);
+                      matIdx[i], texIdx[i]);
 
         }
       }
