@@ -9,14 +9,10 @@ public:
   XYRectWorklet(
            int cs,
            int d,
-      bool _f = false,
-      float _tmin = 0.001,
-      float _tmax = std::numeric_limits<float>::max()
+      bool _f = false
       )
     :canvasSize(cs)
     ,depth(d)
-    ,tmin(_tmin)
-    ,tmax(_tmax)
     , flip(_f)
   {
   }
@@ -26,6 +22,8 @@ public:
   bool hit(
           const ray& r,
           hit_record& rec,
+          float &tmin, float &tmax,
+
           float x0,
           float x1,
           float y0,
@@ -66,10 +64,12 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
+  FieldInOut<>,
+  FieldInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14);
 
   VTKM_EXEC
   template<
@@ -78,6 +78,7 @@ public:
   void operator()(vtkm::Id idx,
                   ray &ray_io,
                   hit_record &hrec,
+                  float &tmin, float &tmax,
                   vtkm::Int8 &scattered,
                   vtkm::Int8 &rayHit,
                   vec3 pt1,
@@ -89,22 +90,25 @@ public:
                 ) const
   {
     if (scattered){
-      auto matId = matType.Get(matIdx);
-      auto texId = texType.Get(texIdx);
       float x0 = pt1[0];
       float x1 = pt2[0];
       float y0 = pt1[1];
       float y1 = pt2[1];
       float k = pt1[2];
+      hit_record  temp_rec;
+      auto h = hit(ray_io, temp_rec, tmin, tmax,
+                   x0,x1,y0,y1,k,matIdx,texIdx);
+      if (h){
 
-      rayHit |= hit(ray_io, hrec,
-                         x0,x1,y0,y1,k,matId,texId);
+        tmax = temp_rec.t;
+        hrec = temp_rec;
+      }
+      rayHit |= h;
     }
   }
 
   int canvasSize;
   int depth;
-  float tmin, tmax;
   bool flip;
 };
 
@@ -115,34 +119,29 @@ public:
   XZRectWorklet(
            int cs,
            int d,
-      bool _f = false,
-      float _tmin = 0.001,
-      float _tmax = std::numeric_limits<float>::max()
+      bool _f = false
       )
     :canvasSize(cs)
     ,depth(d)
-    ,tmin(_tmin)
-    ,tmax(_tmax)
     , flip(_f)
   {
   }
   VTKM_EXEC
   bool hit(const ray& r,
                   hit_record& rec,
+                  float &tmin, float &tmax,
                   float x0, float x1, float z0, float z1,
                   float k,
                   int matId,
                   int texId) const
   {
     float t = (k-r.origin()[1]) / r.direction()[1];
-    if (t < tmin || t > tmax){
+    if (t < tmin || t > tmax)
         return false;
-    }
     float x = r.origin()[0] + t*r.direction()[0];
     float z = r.origin()[2] + t*r.direction()[2];
-    if (x < x0 || x > x1 || z < z0 || z > z1){
+    if (x < x0 || x > x1 || z < z0 || z > z1)
         return false;
-    }
     rec.u = (x-x0)/(x1-x0);
     rec.v = (z-z0)/(z1-z0);
     rec.t = t;
@@ -166,10 +165,12 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
+  FieldInOut<>,
+  FieldInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14);
 
   VTKM_EXEC
   template<
@@ -178,6 +179,7 @@ public:
   void operator()(vtkm::Id idx,
                   ray &ray_io,
                   hit_record &hrec,
+                  float &tmin, float &tmax,
                   vtkm::Int8 &scattered,
                   vtkm::Int8 &rayHit,
                   vec3 &pt1,
@@ -189,22 +191,25 @@ public:
                   ) const
   {
     if (scattered){
-      auto matId = matType.Get(matIdx);
-      auto texId = texType.Get(texIdx);
       float x0 = pt1[0];
       float x1 = pt2[0];
       float z0 = pt1[2];
       float z1 = pt2[2];
       float k = pt1[1];
+      hit_record  temp_rec;
+      auto h =  hit(ray_io, temp_rec, tmin, tmax,
+                    x0,x1,z0,z1,k,matIdx,texIdx);
+      if (h){
 
-      rayHit |= hit(ray_io, hrec,
-                         x0,x1,z0,z1,k,matId,texId);
+        tmax = temp_rec.t;
+        hrec = temp_rec;
+      }
+      rayHit |= h;
     }
   }
 
   int canvasSize;
   int depth;
-  float tmin, tmax;
   bool flip;
 };
 class YZRectWorklet : public vtkm::worklet::WorkletMapField
@@ -214,14 +219,10 @@ public:
   YZRectWorklet(
            int cs,
            int d,
-      bool _f = false,
-      float _tmin = 0.001,
-      float _tmax = std::numeric_limits<float>::max()
+      bool _f = false
       )
     :canvasSize(cs)
     ,depth(d)
-    ,tmin(_tmin)
-    ,tmax(_tmax)
     , flip(_f)
   {
   }
@@ -230,6 +231,7 @@ public:
   VTKM_EXEC
   bool hit(const ray& r,
             hit_record& rec,
+            float &tmin, float &tmax,
             float y0, float y1, float z0, float z1,
             float k,
             int matId,
@@ -268,10 +270,12 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
+  FieldInOut<>,
+  FieldInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14);
 
   VTKM_EXEC
   template<
@@ -280,6 +284,7 @@ public:
   void operator()(vtkm::Id idx,
                   ray &ray_io,
                   hit_record &hrec,
+                  float &tmin, float &tmax,
                   vtkm::Int8 &scattered,
                   vtkm::Int8 &rayHit,
                   vec3 &pt1,
@@ -290,22 +295,27 @@ public:
                   ColTypeArrayType texType
                   ) const
   {
-    auto matId = matType.Get(matIdx);
-    auto texId = texType.Get(texIdx);
     if (scattered){
       float y0 = pt1[1];
       float y1 = pt2[1];
       float z0 = pt1[2];
       float z1 = pt2[2];
       float k = pt1[0];
-      rayHit |= hit(ray_io, hrec,
-                         y0,y1,z0,z1,k,matId,texId);
+      hit_record  temp_rec;
+      auto h =  hit(ray_io, temp_rec, tmin, tmax,
+                    y0,y1,z0,z1,k,matIdx,texIdx);
+      if (h){
+
+        tmax = temp_rec.t;
+        hrec = temp_rec;
+      }
+      rayHit |= h;
     }
   }
 
   int canvasSize;
   int depth;
-  float tmin, tmax;
+
   bool flip;
 };
 
@@ -316,19 +326,15 @@ public:
   SphereIntersecttWorklet(
            int cs,
            int d,
-      bool _f = false,
-      float _tmin = 0.001,
-      float _tmax = std::numeric_limits<float>::max()
+      bool _f = false
       )
     :canvasSize(cs)
     ,depth(d)
-    ,tmin(_tmin)
-    ,tmax(_tmax)
     , flip(_f)
   {
   }
   VTKM_EXEC
-  bool hit(const ray& r,  hit_record& rec,
+  bool hit(const ray& r,  hit_record& rec, float& tmin, float &tmax,
            vec3 center, float radius,
            int matId, int texId) const {
       vec3 oc = r.origin() - center;
@@ -373,10 +379,12 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
+  FieldInOut<>,
+  FieldInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14);
 
   VTKM_EXEC
   template<
@@ -385,6 +393,7 @@ public:
   void operator()(vtkm::Id idx,
                   ray &ray_io,
                   hit_record &hrec,
+                  float &tmin, float &tmax,
                   vtkm::Int8 &scattered,
                   vtkm::Int8 &rayHit,
                   vec3 &pt1,
@@ -396,19 +405,24 @@ public:
                   ) const
   {
     if (scattered){
-      auto matId = matType.Get(matIdx);
-      auto texId = texType.Get(texIdx);
       float y0 = pt1[1];
       float y1 = pt2[1];
       float z0 = pt1[2];
       float z1 = pt2[2];
       float k = pt1[0];
-      rayHit |= hit(ray_io, hrec, pt1, pt2[0],matId,texId);
+      hit_record  temp_rec;
+      auto h =   hit(ray_io, temp_rec, tmin, tmax, pt1, pt2[0],matIdx,texIdx);
+      if (h){
+
+        tmax = temp_rec.t;
+        hrec = temp_rec;
+      }
+      rayHit |= h;
+
     }
   }
   int canvasSize;
   int depth;
-  float tmin, tmax;
   bool flip;
 };
 #endif

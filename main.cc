@@ -347,10 +347,10 @@ void cornell_box(hitable **scene, camera **cam, float aspect) {
 
   texType.Allocate(5);
   texType.GetPortalControl().Set(0, 0); //lambertian
-  texType.GetPortalControl().Set(1, 0); //lambertian
-  texType.GetPortalControl().Set(2, 0); //lambertian
-  texType.GetPortalControl().Set(3, 1); //light
-  texType.GetPortalControl().Set(4, 2); //dielectric
+  texType.GetPortalControl().Set(1, 1); //lambertian
+  texType.GetPortalControl().Set(2, 2); //lambertian
+  texType.GetPortalControl().Set(3, 3); //light
+  texType.GetPortalControl().Set(4, 0); //dielectric
 
   matIdx.Allocate(8);
   texIdx.Allocate(8);
@@ -424,9 +424,9 @@ int main() {
 
   constexpr int nx = 128;
   constexpr int ny = 128;
-  constexpr int ns = 100;
+  constexpr int ns = 1;
 
-  constexpr int depthcount = 1;
+  constexpr int depthcount = 2;
   auto canvasSize = nx*ny;
 
   //std::cout << "P3\n" << nx << " " << ny << "\n255\n";
@@ -462,6 +462,7 @@ int main() {
 
   vtkm::cont::ArrayHandle<hit_record> hrecs;
 
+  vtkm::cont::ArrayHandle<float> closest, tmin;
   using ArrayType = vtkm::cont::ArrayHandle<vec3>;
   ArrayType attenuation;
   ArrayType emitted;
@@ -474,7 +475,8 @@ int main() {
   srecs.Allocate(rays.GetNumberOfValues());
   ArrayType sumtotl;
   sumtotl.Allocate(rays.GetNumberOfValues());
-
+  closest.Allocate(rays.GetNumberOfValues());
+  tmin.Allocate(rays.GetNumberOfValues());
   for (int s =0; s<ns; s++){
     UVGen uvgen(nx, ny, s);
     vtkm::worklet::AutoDispatcherMapField<UVGen>(
@@ -499,102 +501,137 @@ int main() {
 
 
     for (int depth=0; depth<depthcount; depth++){
+      MyAlgos::Copy<float, float, StorageTag>(std::numeric_limits<float>::max(), closest);
+      MyAlgos::Copy<float, float, StorageTag>(0.001, tmin);
 //      float tmin = 0.001;
 //      float tmax = std::numeric_limits<float>::max();
-//      RayShade rs(world, canvasSize, depth);
+      RayShade rs(world, canvasSize, depth);
 //      vtkm::worklet::AutoDispatcherMapField<RayShade>(rs)
 //            .Invoke(rays, hrecs, scattered, tex,  attenuation, emitted);
 
       std::fstream tmp;
       tmp.open("wtf.pnm", std::fstream::out);
       tmp << "P3\n" << nx << " " << ny << "\n255\n";
-      XYRectWorklet xy(canvasSize, depth, true);
-      XZRectWorklet xz(canvasSize, depth, true);
-      YZRectWorklet yz(canvasSize, depth, true);
+
       SphereIntersecttWorklet sphereIntersect(canvasSize, depth, true);
       MyAlgos::Copy<vtkm::Int8, vtkm::Int8, StorageTag>(0, hitArray);
+      LambertianWorklet lmbWorklet( canvasSize, depth);
+      DiffuseLightWorklet dlWorklet(canvasSize ,depth);
+      DielectricWorklet deWorklet( canvasSize ,depth, 1.5, rays.GetNumberOfValues());
+      PDFCosineWorklet pdfWorklet(canvasSize, depth, &hlist, rays.GetNumberOfValues());
 
       for (int i=0; i<rays.GetNumberOfValues(); i++){
+
         auto r_in = rays.GetPortalConstControl().Get(i);
         auto hrec = hrecs.GetPortalConstControl().Get(i);
         auto sctr = scattered.GetPortalConstControl().Get(i);
         auto hit = hitArray.GetPortalControl().Get(i);
+#if 0
+        rs.operator()(i, r_in, hrec, sctr, tex.GetPortalControl(), attenuation.GetPortalControl(), emitted.GetPortalControl());
+        hrecs.GetPortalControl().Set(i, hrec);
+        scattered.GetPortalControl().Set(i,sctr);
 
-
+#else
+        auto _tmin = tmin.GetPortalControl().Get(i);
+        auto _tmax = closest.GetPortalControl().Get(i);
 
         auto pt1 = pts.GetPortalConstControl().Get(12);
         auto pt2 = pts.GetPortalConstControl().Get(13);
         auto mId = matIdx.GetPortalConstControl().Get(6);
         auto tId = texIdx.GetPortalConstControl().Get(6);
-        sphereIntersect.operator ()(i, r_in, hrec, sctr,hit, pt1, pt2, mId, tId,
+        sphereIntersect.operator ()(i, r_in, hrec,  _tmin, _tmax,sctr,hit, pt1, pt2, mId, tId,
                                     matType.GetPortalControl(),
                                     texType.GetPortalControl());
+
         pt1 = pts.GetPortalConstControl().Get(10);
         pt2 = pts.GetPortalConstControl().Get(11);
         mId = matIdx.GetPortalConstControl().Get(5);
         tId = texIdx.GetPortalConstControl().Get(5);
-        xy.operator ()(i, r_in, hrec,sctr, hit, pt1, pt2, mId, tId,
+        XYRectWorklet xy(canvasSize, depth, true);
+        xy.operator ()(i, r_in, hrec, _tmin, _tmax, sctr,hit, pt1, pt2, mId, tId,
             matType.GetPortalConstControl(),
             texType.GetPortalConstControl());
 
-        for (int j=0; j<3; j++){
-          auto pt1 = pts.GetPortalConstControl().Get(j*2);
-          auto pt2 = pts.GetPortalConstControl().Get(j*2+1);
-          auto mId = matIdx.GetPortalConstControl().Get(j);
-          auto tId = texIdx.GetPortalConstControl().Get(j);
+        pt1 = pts.GetPortalConstControl().Get(0);
+        pt2 = pts.GetPortalConstControl().Get(1);
+        mId = matIdx.GetPortalConstControl().Get(0);
+        tId = texIdx.GetPortalConstControl().Get(0);
+        YZRectWorklet yz(canvasSize, depth, true);
+        yz.operator()(i, r_in, hrec, _tmin, _tmax, sctr, hit, pt1, pt2, mId, tId,
+            matType.GetPortalConstControl(),
+            texType.GetPortalConstControl());
+        pt1 = pts.GetPortalConstControl().Get(2);
+        pt2 = pts.GetPortalConstControl().Get(3);
+        mId = matIdx.GetPortalConstControl().Get(1);
+        tId = texIdx.GetPortalConstControl().Get(1);
+        YZRectWorklet yz2(canvasSize, depth, false);
 
-          yz.operator()(i, r_in, hrec,sctr, hit, pt1, pt2, mId, tId,
-              matType.GetPortalConstControl(),
-              texType.GetPortalConstControl());
+        yz2.operator()(i, r_in, hrec, _tmin, _tmax, sctr, hit, pt1, pt2, mId, tId,
+            matType.GetPortalConstControl(),
+            texType.GetPortalConstControl());
 
-        }
-        for (int j=3; j<5; j++){
-          auto pt1 = pts.GetPortalConstControl().Get(j*2);
-          auto pt2 = pts.GetPortalConstControl().Get(j*2+1);
-          auto mId = matIdx.GetPortalConstControl().Get(j);
-          auto tId = texIdx.GetPortalConstControl().Get(j);
+        pt1 = pts.GetPortalConstControl().Get(4);
+        pt2 = pts.GetPortalConstControl().Get(5);
+        mId = matIdx.GetPortalConstControl().Get(2);
+        tId = texIdx.GetPortalConstControl().Get(2);
+        XZRectWorklet xz(canvasSize, depth, true);
+        xz.operator()(i, r_in, hrec, _tmin, _tmax, sctr, hit, pt1,pt2, mId, tId,
+            matType.GetPortalConstControl(),
+            texType.GetPortalConstControl());
+        pt1 = pts.GetPortalConstControl().Get(6);
+        pt2 = pts.GetPortalConstControl().Get(7);
+        mId = matIdx.GetPortalConstControl().Get(3);
+        tId = texIdx.GetPortalConstControl().Get(3);
+        xz.operator()(i, r_in, hrec, _tmin, _tmax,sctr, hit, pt1,pt2, mId, tId,
+            matType.GetPortalConstControl(),
+            texType.GetPortalConstControl());
+        pt1 = pts.GetPortalConstControl().Get(8);
+        pt2 = pts.GetPortalConstControl().Get(9);
+        mId = matIdx.GetPortalConstControl().Get(4);
+        tId = texIdx.GetPortalConstControl().Get(4);
+        XZRectWorklet xz2(canvasSize, depth, false);
+        xz2.operator()(i, r_in, hrec, _tmin, _tmax,sctr, hit, pt1,pt2, mId, tId,
+            matType.GetPortalConstControl(),
+            texType.GetPortalConstControl());
 
-          xz.operator()(i, r_in, hrec,sctr, hit, pt1,pt2, mId, tId,
-              matType.GetPortalConstControl(),
-              texType.GetPortalConstControl());
-
-        }
         if (!(sctr && hit)){
           sctr = false;
           attenuation.GetPortalControl().Set(i + canvasSize * depth, vec3(1.0));
           emitted.GetPortalControl().Set(i + canvasSize * depth, vec3(0.0f));
         }
 
-        if (sctr){
-          tmp << "255 255 255" << std::endl;
-        }
-        else
-          tmp << "0 0 0 " << std::endl;
+#endif
+
+        auto srec = srecs.GetPortalControl().Get(i);
+        auto fin = finished.GetPortalControl().Get(i);
+        lmbWorklet.operator()(i, r_in, hrec, srec, fin, sctr, tex.GetPortalControl(), matType.GetPortalControl(), emitted.GetPortalControl());
+        dlWorklet.operator()(i, r_in, hrec, srec, fin, sctr, tex.GetPortalControl(), matType.GetPortalControl(), emitted.GetPortalControl());
+        deWorklet.operator()(i, r_in, hrec, srec, fin, sctr, tex.GetPortalControl(), matType.GetPortalControl(), emitted.GetPortalControl());
+        pdfWorklet.operator()(i, r_in, hrec, srec, fin, sctr, r_in, attenuation.GetPortalControl());
         hrecs.GetPortalControl().Set(i, hrec);
+        srecs.GetPortalControl().Set(i, srec);
+        finished.GetPortalControl().Set(i, fin);
         scattered.GetPortalControl().Set(i,sctr);
+        rays.GetPortalControl().Set(i, r_in);
+        vec3 wtf = emitted.GetPortalControl().Get(i);
+        tmp << wtf[0] << " " << wtf[1] << " " << wtf[2] << std::endl;
       }
       tmp.close();
-      LambertianWorklet lmbWorklet( canvasSize, depth);
-      DiffuseLightWorklet dlWorklet(canvasSize ,depth);
-      DielectricWorklet deWorklet( canvasSize ,depth, 1.5, rays.GetNumberOfValues());
-      PDFCosineWorklet pdfWorklet(canvasSize, depth, &hlist, rays.GetNumberOfValues());
-//      vtkm::worklet::AutoDispatcherMapField<XYRectWorklet>(xy)
-//            .Invoke(rays, hrecs, scattered, tex,  attenuation, emitted);
 
-      vtkm::worklet::AutoDispatcherMapField<LambertianWorklet>(lmbWorklet)
-          .Invoke(rays, hrecs, srecs, finished, scattered,
-                  tex, matType, emitted);
+//      vtkm::worklet::AutoDispatcherMapField<LambertianWorklet>(lmbWorklet)
+//          .Invoke(rays, hrecs, srecs, finished, scattered,
+//                  tex, matType, emitted);
 
-      vtkm::worklet::AutoDispatcherMapField<DiffuseLightWorklet>(dlWorklet)
-          .Invoke(rays, hrecs, srecs, finished, scattered,
-                  tex, matType, emitted);
+//      vtkm::worklet::AutoDispatcherMapField<DiffuseLightWorklet>(dlWorklet)
+//          .Invoke(rays, hrecs, srecs, finished, scattered,
+//                  tex, matType, emitted);
 
-      vtkm::worklet::AutoDispatcherMapField<DielectricWorklet>(deWorklet)
-            .Invoke(rays, hrecs, srecs, finished, scattered,
-                    tex, matType, emitted);
+//      vtkm::worklet::AutoDispatcherMapField<DielectricWorklet>(deWorklet)
+//            .Invoke(rays, hrecs, srecs, finished, scattered,
+//                    tex, matType, emitted);
 
-      vtkm::worklet::AutoDispatcherMapField<PDFCosineWorklet>(pdfWorklet)
-            .Invoke(rays, hrecs, srecs, finished, scattered, rays, attenuation);
+//      vtkm::worklet::AutoDispatcherMapField<PDFCosineWorklet>(pdfWorklet)
+//            .Invoke(rays, hrecs, srecs, finished, scattered, rays, attenuation);
     }
 
     using CountType = vtkm::cont::ArrayHandleCounting<vtkm::Id>;
@@ -609,7 +646,7 @@ int main() {
          std::make_tuple(0, canvasSize), zero,
          std::make_tuple(0, canvasSize), sumtotl, vtkm::Sum());
 
-
+     std::cout << vtkm::cont::Algorithm::Reduce(emitted, vec3(0.0)) << std::endl;
 
     for (int depth = depthcount-2; depth >=0; depth--){
       MyAlgos::SliceTransform<

@@ -88,7 +88,8 @@ public:
           mixture_pdf p(&plight, &newPdf);
           r_out = ray(hrec.p, p.generate(r1,r2,r3), r_in.time());
           float pdf_val = p.value(r_out.direction());
-          atten = srec.attenuation * scattering_pdf(r_in, hrec, r_out)/pdf_val;
+          auto sctr = scattering_pdf(r_in, hrec, r_out)/pdf_val;
+          atten = srec.attenuation * sctr;
           //auto ret = scatter(r, srec, hrec, light_shape, mat);
           //return std::make_tuple(2, srec.attenuation*std::get<0>(ret), emitted, std::get<1>(ret));
 #endif
