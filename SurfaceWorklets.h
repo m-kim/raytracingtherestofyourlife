@@ -31,26 +31,24 @@ public:
           int texId,
           vtkm::Int8 flip) const
   {
-      float t = (k-r.origin()[2]) / r.direction()[2];
-      if (t < tmin || t > tmax){
-          return false;
-      }
-      float x = r.origin()[0] + t*r.direction()[0];
-      float y = r.origin()[1] + t*r.direction()[1];
-      if (x < x0 || x > x1 || y < y0 || y > y1){
+    float t = (k-r.origin()[2]) / r.direction()[2];
+    if (t < tmin || t > tmax)
         return false;
-      }
-      rec.u = (x-x0)/(x1-x0);
-      rec.v = (y-y0)/(y1-y0);
-      rec.t = t;
-      rec.matId = matId;
-      rec.texId = texId;
+    float x = r.origin()[0] + t*r.direction()[0];
+    float y = r.origin()[1] + t*r.direction()[1];
+    if (x < x0 || x > x1 || y < y0 || y > y1)
+        return false;
+    rec.u = (x-x0)/(x1-x0);
+    rec.v = (y-y0)/(y1-y0);
+    rec.t = t;
+    rec.matId = matId;
+    rec.texId = texId;
 
-      rec.p = r.point_at_parameter(t);
-      rec.normal = vec3(0, 0, 1);
-      if (flip)
-        rec.normal = -rec.normal;
-      return true;
+    rec.p = r.point_at_parameter(t);
+    rec.normal = vec3(0, 0, 1);
+    if (flip)
+      rec.normal = -rec.normal;
+    return true;
   }
 
   using ControlSignature = void(FieldInOut<>,
@@ -90,12 +88,12 @@ public:
       for (int i=0; i<matIdx.GetNumberOfValues(); i++){
         float x0 = pt1.Get(i)[0];
         float x1 = pt2.Get(i)[0];
-        float z0 = pt1.Get(i)[2];
-        float z1 = pt2.Get(i)[2];
-        float k = pt1.Get(i)[1];
+        float y0 = pt1.Get(i)[1];
+        float y1 = pt2.Get(i)[1];
+        float k = pt1.Get(i)[2];
         hit_record  temp_rec;
         auto h =  hit(ray_io, temp_rec, tmin, tmax,
-                      x0,x1,z0,z1,k,matIdx.Get(i),texIdx.Get(i),flipped.Get(i));
+                      x0,x1,y0,y1,k,matIdx.Get(i),texIdx.Get(i),flipped.Get(i));
         if (h){
 
           tmax = temp_rec.t;

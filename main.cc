@@ -349,10 +349,10 @@ void cornell_box(hitable **scene, camera **cam, float aspect) {
   matType.GetPortalControl().Set(4, 2); //dielectric
 
   texType.Allocate(5);
-  texType.GetPortalControl().Set(0, 0); //lambertian
-  texType.GetPortalControl().Set(1, 1); //lambertian
-  texType.GetPortalControl().Set(2, 2); //lambertian
-  texType.GetPortalControl().Set(3, 3); //light
+  texType.GetPortalControl().Set(0, 0); //red
+  texType.GetPortalControl().Set(1, 1); //white
+  texType.GetPortalControl().Set(2, 2); //green
+  texType.GetPortalControl().Set(3, 3); //super bright
   texType.GetPortalControl().Set(4, 0); //dielectric
 
 
@@ -674,15 +674,15 @@ int main() {
       }
       vtkm::worklet::AutoDispatcherMapField<LambertianWorklet>(lmbWorklet)
           .Invoke(rays, hrecs, srecs, finished, scattered,
-                  tex, matType, emitted);
+                  tex, matType, texType, emitted);
 
       vtkm::worklet::AutoDispatcherMapField<DiffuseLightWorklet>(dlWorklet)
           .Invoke(rays, hrecs, srecs, finished, scattered,
-                  tex, matType, emitted);
+                  tex, matType, texType, emitted);
 
       vtkm::worklet::AutoDispatcherMapField<DielectricWorklet>(deWorklet)
             .Invoke(rays, hrecs, srecs, finished, scattered,
-                    tex, matType, emitted);
+                    tex, matType, texType, emitted);
 
       vtkm::worklet::AutoDispatcherMapField<PDFCosineWorklet>(pdfWorklet)
             .Invoke(rays, hrecs, srecs, finished, scattered, rays, attenuation);
