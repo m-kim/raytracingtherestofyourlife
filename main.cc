@@ -509,10 +509,6 @@ int main() {
 //      vtkm::worklet::AutoDispatcherMapField<RayShade>(rs)
 //            .Invoke(rays, hrecs, scattered, tex,  attenuation, emitted);
 
-      std::fstream tmp;
-      tmp.open("wtf.pnm", std::fstream::out);
-      tmp << "P3\n" << nx << " " << ny << "\n255\n";
-
       SphereIntersecttWorklet sphereIntersect(canvasSize, depth, true);
       MyAlgos::Copy<vtkm::Int8, vtkm::Int8, StorageTag>(0, hitArray);
       LambertianWorklet lmbWorklet( canvasSize, depth);
@@ -602,36 +598,24 @@ int main() {
 
 #endif
 
-        auto srec = srecs.GetPortalControl().Get(i);
-        auto fin = finished.GetPortalControl().Get(i);
-        lmbWorklet.operator()(i, r_in, hrec, srec, fin, sctr, tex.GetPortalControl(), matType.GetPortalControl(), emitted.GetPortalControl());
-        dlWorklet.operator()(i, r_in, hrec, srec, fin, sctr, tex.GetPortalControl(), matType.GetPortalControl(), emitted.GetPortalControl());
-        deWorklet.operator()(i, r_in, hrec, srec, fin, sctr, tex.GetPortalControl(), matType.GetPortalControl(), emitted.GetPortalControl());
-        pdfWorklet.operator()(i, r_in, hrec, srec, fin, sctr, r_in, attenuation.GetPortalControl());
         hrecs.GetPortalControl().Set(i, hrec);
-        srecs.GetPortalControl().Set(i, srec);
-        finished.GetPortalControl().Set(i, fin);
         scattered.GetPortalControl().Set(i,sctr);
-        rays.GetPortalControl().Set(i, r_in);
-        vec3 wtf = emitted.GetPortalControl().Get(i);
-        tmp << wtf[0] << " " << wtf[1] << " " << wtf[2] << std::endl;
       }
-      tmp.close();
 
-//      vtkm::worklet::AutoDispatcherMapField<LambertianWorklet>(lmbWorklet)
-//          .Invoke(rays, hrecs, srecs, finished, scattered,
-//                  tex, matType, emitted);
+      vtkm::worklet::AutoDispatcherMapField<LambertianWorklet>(lmbWorklet)
+          .Invoke(rays, hrecs, srecs, finished, scattered,
+                  tex, matType, emitted);
 
-//      vtkm::worklet::AutoDispatcherMapField<DiffuseLightWorklet>(dlWorklet)
-//          .Invoke(rays, hrecs, srecs, finished, scattered,
-//                  tex, matType, emitted);
+      vtkm::worklet::AutoDispatcherMapField<DiffuseLightWorklet>(dlWorklet)
+          .Invoke(rays, hrecs, srecs, finished, scattered,
+                  tex, matType, emitted);
 
-//      vtkm::worklet::AutoDispatcherMapField<DielectricWorklet>(deWorklet)
-//            .Invoke(rays, hrecs, srecs, finished, scattered,
-//                    tex, matType, emitted);
+      vtkm::worklet::AutoDispatcherMapField<DielectricWorklet>(deWorklet)
+            .Invoke(rays, hrecs, srecs, finished, scattered,
+                    tex, matType, emitted);
 
-//      vtkm::worklet::AutoDispatcherMapField<PDFCosineWorklet>(pdfWorklet)
-//            .Invoke(rays, hrecs, srecs, finished, scattered, rays, attenuation);
+      vtkm::worklet::AutoDispatcherMapField<PDFCosineWorklet>(pdfWorklet)
+            .Invoke(rays, hrecs, srecs, finished, scattered, rays, attenuation);
     }
 
     using CountType = vtkm::cont::ArrayHandleCounting<vtkm::Id>;
