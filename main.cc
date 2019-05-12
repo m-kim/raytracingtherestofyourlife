@@ -335,7 +335,115 @@ vtkm::cont::ArrayHandle<vec3> norms;
 
 std::vector<vtkm::cont::ArrayHandle<vec3>> ptsArray;
 std::vector<int> cellTypeArray;
+void vtkCornellBox()
+{
+  tex.Allocate(4);
+  tex.GetPortalControl().Set(0, vec3(0.65, 0.05, 0.05));
+  tex.GetPortalControl().Set(1, vec3(0.73, 0.73, 0.73));
+  tex.GetPortalControl().Set(2, vec3(0.12, 0.45, 0.15));
+  tex.GetPortalControl().Set(3, vec3(15, 15, 15));
 
+  matType.Allocate(5);
+  matType.GetPortalControl().Set(0, 0); //lambertian
+  matType.GetPortalControl().Set(1, 0); //lambertian
+  matType.GetPortalControl().Set(2, 0); //lambertian
+  matType.GetPortalControl().Set(3, 1); //light
+  matType.GetPortalControl().Set(4, 2); //dielectric
+
+  texType.Allocate(5);
+  texType.GetPortalControl().Set(0, 0); //red
+  texType.GetPortalControl().Set(1, 1); //white
+  texType.GetPortalControl().Set(2, 2); //green
+  texType.GetPortalControl().Set(3, 3); //super bright
+  texType.GetPortalControl().Set(4, 0); //dielectric
+
+
+  cellTypeArray.resize(5);
+  norms.Allocate(16);
+
+    flipped[0].Allocate(2);
+    matIdx[0].Allocate(2);
+    texIdx[0].Allocate(2);
+    pts1[0].Allocate(2);
+    pts2[0].Allocate(2);
+    cellTypeArray[0] = 0;
+    matIdx[0].GetPortalControl().Set(0, 2);
+    texIdx[0].GetPortalControl().Set(0, 2);
+    pts1[0].GetPortalControl().Set(0, vec3(555,0,0));
+    pts2[0].GetPortalControl().Set(0, vec3(555,555,555));
+    flipped[0].GetPortalControl().Set(0, 1);
+
+
+    matIdx[0].GetPortalControl().Set(1, 0);
+    texIdx[0].GetPortalControl().Set(1, 0);
+    pts1[0].GetPortalControl().Set(1, vec3(0,0,0));
+    pts2[0].GetPortalControl().Set(1, vec3(0,555,555));
+    flipped[0].GetPortalControl().Set(1, 0);
+
+    flipped[1].Allocate(3);
+    matIdx[1].Allocate(3);
+    texIdx[1].Allocate(3);
+    pts1[1].Allocate(3);
+    pts2[1].Allocate(3);
+    cellTypeArray[1] =  1;
+    matIdx[1].GetPortalControl().Set(0, 3);
+    texIdx[1].GetPortalControl().Set(0, 3);
+    pts1[1].GetPortalControl().Set(0, vec3(213,554,227));
+    pts2[1].GetPortalControl().Set(0, vec3(343,554,332));
+    flipped[1].GetPortalControl().Set(0, 1);
+
+    matIdx[1].GetPortalControl().Set(1, 1);
+    texIdx[1].GetPortalControl().Set(1, 1);
+    pts1[1].GetPortalControl().Set(1, vec3(0,555,0));
+    pts2[1].GetPortalControl().Set(1, vec3(555,555,555));
+    flipped[1].GetPortalControl().Set(1, 1);
+
+    matIdx[1].GetPortalControl().Set(2, 1);
+    texIdx[1].GetPortalControl().Set(2, 1);
+    pts1[1].GetPortalControl().Set(2, vec3(0,0,0));
+    pts2[1].GetPortalControl().Set(2, vec3(555,0,555));
+    flipped[1].GetPortalControl().Set(2, 0);
+
+    flipped[2].Allocate(1);
+    matIdx[2].Allocate(1);
+    texIdx[2].Allocate(1);
+    pts1[2].Allocate(1);
+    pts2[2].Allocate(1);
+    cellTypeArray[2] =  2;
+    matIdx[2].GetPortalControl().Set(0, 1);
+    texIdx[2].GetPortalControl().Set(0, 1);
+    pts1[2].GetPortalControl().Set(0, vec3(0,0,555));
+    pts2[2].GetPortalControl().Set(0, vec3(555,555,555));
+    flipped[2].GetPortalControl().Set(0, 1);
+
+
+    flipped[3].Allocate(1);
+    matIdx[3].Allocate(1);
+    texIdx[3].Allocate(1);
+    pts1[3].Allocate(1);
+    pts2[3].Allocate(1);
+    cellTypeArray[3] =  3;
+    matIdx[3].GetPortalControl().Set(0, 4);
+    texIdx[3].GetPortalControl().Set(0, 0);
+    pts1[3].GetPortalControl().Set(0, vec3(190,90,190));
+    pts2[3].GetPortalControl().Set(0, vec3(90,0,0));
+    flipped[3].GetPortalControl().Set(0, 0);
+
+    flipped[4].Allocate(1);
+    matIdx[4].Allocate(1);
+    texIdx[4].Allocate(1);
+    pts1[4].Allocate(1);
+    pts2[4].Allocate(1);
+    cellTypeArray[4] =  4;
+    matIdx[4].GetPortalControl().Set(0, 1);
+    texIdx[4].GetPortalControl().Set(0, 1);
+    flipped[4].GetPortalControl().Set(0, 0);
+//    list[i++] = new translate(new rotate_y(
+//                    new box(vec3(0, 0, 0), vec3(165, 330, 165), 1,1),  15), vec3(265,0,295));
+//    *scene = new hitable_list(list,i);
+
+
+}
 void cornell_box(hitable **scene, camera **cam, float aspect) {
   tex.Allocate(4);
   tex.GetPortalControl().Set(0, vec3(0.65, 0.05, 0.05));
@@ -620,8 +728,6 @@ void intersect(vtkm::cont::ArrayHandle<ray> &rays,
         scattered.GetPortalControl().Set(i,sctr);
         //std::cout << sctr *255 <<  " " << sctr * 255 << " " << sctr * 255 << std::endl;
       }
-
-
 }
 
 
@@ -631,23 +737,27 @@ int main() {
 
   constexpr int nx = 128;
   constexpr int ny = 128;
-  constexpr int ns = 1;
+  constexpr int ns = 100;
 
-  constexpr int depthcount = 4;
+  constexpr int depthcount = 50;
   auto canvasSize = nx*ny;
 
   //std::cout << "P3\n" << nx << " " << ny << "\n255\n";
+#ifdef USE_HITABLE
   hitable *world;
   camera *cam;
   constexpr float aspect = float(ny) / float(nx);
   cornell_box(&world, &cam, aspect);
+#endif
   hitable *light_shape = new xz_rect(213, 343, 227, 332, 554, 0,0);
   hitable *glass_sphere = new sphere(vec3(190, 90, 190), 90, 0,0);
   hitable *a[2];
   a[0] = light_shape;
   a[1] = glass_sphere;
   hitable_list hlist(a,2);
-
+#ifndef USE_HITABLE
+  vtkCornellBox();
+#endif
   vtkm::cont::ArrayHandle<ray> rays;
   rays.Allocate(nx*ny);
 
@@ -711,8 +821,8 @@ int main() {
       MyAlgos::Copy<float, float, StorageTag>(0.001, tmin);
 //      float tmin = 0.001;
 //      float tmax = std::numeric_limits<float>::max();
+#ifdef USE_HITABLE
       RayShade rs(world, canvasSize, depth);
-#if 0
 //      vtkm::worklet::AutoDispatcherMapField<RayShade>(rs)
 //            .Invoke(rays, hrecs, scattered, tex,  attenuation, emitted);
 
@@ -762,7 +872,7 @@ int main() {
          std::make_tuple(0, canvasSize), zero,
          std::make_tuple(0, canvasSize), sumtotl, vtkm::Sum());
 
-     std::cout << vtkm::cont::Algorithm::Reduce(emitted, vec3(0.0)) << std::endl;
+     std::cout << s << " " << vtkm::cont::Algorithm::Reduce(emitted, vec3(0.0)) << std::endl;
 
     for (int depth = depthcount-2; depth >=0; depth--){
       MyAlgos::SliceTransform<
