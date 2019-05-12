@@ -196,7 +196,7 @@ public:
           randState[3] = vtkm::random::xorshift::getRand32(idx*4) + 4; //arbitrary random state based off number of rays being shot through
 
           vec3 em = emit(r_in, hrec, col.Get(texType.Get(hrec.texId)));
-          scattered = scatter(r_in, hrec, srec, col.Get(texType.Get(hrec.texId)), vtkm::random::xorshift::getRandF(randState));
+          scattered = scatter(r_in, hrec, srec, col.Get(texType.Get(hrec.texId)), drand48());//vtkm::random::xorshift::getRandF(randState));
           emitted.Set(canvasSize * depth + idx, em);
 
         }

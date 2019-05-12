@@ -330,7 +330,8 @@ vtkm::cont::ArrayHandle<vec3> tex;
 vtkm::cont::ArrayHandle<vtkm::Id> matIdx[5];
 vtkm::cont::ArrayHandle<vtkm::Id> texIdx[5];
 vtkm::cont::ArrayHandle<int> matType, texType, flipped[5];
-vtkm::cont::ArrayHandle<vec3> pts1[5], pts2[5];
+vtkm::cont::ArrayHandle<vec3> pts1[5], pts2[5], translateOffset[5];
+vtkm::cont::ArrayHandle<float> angleArray[5];
 vtkm::cont::ArrayHandle<vec3> norms;
 
 std::vector<vtkm::cont::ArrayHandle<vec3>> ptsArray;
@@ -361,17 +362,22 @@ void vtkCornellBox()
   cellTypeArray.resize(5);
   norms.Allocate(16);
 
-    flipped[0].Allocate(2);
-    matIdx[0].Allocate(2);
-    texIdx[0].Allocate(2);
-    pts1[0].Allocate(2);
-    pts2[0].Allocate(2);
+  //yz_rect
+  translateOffset[0].Allocate(4);
+  angleArray[0].Allocate(4);
+    flipped[0].Allocate(4);
+    matIdx[0].Allocate(4);
+    texIdx[0].Allocate(4);
+    pts1[0].Allocate(4);
+    pts2[0].Allocate(4);
     cellTypeArray[0] = 0;
     matIdx[0].GetPortalControl().Set(0, 2);
     texIdx[0].GetPortalControl().Set(0, 2);
     pts1[0].GetPortalControl().Set(0, vec3(555,0,0));
     pts2[0].GetPortalControl().Set(0, vec3(555,555,555));
     flipped[0].GetPortalControl().Set(0, 1);
+    translateOffset[0].GetPortalControl().Set(0, vec3(0.0f));
+    angleArray[0].GetPortalControl().Set(0, 0);
 
 
     matIdx[0].GetPortalControl().Set(1, 0);
@@ -379,7 +385,10 @@ void vtkCornellBox()
     pts1[0].GetPortalControl().Set(1, vec3(0,0,0));
     pts2[0].GetPortalControl().Set(1, vec3(0,555,555));
     flipped[0].GetPortalControl().Set(1, 0);
+    translateOffset[0].GetPortalControl().Set(1, vec3(0.0f));
+    angleArray[0].GetPortalControl().Set(1, 0);
 
+    //xz_rect
     flipped[1].Allocate(3);
     matIdx[1].Allocate(3);
     texIdx[1].Allocate(3);
@@ -404,19 +413,24 @@ void vtkCornellBox()
     pts2[1].GetPortalControl().Set(2, vec3(555,0,555));
     flipped[1].GetPortalControl().Set(2, 0);
 
-    flipped[2].Allocate(1);
-    matIdx[2].Allocate(1);
-    texIdx[2].Allocate(1);
-    pts1[2].Allocate(1);
-    pts2[2].Allocate(1);
+    //xy_rect
+    translateOffset[2].Allocate(3);
+    angleArray[2].Allocate(3);
+    flipped[2].Allocate(3);
+    matIdx[2].Allocate(3);
+    texIdx[2].Allocate(3);
+    pts1[2].Allocate(3);
+    pts2[2].Allocate(3);
     cellTypeArray[2] =  2;
     matIdx[2].GetPortalControl().Set(0, 1);
     texIdx[2].GetPortalControl().Set(0, 1);
     pts1[2].GetPortalControl().Set(0, vec3(0,0,555));
     pts2[2].GetPortalControl().Set(0, vec3(555,555,555));
+    translateOffset[2].GetPortalControl().Set(0, vec3(0,0,0));
+    angleArray[2].GetPortalControl().Set(0,0);
     flipped[2].GetPortalControl().Set(0, 1);
 
-
+    //sphere
     flipped[3].Allocate(1);
     matIdx[3].Allocate(1);
     texIdx[3].Allocate(1);
@@ -438,10 +452,58 @@ void vtkCornellBox()
     matIdx[4].GetPortalControl().Set(0, 1);
     texIdx[4].GetPortalControl().Set(0, 1);
     flipped[4].GetPortalControl().Set(0, 0);
+
+
 //    list[i++] = new translate(new rotate_y(
 //                    new box(vec3(0, 0, 0), vec3(165, 330, 165), 1,1),  15), vec3(265,0,295));
 //    *scene = new hitable_list(list,i);
+//    list[0] = new xy_rect(p0[0], p1[0], p0[1], p1[1], p1[2], matId, texId);
+//    list[1] = new flip_normals(new xy_rect(p0[0], p1[0], p0[1], p1[1], p0[2],  matId, texId));
+//    list[2] = new xz_rect(p0[0], p1[0], p0[2], p1[2], p1[1],  matId, texId);
+//    list[3] = new flip_normals(new xz_rect(p0[0], p1[0], p0[2], p1[2], p0[1],  matId, texId));
+//    list[4] = new yz_rect(p0[1], p1[1], p0[2], p1[2], p1[0],  matId, texId);
+//    list[5] = new flip_normals(new yz_rect(p0[1], p1[1], p0[2], p1[2], p0[0],  matId, texId));
 
+  //small box
+  //xy
+  vec3 p1(0,0,0);
+  vec3 p2(165, 330, 165);
+  vec3 offset(265,0,295);
+  int ct = 2;
+  translateOffset[ct].Allocate(3);
+  matIdx[ct].GetPortalControl().Set(1, 1);
+  texIdx[ct].GetPortalControl().Set(1, 1);
+  pts1[ct].GetPortalControl().Set(1, p1);
+  pts2[ct].GetPortalControl().Set(1, p2);
+  translateOffset[ct].GetPortalControl().Set(1, offset);
+  angleArray[ct].GetPortalControl().Set(1, 15);
+  flipped[ct].GetPortalControl().Set(1, 0);
+
+  matIdx[ct].GetPortalControl().Set(2, 1);
+  texIdx[ct].GetPortalControl().Set(2, 1);
+  pts1[ct].GetPortalControl().Set(2, p1);
+  pts2[ct].GetPortalControl().Set(2, p2);
+  translateOffset[ct].GetPortalControl().Set(2, offset);
+  angleArray[ct].GetPortalControl().Set(2, 15);
+  flipped[ct].GetPortalControl().Set(2, 1);
+
+  //yz
+  ct = 0;
+  matIdx[ct].GetPortalControl().Set(2, 1);
+  texIdx[ct].GetPortalControl().Set(2, 1);
+  pts1[ct].GetPortalControl().Set(2, p1);
+  pts2[ct].GetPortalControl().Set(2, p2);
+  translateOffset[ct].GetPortalControl().Set(2, offset);
+  angleArray[ct].GetPortalControl().Set(2, 15);
+  flipped[ct].GetPortalControl().Set(2, 0);
+
+  matIdx[ct].GetPortalControl().Set(3, 1);
+  texIdx[ct].GetPortalControl().Set(3, 1);
+  pts1[ct].GetPortalControl().Set(3, p1);
+  pts2[ct].GetPortalControl().Set(3, p2);
+  translateOffset[ct].GetPortalControl().Set(3, offset);
+  angleArray[ct].GetPortalControl().Set(3, 15);
+  flipped[ct].GetPortalControl().Set(3, 1);
 
 }
 void cornell_box(hitable **scene, camera **cam, float aspect) {
@@ -585,7 +647,7 @@ void intersect(vtkm::cont::ArrayHandle<ray> &rays,
           YZRectWorklet yz(canvasSize, depth);
             vtkm::worklet::AutoDispatcherMapField<YZRectWorklet>(yz)
                 .Invoke(rays, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
-                        matIdx[i], texIdx[i],flipped[i]);
+                        matIdx[i], texIdx[i],translateOffset[i], angleArray[i],flipped[i]);
         }
         else if (cellTypeArray[i] == 1){
           XZRectWorklet xz(canvasSize, depth);
@@ -600,7 +662,7 @@ void intersect(vtkm::cont::ArrayHandle<ray> &rays,
           XYRectWorklet xy(canvasSize, depth);
           vtkm::worklet::AutoDispatcherMapField<XYRectWorklet>(xy)
               .Invoke(rays, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
-                      matIdx[i], texIdx[i],flipped[i]);
+                      matIdx[i], texIdx[i],translateOffset[i], angleArray[i],flipped[i]);
 
         }
         else if (cellTypeArray[i] == 3){
@@ -635,16 +697,19 @@ void intersect(vtkm::cont::ArrayHandle<ray> &rays,
           vec3 pt1, pt2;
           int mId, tId;
           vtkm::Int8 h, fl;
-
+          vtkm::cont::ArrayHandle<float> angle;
+          vtkm::cont::ArrayHandle<vec3> to;
 
           fl = flipped[2].GetPortalControl().Get(0);
           pt1 = pts1[2].GetPortalConstControl().Get(0);
           pt2 = pts2[2].GetPortalConstControl().Get(0);
           mId = matIdx[2].GetPortalConstControl().Get(0);
           tId = texIdx[2].GetPortalConstControl().Get(0);
+          to = translateOffset[i];
+          angle = angleArray[i];
           XYRectWorklet xy(canvasSize, depth);
-          h = xy.hit(r_in, temp_rec, _tmin, _tmax,
-                  pt1[0], pt2[0], pt1[1], pt2[1], pt1[2], mId, tId, fl);
+//          h = xy.hit(r_in, temp_rec, _tmin, _tmax,
+//                  pt1[0], pt2[0], pt1[1], pt2[1], pt1[2], mId, tId, to, angle, fl);
           hit |= checkHit(h, temp_rec, hrec);
 
           fl = flipped[0].GetPortalControl().Get(0);
@@ -737,7 +802,7 @@ int main() {
 
   constexpr int nx = 128;
   constexpr int ny = 128;
-  constexpr int ns = 100;
+  constexpr int ns = 5;
 
   constexpr int depthcount = 50;
   auto canvasSize = nx*ny;
