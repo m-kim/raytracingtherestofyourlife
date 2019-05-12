@@ -20,12 +20,14 @@ ray rotateY(const ray &r, float angle){
 
 ray rotAndTrans(ray &ray_io, vec3 offset, float angle)
 {
-  auto rot_r = rotateY(ray_io, angle);
-  return ray(rot_r.origin() - offset, rot_r.direction(), rot_r.time());
+  ray tran(ray_io.origin() - offset, ray_io.direction(), ray_io.time());
+  return rotateY(tran, angle);
 }
 
 void applyRotAndTrans(hit_record &temp_rec, vec3 offset, float angle)
 {
+  temp_rec.p += offset;
+
   vec3 p = temp_rec.p;
   vec3 normal = temp_rec.normal;
   float radians = (M_PI / 180.) * angle;
@@ -39,7 +41,6 @@ void applyRotAndTrans(hit_record &temp_rec, vec3 offset, float angle)
   temp_rec.p = p;
   temp_rec.normal = normal;
 
-  temp_rec.p += offset;
 }
 class XYRectWorklet : public vtkm::worklet::WorkletMapField
 {
