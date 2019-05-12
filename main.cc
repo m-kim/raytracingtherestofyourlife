@@ -40,6 +40,8 @@
 #include "EmitWorklet.h"
 #include "ScatterWorklet.h"
 
+using ArrayType = vtkm::cont::ArrayHandle<vec3>;
+
 
 template <class IndexPortalType, class InputPortalType, class OutputPortalType>
 struct SliceCopyKernel
@@ -458,6 +460,170 @@ void cornell_box(hitable **scene, camera **cam, float aspect) {
                       vfov, aspect, aperture, dist_to_focus, 0.0, 1.0);
 }
 
+void intersect(vtkm::cont::ArrayHandle<ray> &rays,
+               vtkm::cont::ArrayHandle<hit_record> &hrecs,
+               vtkm::cont::ArrayHandle<float> &tmin,
+               vtkm::cont::ArrayHandle<float> &closest,
+               vtkm::cont::ArrayHandle<vtkm::Int8> &scattered,
+               vtkm::cont::ArrayHandle<vtkm::Int8> &hitArray,
+               ArrayType &emitted,
+               ArrayType &attenuation,
+               const int depth)
+{
+  vtkm::Id canvasSize = rays.GetNumberOfValues();
+#if 1
+      for (int i=0; i<cellTypeArray.size(); i++){
+        if (cellTypeArray[i] == 0){
+          YZRectWorklet yz(canvasSize, depth);
+            vtkm::worklet::AutoDispatcherMapField<YZRectWorklet>(yz)
+                .Invoke(rays, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
+                        matIdx[i], texIdx[i],flipped[i]);
+        }
+        else if (cellTypeArray[i] == 1){
+          XZRectWorklet xz(canvasSize, depth);
+          vtkm::worklet::AutoDispatcherMapField<XZRectWorklet>(xz)
+              .Invoke(rays, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
+                      matIdx[i], texIdx[i],flipped[i]);
+
+
+        }
+        else if (cellTypeArray[i] == 2){
+          //xy
+          XYRectWorklet xy(canvasSize, depth);
+          vtkm::worklet::AutoDispatcherMapField<XYRectWorklet>(xy)
+              .Invoke(rays, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
+                      matIdx[i], texIdx[i],flipped[i]);
+
+        }
+        else if (cellTypeArray[i] == 3){
+          SphereIntersecttWorklet sphereIntersect(canvasSize, depth);
+          vtkm::worklet::AutoDispatcherMapField<SphereIntersecttWorklet>(sphereIntersect)
+              .Invoke(rays, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
+                      matIdx[i], texIdx[i]);
+
+        }
+      }
+#else
+      for (int i=0; i<rays.GetNumberOfValues(); i++){
+        auto r_in = rays.GetPortalConstControl().Get(i);
+        auto sctr = scattered.GetPortalConstControl().Get(i);
+        auto hrec = hrecs.GetPortalConstControl().Get(i);
+
+        if(sctr){
+          auto hit = hitArray.GetPortalControl().Get(i);
+
+
+          auto _tmin = tmin.GetPortalControl().Get(i);
+          auto _tmax = closest.GetPortalControl().Get(i);
+          hit_record  temp_rec;
+          auto checkHit = [&](auto h, auto temp_rec, auto &hrec){
+            if (h){
+              _tmax = temp_rec.t;
+              hrec = temp_rec;
+            }
+            return h;
+          };
+
+          vec3 pt1, pt2;
+          int mId, tId;
+          vtkm::Int8 h, fl;
+
+
+          fl = flipped[2].GetPortalControl().Get(0);
+          pt1 = pts1[2].GetPortalConstControl().Get(0);
+          pt2 = pts2[2].GetPortalConstControl().Get(0);
+          mId = matIdx[2].GetPortalConstControl().Get(0);
+          tId = texIdx[2].GetPortalConstControl().Get(0);
+          XYRectWorklet xy(canvasSize, depth);
+          h = xy.hit(r_in, temp_rec, _tmin, _tmax,
+                  pt1[0], pt2[0], pt1[1], pt2[1], pt1[2], mId, tId, fl);
+          hit |= checkHit(h, temp_rec, hrec);
+
+          fl = flipped[0].GetPortalControl().Get(0);
+          pt1 = pts1[0].GetPortalConstControl().Get(0);
+          pt2 = pts2[0].GetPortalConstControl().Get(0);
+          mId = matIdx[0].GetPortalConstControl().Get(0);
+          tId = texIdx[0].GetPortalConstControl().Get(0);
+          YZRectWorklet yz(canvasSize, depth);
+          h = yz.hit( r_in, temp_rec, _tmin, _tmax,
+                  pt1[1], pt2[1], pt1[2], pt2[2], pt1[0], mId, tId,fl);
+          hit |= checkHit(h, temp_rec, hrec);
+
+          fl = flipped[0].GetPortalControl().Get(1);
+          pt1 = pts1[0].GetPortalConstControl().Get(1);
+          pt2 = pts2[0].GetPortalConstControl().Get(1);
+          mId = matIdx[0].GetPortalConstControl().Get(1);
+          tId = texIdx[0].GetPortalConstControl().Get(1);
+          h = yz.hit( r_in, temp_rec, _tmin, _tmax,
+                  pt1[1], pt2[1], pt1[2], pt2[2], pt1[0], mId, tId,fl);
+          hit |= checkHit(h, temp_rec, hrec);
+
+
+          fl = flipped[1].GetPortalControl().Get(0);
+          pt1 = pts1[1].GetPortalConstControl().Get(0);
+          pt2 = pts2[1].GetPortalConstControl().Get(0);
+          mId = matIdx[1].GetPortalConstControl().Get(0);
+          tId = texIdx[1].GetPortalConstControl().Get(0);
+          XZRectWorklet xz(canvasSize, depth);
+          h = xz.hit( r_in, temp_rec, _tmin, _tmax,
+                  pt1[0],pt2[0], pt1[2], pt2[2], pt1[1], mId, tId, fl);
+          hit |= checkHit(h, temp_rec, hrec);
+
+          fl = flipped[1].GetPortalControl().Get(1);
+          pt1 = pts1[1].GetPortalConstControl().Get(1);
+          pt2 = pts2[1].GetPortalConstControl().Get(1);
+          mId = matIdx[1].GetPortalConstControl().Get(1);
+          tId = texIdx[1].GetPortalConstControl().Get(1);
+          h = xz.hit(r_in, temp_rec, _tmin, _tmax,
+                     pt1[0],pt2[0],
+                     pt1[2], pt2[2], pt1[1], mId, tId,fl);
+
+          hit |= checkHit(h, temp_rec, hrec);
+
+          fl = flipped[1].GetPortalControl().Get(2);
+          pt1 = pts1[1].GetPortalConstControl().Get(2);
+          pt2 = pts2[1].GetPortalConstControl().Get(2);
+          mId = matIdx[1].GetPortalConstControl().Get(2);
+          tId = texIdx[1].GetPortalConstControl().Get(2);
+          h = xz.hit( r_in, temp_rec, _tmin, _tmax,
+                         pt1[0], pt2[0],
+                         pt1[2], pt2[2], pt1[1], mId, tId,fl);
+          hit |= checkHit(h, temp_rec, hrec);
+
+          pt1 = pts1[3].GetPortalConstControl().Get(0);
+          pt2 = pts2[3].GetPortalConstControl().Get(0);
+          mId = matIdx[3].GetPortalConstControl().Get(0);
+          tId = texIdx[3].GetPortalConstControl().Get(0);
+          SphereIntersecttWorklet sphereIntersect(canvasSize, depth);
+          h = sphereIntersect.hit( r_in, temp_rec,  _tmin, _tmax,
+                                          pt1, pt2[0], mId, tId);
+          hit |= checkHit(h, temp_rec, hrec);
+
+          hitArray.GetPortalControl().Set(i, hit);
+
+          tmin.GetPortalControl().Set(i, _tmin);
+          closest.GetPortalControl().Set(i, _tmax);
+        }
+        hrecs.GetPortalControl().Set(i, hrec);
+      }
+#endif
+
+      for (int i=0; i<rays.GetNumberOfValues(); i++){
+        auto sctr = scattered.GetPortalControl().Get(i);
+        auto hit = hitArray.GetPortalControl().Get(i);
+        if (!(sctr && hit)){
+          sctr = false;
+          attenuation.GetPortalControl().Set(i + canvasSize * depth, vec3(1.0));
+          emitted.GetPortalControl().Set(i + canvasSize * depth, vec3(0.0f));
+        }
+
+        scattered.GetPortalControl().Set(i,sctr);
+        //std::cout << sctr *255 <<  " " << sctr * 255 << " " << sctr * 255 << std::endl;
+      }
+
+
+}
+
 
 int main() {
   using MyAlgos = MyAlgorithms<vtkm::cont::DeviceAdapterAlgorithm<VTKM_DEFAULT_DEVICE_ADAPTER_TAG>, VTKM_DEFAULT_DEVICE_ADAPTER_TAG>;
@@ -467,7 +633,7 @@ int main() {
   constexpr int ny = 128;
   constexpr int ns = 1;
 
-  constexpr int depthcount = 2;
+  constexpr int depthcount = 4;
   auto canvasSize = nx*ny;
 
   //std::cout << "P3\n" << nx << " " << ny << "\n255\n";
@@ -504,7 +670,6 @@ int main() {
   vtkm::cont::ArrayHandle<hit_record> hrecs;
 
   vtkm::cont::ArrayHandle<float> closest, tmin;
-  using ArrayType = vtkm::cont::ArrayHandle<vec3>;
   ArrayType attenuation;
   ArrayType emitted;
   attenuation.Allocate(rays.GetNumberOfValues() * depthcount);
@@ -547,131 +712,28 @@ int main() {
 //      float tmin = 0.001;
 //      float tmax = std::numeric_limits<float>::max();
       RayShade rs(world, canvasSize, depth);
+#if 0
 //      vtkm::worklet::AutoDispatcherMapField<RayShade>(rs)
 //            .Invoke(rays, hrecs, scattered, tex,  attenuation, emitted);
 
+      for (int i=0; i<rays.GetNumberOfValues(); i++){
+        auto r_in = rays.GetPortalConstControl().Get(i);
+        auto sctr = scattered.GetPortalConstControl().Get(i);
+        auto hrec = hrecs.GetPortalConstControl().Get(i);
+        rs.operator()(i, r_in, hrec, sctr, tex.GetPortalControl(), attenuation.GetPortalControl(), emitted.GetPortalControl());
+        hrecs.GetPortalControl().Set(i, hrec);
+        scattered.GetPortalControl().Set(i,sctr);
+      }
+#else
+      intersect(rays, hrecs, tmin, closest, scattered, hitArray,
+                emitted, attenuation, depth);
+#endif
       MyAlgos::Copy<vtkm::Int8, vtkm::Int8, StorageTag>(0, hitArray);
       LambertianWorklet lmbWorklet( canvasSize, depth);
       DiffuseLightWorklet dlWorklet(canvasSize ,depth);
       DielectricWorklet deWorklet( canvasSize ,depth, 1.5, rays.GetNumberOfValues());
       PDFCosineWorklet pdfWorklet(canvasSize, depth, &hlist, rays.GetNumberOfValues());
 
-      for (int i=0; i<cellTypeArray.size(); i++){
-        if (cellTypeArray[i] == 0){
-          YZRectWorklet yz(canvasSize, depth);
-            vtkm::worklet::AutoDispatcherMapField<YZRectWorklet>(yz)
-                .Invoke(rays, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
-                        matIdx[i], texIdx[i],flipped[i]);
-        }
-        else if (cellTypeArray[i] == 1){
-          XZRectWorklet xz(canvasSize, depth);
-          vtkm::worklet::AutoDispatcherMapField<XZRectWorklet>(xz)
-              .Invoke(rays, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
-                      matIdx[i], texIdx[i],flipped[i]);
-
-
-        }
-        else if (cellTypeArray[i] == 2){
-          //xy
-          XYRectWorklet xy(canvasSize, depth);
-          vtkm::worklet::AutoDispatcherMapField<XYRectWorklet>(xy)
-              .Invoke(rays, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
-                      matIdx[i], texIdx[i],flipped[i]);
-
-        }
-        else if (cellTypeArray[i] == 3){
-          SphereIntersecttWorklet sphereIntersect(canvasSize, depth);
-          vtkm::worklet::AutoDispatcherMapField<SphereIntersecttWorklet>(sphereIntersect)
-              .Invoke(rays, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
-                      matIdx[i], texIdx[i]);
-
-        }
-      }
-#if 0
-      for (int i=0; i<rays.GetNumberOfValues(); i++){
-
-        auto r_in = rays.GetPortalConstControl().Get(i);
-        auto hrec = hrecs.GetPortalConstControl().Get(i);
-        auto sctr = scattered.GetPortalConstControl().Get(i);
-        auto hit = hitArray.GetPortalControl().Get(i);
-
-//        rs.operator()(i, r_in, hrec, sctr, tex.GetPortalControl(), attenuation.GetPortalControl(), emitted.GetPortalControl());
-//        hrecs.GetPortalControl().Set(i, hrec);
-//        scattered.GetPortalControl().Set(i,sctr);
-
-        auto _tmin = tmin.GetPortalControl().Get(i);
-        auto _tmax = closest.GetPortalControl().Get(i);
-
-        auto pt1 = pts.GetPortalConstControl().Get(12);
-        auto pt2 = pts.GetPortalConstControl().Get(13);
-        auto mId = matIdx.GetPortalConstControl().Get(6);
-        auto tId = texIdx.GetPortalConstControl().Get(6);
-        sphereIntersect.operator ()(i, r_in, hrec,  _tmin, _tmax,sctr,hit, pt1, pt2, mId, tId,
-                                    matType.GetPortalControl(),
-                                    texType.GetPortalControl());
-
-        pt1 = pts.GetPortalConstControl().Get(10);
-        pt2 = pts.GetPortalConstControl().Get(11);
-        mId = matIdx.GetPortalConstControl().Get(5);
-        tId = texIdx.GetPortalConstControl().Get(5);
-        XYRectWorklet xy(canvasSize, depth, true);
-        xy.operator ()(i, r_in, hrec, _tmin, _tmax, sctr,hit, pt1, pt2, mId, tId,
-            matType.GetPortalConstControl(),
-            texType.GetPortalConstControl());
-
-        pt1 = pts.GetPortalConstControl().Get(0);
-        pt2 = pts.GetPortalConstControl().Get(1);
-        mId = matIdx.GetPortalConstControl().Get(0);
-        tId = texIdx.GetPortalConstControl().Get(0);
-        YZRectWorklet yz(canvasSize, depth, true);
-        yz.operator()(i, r_in, hrec, _tmin, _tmax, sctr, hit, pt1, pt2, mId, tId,
-            matType.GetPortalConstControl(),
-            texType.GetPortalConstControl());
-        pt1 = pts.GetPortalConstControl().Get(2);
-        pt2 = pts.GetPortalConstControl().Get(3);
-        mId = matIdx.GetPortalConstControl().Get(1);
-        tId = texIdx.GetPortalConstControl().Get(1);
-        YZRectWorklet yz2(canvasSize, depth, false);
-
-        yz2.operator()(i, r_in, hrec, _tmin, _tmax, sctr, hit, pt1, pt2, mId, tId,
-            matType.GetPortalConstControl(),
-            texType.GetPortalConstControl());
-
-        pt1 = pts.GetPortalConstControl().Get(4);
-        pt2 = pts.GetPortalConstControl().Get(5);
-        mId = matIdx.GetPortalConstControl().Get(2);
-        tId = texIdx.GetPortalConstControl().Get(2);
-        XZRectWorklet xz(canvasSize, depth, true);
-        xz.operator()(i, r_in, hrec, _tmin, _tmax, sctr, hit, pt1,pt2, mId, tId,
-            matType.GetPortalConstControl(),
-            texType.GetPortalConstControl());
-        pt1 = pts.GetPortalConstControl().Get(6);
-        pt2 = pts.GetPortalConstControl().Get(7);
-        mId = matIdx.GetPortalConstControl().Get(3);
-        tId = texIdx.GetPortalConstControl().Get(3);
-        xz.operator()(i, r_in, hrec, _tmin, _tmax,sctr, hit, pt1,pt2, mId, tId,
-            matType.GetPortalConstControl(),
-            texType.GetPortalConstControl());
-        pt1 = pts.GetPortalConstControl().Get(8);
-        pt2 = pts.GetPortalConstControl().Get(9);
-        mId = matIdx.GetPortalConstControl().Get(4);
-        tId = texIdx.GetPortalConstControl().Get(4);
-        XZRectWorklet xz2(canvasSize, depth, false);
-        xz2.operator()(i, r_in, hrec, _tmin, _tmax,sctr, hit, pt1,pt2, mId, tId,
-            matType.GetPortalConstControl(),
-            texType.GetPortalConstControl());
-#endif
-      for (int i=0; i<rays.GetNumberOfValues(); i++){
-        auto sctr = scattered.GetPortalControl().Get(i);
-        auto hit = hitArray.GetPortalControl().Get(i);
-        if (!(sctr && hit)){
-          sctr = false;
-          attenuation.GetPortalControl().Set(i + canvasSize * depth, vec3(1.0));
-          emitted.GetPortalControl().Set(i + canvasSize * depth, vec3(0.0f));
-        }
-
-        scattered.GetPortalControl().Set(i,sctr);
-      }
       vtkm::worklet::AutoDispatcherMapField<LambertianWorklet>(lmbWorklet)
           .Invoke(rays, hrecs, srecs, finished, scattered,
                   tex, matType, texType, emitted);
