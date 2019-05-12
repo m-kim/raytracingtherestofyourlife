@@ -211,14 +211,18 @@ public:
   WholeArrayInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>,
+  WholeArrayInOut<>,
+  WholeArrayInOut<>,
   WholeArrayInOut<>
+
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13);
 
   VTKM_EXEC
   template<typename PtArrayType,
           typename IndexType,
-          typename FlippedType>
+          typename FlippedType,
+          typename AngleArray>
   void operator()(vtkm::Id idx,
                   ray &ray_io,
                   hit_record &hrec,
@@ -230,6 +234,8 @@ public:
                   PtArrayType pt2,
                   IndexType matIdx,
                   IndexType texIdx,
+                  PtArrayType offsetArray,
+                  AngleArray angleArray,
                   FlippedType flipped
                   ) const
   {
@@ -241,15 +247,21 @@ public:
         float z1 = pt2.Get(i)[2];
         float k = pt1.Get(i)[1];
         hit_record  temp_rec;
-        auto h =  hit(ray_io, temp_rec, tmin, tmax,
+
+        auto offset = offsetArray.Get(i);
+        auto angle = angleArray.Get(i);
+        auto moved_r = rotAndTrans(ray_io, offset, angle);
+
+        auto h =  hit(moved_r, temp_rec, tmin, tmax,
                       x0,x1,z0,z1,k,matIdx.Get(i),texIdx.Get(i),flipped.Get(i));
         if (h){
-
           tmax = temp_rec.t;
-          hrec = temp_rec;
+
+
+          applyRotAndTrans(temp_rec, offset, angle);
+          hrec= temp_rec;
         }
         rayHit |= h;
-
       }
     }
   }

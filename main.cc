@@ -389,11 +389,13 @@ void vtkCornellBox()
     angleArray[0].GetPortalControl().Set(1, 0);
 
     //xz_rect
-    flipped[1].Allocate(3);
-    matIdx[1].Allocate(3);
-    texIdx[1].Allocate(3);
-    pts1[1].Allocate(3);
-    pts2[1].Allocate(3);
+    translateOffset[1].Allocate(5);
+    angleArray[1].Allocate(5);
+    flipped[1].Allocate(5);
+    matIdx[1].Allocate(5);
+    texIdx[1].Allocate(5);
+    pts1[1].Allocate(5);
+    pts2[1].Allocate(5);
     cellTypeArray[1] =  1;
     matIdx[1].GetPortalControl().Set(0, 3);
     texIdx[1].GetPortalControl().Set(0, 3);
@@ -504,6 +506,24 @@ void vtkCornellBox()
   translateOffset[ct].GetPortalControl().Set(3, offset);
   angleArray[ct].GetPortalControl().Set(3, 15);
   flipped[ct].GetPortalControl().Set(3, 1);
+
+  //xz_rect
+  ct = 1;
+  matIdx[ct].GetPortalControl().Set(3, 1);
+  texIdx[ct].GetPortalControl().Set(3, 1);
+  pts1[ct].GetPortalControl().Set(3, p1);
+  pts2[ct].GetPortalControl().Set(3, p2);
+  translateOffset[ct].GetPortalControl().Set(3, offset);
+  angleArray[ct].GetPortalControl().Set(3, 15);
+  flipped[ct].GetPortalControl().Set(3, 0);
+
+  matIdx[ct].GetPortalControl().Set(4, 1);
+  texIdx[ct].GetPortalControl().Set(4, 1);
+  pts1[ct].GetPortalControl().Set(4, p1);
+  pts2[ct].GetPortalControl().Set(4, p2);
+  translateOffset[ct].GetPortalControl().Set(4, offset);
+  angleArray[ct].GetPortalControl().Set(4, 15);
+  flipped[ct].GetPortalControl().Set(4, 1);
 
 }
 void cornell_box(hitable **scene, camera **cam, float aspect) {
@@ -653,7 +673,7 @@ void intersect(vtkm::cont::ArrayHandle<ray> &rays,
           XZRectWorklet xz(canvasSize, depth);
           vtkm::worklet::AutoDispatcherMapField<XZRectWorklet>(xz)
               .Invoke(rays, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
-                      matIdx[i], texIdx[i],flipped[i]);
+                      matIdx[i], texIdx[i],translateOffset[i], angleArray[i],flipped[i]);
 
 
         }
@@ -802,7 +822,7 @@ int main() {
 
   constexpr int nx = 128;
   constexpr int ny = 128;
-  constexpr int ns = 5;
+  constexpr int ns = 1000;
 
   constexpr int depthcount = 50;
   auto canvasSize = nx*ny;
