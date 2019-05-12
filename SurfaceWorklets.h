@@ -331,7 +331,7 @@ public:
       float discriminant = b*b - a*c;
       if (discriminant > 0) {
           float temp = (-b - sqrt(b*b-a*c))/a;
-          if (temp < tmin && temp > tmin) {
+          if (temp < tmax && temp > tmin) {
               rec.t = temp;
               rec.p = r.point_at_parameter(rec.t);
               get_sphere_uv((rec.p-center)/radius, rec.u, rec.v);
