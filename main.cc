@@ -826,9 +826,9 @@ int main() {
 
   constexpr int nx = 128;
   constexpr int ny = 128;
-  constexpr int ns = 1;
+  constexpr int ns = 100;
 
-  constexpr int depthcount = 5;
+  constexpr int depthcount = 50;
   auto canvasSize = nx*ny;
 
   //std::cout << "P3\n" << nx << " " << ny << "\n255\n";
@@ -953,9 +953,9 @@ int main() {
       DiffuseLightWorklet dlWorklet(canvasSize ,depth);
       DielectricWorklet deWorklet( canvasSize ,depth, 1.5, rays.GetNumberOfValues());
       GenerateDir genDir(3);
-      CosineGenerateDir cosGenDir;
-      XZRectGenerateDir xzRectGenDir;
-      SphereGenerateDir sphereGenDir;
+      CosineGenerateDir cosGenDir(1);
+      XZRectGenerateDir xzRectGenDir(2);
+      SphereGenerateDir sphereGenDir(3);
 
       XZRectPDFWorklet xzPDFWorklet(lightables);
       SpherePDFWorklet spherePDFWorklet(lightables);

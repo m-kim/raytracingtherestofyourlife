@@ -5,9 +5,13 @@ class GenerateDir : public vtkm::worklet::WorkletMapField
 {
 public:
   GenerateDir(int ts) : type_size(ts){}
+
+  using ControlSignature = void(FieldInOut<>);
+  using ExecutionSignature = void( _1);
+
   VTKM_EXEC
   void operator()(int &which){
-    which = int(drand48() * type_size);
+    which = int(drand48() * vtkm::Max(type_size, (type_size+1)));
   }
   int type_size;
 };
@@ -16,12 +20,22 @@ class CosineGenerateDir : public vtkm::worklet::WorkletMapField
 {
 public:
   CosineGenerateDir(int cur = 0) : current(cur){}
+
   VTKM_EXEC
   vec3 random(const vec3& o, float r1, float r2,
               float x0, float x1, float z0, float z1, float k) const {
       vec3 random_point = vec3(x0 + r1*(x1-x0), k,  z0 + r2*(z1-z0));
       return random_point - o;
   }
+
+  using ControlSignature = void(FieldInOut<>,
+  FieldInOut<>,
+  FieldInOut<>,
+  WholeArrayInOut<>,
+  WholeArrayInOut<>
+
+  );
+  using ExecutionSignature = void(_1, _2, _3, _4, _5);
 
   template<typename PtArrayType>
   void operator()(
@@ -32,7 +46,7 @@ public:
        PtArrayType pt2
     )
   {
-    if (current == which){
+    if (which <= current ){
       float r1 =drand48();
       float r2 =drand48();
       uvw.build_from_w(hrec.normal);
@@ -53,6 +67,15 @@ public:
       vec3 random_point = vec3(x0 + r1*(x1-x0), k,  z0 + r2*(z1-z0));
       return random_point - o;
   }
+
+  using ControlSignature = void(FieldInOut<>,
+  FieldInOut<>,
+  FieldInOut<>,
+  WholeArrayInOut<>,
+  WholeArrayInOut<>
+
+  );
+  using ExecutionSignature = void(_1, _2, _3, _4, _5);
 
   template<typename PtArrayType>
   void operator()(int which,
@@ -90,6 +113,14 @@ public:
        uvw.build_from_w(direction);
        return uvw.local(random_to_sphere(radius, distance_squared, r1,r2));
   }
+  using ControlSignature = void(FieldInOut<>,
+  FieldInOut<>,
+  FieldInOut<>,
+  WholeArrayInOut<>,
+  WholeArrayInOut<>
+
+  );
+  using ExecutionSignature = void(_1, _2, _3, _4, _5);
 
   template<typename PtArrayType>
   void operator()(
