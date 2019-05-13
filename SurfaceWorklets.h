@@ -26,8 +26,6 @@ ray rotAndTrans(ray &ray_io, vec3 offset, float angle)
 
 void applyRotAndTrans(hit_record &temp_rec, vec3 offset, float angle)
 {
-  temp_rec.p += offset;
-
   vec3 p = temp_rec.p;
   vec3 normal = temp_rec.normal;
   float radians = (M_PI / 180.) * angle;
@@ -40,6 +38,7 @@ void applyRotAndTrans(hit_record &temp_rec, vec3 offset, float angle)
   normal[2] = -sin_theta*temp_rec.normal[0] + cos_theta*temp_rec.normal[2];
   temp_rec.p = p;
   temp_rec.normal = normal;
+  temp_rec.p += offset;
 
 }
 class XYRectWorklet : public vtkm::worklet::WorkletMapField
@@ -61,7 +60,7 @@ public:
   bool hit(
           const ray& r,
           hit_record& rec,
-          float &tmin, float &tmax,
+          float tmin, float tmax,
 
           float x0,
           float x1,
@@ -69,8 +68,7 @@ public:
           float y1,
           float k,
           int matId,
-          int texId,
-          vtkm::Int8 flip) const
+          int texId) const
   {
     float t = (k-r.origin()[2]) / r.direction()[2];
     if (t < tmin || t > tmax)
@@ -87,8 +85,6 @@ public:
 
     rec.p = r.point_at_parameter(t);
     rec.normal = vec3(0, 0, 1);
-    if (flip)
-      rec.normal = -rec.normal;
     return true;
   }
 
@@ -143,13 +139,13 @@ public:
         auto angle = angleArray.Get(i);
         auto moved_r = rotAndTrans(ray_io, offset, angle);
         auto h =  hit(moved_r, temp_rec, tmin, tmax,
-                      x0,x1,y0,y1,k,matIdx.Get(i),texIdx.Get(i),flipped.Get(i));
+                      x0,x1,y0,y1,k,matIdx.Get(i),texIdx.Get(i));
         if (h){
-          tmax = temp_rec.t;
-
-
+          if (flipped.Get(i))
+            temp_rec.normal = -temp_rec.normal;
           applyRotAndTrans(temp_rec, offset, angle);
           hrec= temp_rec;
+          tmax = temp_rec.t;
         }
         rayHit |= h;
 
@@ -175,12 +171,11 @@ public:
   VTKM_EXEC
   bool hit(const ray& r,
                   hit_record& rec,
-                  float &tmin, float &tmax,
+                  float tmin, float tmax,
                   float x0, float x1, float z0, float z1,
                   float k,
                   int matId,
-                  int texId,
-           vtkm::Int8 flip) const
+                  int texId) const
   {
     float t = (k-r.origin()[1]) / r.direction()[1];
     if (t < tmin || t > tmax)
@@ -197,8 +192,7 @@ public:
 
     rec.p = r.point_at_parameter(t);
     rec.normal = vec3(0, 1, 0);
-    if (flip)
-      rec.normal = -rec.normal;
+
 
     return true;
   }
@@ -254,10 +248,11 @@ public:
         auto moved_r = rotAndTrans(ray_io, offset, angle);
 
         auto h =  hit(moved_r, temp_rec, tmin, tmax,
-                      x0,x1,z0,z1,k,matIdx.Get(i),texIdx.Get(i),flipped.Get(i));
+                      x0,x1,z0,z1,k,matIdx.Get(i),texIdx.Get(i));
         if (h){
           tmax = temp_rec.t;
-
+          if (flipped.Get(i))
+            temp_rec.normal = -temp_rec.normal;
 
           applyRotAndTrans(temp_rec, offset, angle);
           hrec= temp_rec;
@@ -287,12 +282,11 @@ public:
   VTKM_EXEC
   bool hit(const ray& r,
             hit_record& rec,
-            float &tmin, float &tmax,
+            float tmin, float tmax,
             float y0, float y1, float z0, float z1,
             float k,
             int matId,
-            int texId,
-           vtkm::Int8 flip) const
+            int texId) const
   {
     float t = (k-r.origin()[0]) / r.direction()[0];
     if (t < tmin || t > tmax){
@@ -313,8 +307,6 @@ public:
 
     rec.p = r.point_at_parameter(t);
     rec.normal = vec3(1, 0, 0);
-    if (flip)
-      rec.normal = -rec.normal;
     return true;
   }
   using ControlSignature = void(FieldInOut<>,
@@ -369,8 +361,10 @@ public:
         auto angle = angleArray.Get(i);
         auto moved_r = rotAndTrans(ray_io, offset, angle);
         auto h =  hit(moved_r, temp_rec, tmin, tmax,
-                      y0,y1,z0,z1,k,matIdx.Get(i),texIdx.Get(i), flipped.Get(i));
+                      y0,y1,z0,z1,k,matIdx.Get(i),texIdx.Get(i));
         if (h){
+          if (flipped.Get(i))
+            temp_rec.normal = -temp_rec.normal;
           tmax = temp_rec.t;
 
 
@@ -399,7 +393,7 @@ public:
   {
   }
   VTKM_EXEC
-  bool hit(const ray& r,  hit_record& rec, float& tmin, float &tmax,
+  bool hit(const ray& r,  hit_record& rec, float tmin, float tmax,
            vec3 center, float radius,
            int matId, int texId) const {
       vec3 oc = r.origin() - center;
