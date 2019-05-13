@@ -455,21 +455,16 @@ void vtkCornellBox()
     texIdx[4].GetPortalControl().Set(0, 1);
     flipped[4].GetPortalControl().Set(0, 0);
 
-
-//    list[i++] = new translate(new rotate_y(
-//                    new box(vec3(0, 0, 0), vec3(165, 330, 165), 1,1),  15), vec3(265,0,295));
-//    *scene = new hitable_list(list,i);
-//    list[0] = new xy_rect(p0[0], p1[0], p0[1], p1[1], p1[2], matId, texId);
-//    list[1] = new flip_normals(new xy_rect(p0[0], p1[0], p0[1], p1[1], p0[2],  matId, texId));
-//    list[2] = new xz_rect(p0[0], p1[0], p0[2], p1[2], p1[1],  matId, texId);
-//    list[3] = new flip_normals(new xz_rect(p0[0], p1[0], p0[2], p1[2], p0[1],  matId, texId));
-//    list[4] = new yz_rect(p0[1], p1[1], p0[2], p1[2], p1[0],  matId, texId);
-//    list[5] = new flip_normals(new yz_rect(p0[1], p1[1], p0[2], p1[2], p0[0],  matId, texId));
-
   //small box
+  const vec3 constp1(0,0,0);
+  const vec3 constp2(165,330, 165);
+
+  vec3 p1 = constp1;
+  vec3 p2 = constp2;
+
   //xy
-  vec3 p1(0,0,0);
-  vec3 p2(165, 330, 165);
+  p1 = vec3(0,0,165);
+  p2 = vec3(165,330,165);
   vec3 offset(265,0,295);
   int ct = 2;
   translateOffset[ct].Allocate(3);
@@ -481,16 +476,19 @@ void vtkCornellBox()
   angleArray[ct].GetPortalControl().Set(1, 15);
   flipped[ct].GetPortalControl().Set(1, 0);
 
+
   matIdx[ct].GetPortalControl().Set(2, 1);
   texIdx[ct].GetPortalControl().Set(2, 1);
-  pts1[ct].GetPortalControl().Set(2, p1);
-  pts2[ct].GetPortalControl().Set(2, p2);
+  pts1[ct].GetPortalControl().Set(2, vec3(0,0,0));
+  pts2[ct].GetPortalControl().Set(2,  vec3(165,330,165));
   translateOffset[ct].GetPortalControl().Set(2, offset);
   angleArray[ct].GetPortalControl().Set(2, 15);
   flipped[ct].GetPortalControl().Set(2, 1);
 
   //yz
   ct = 0;
+  p1 = vec3(165,0,0);
+  p2 = vec3(165,330,165);
   matIdx[ct].GetPortalControl().Set(2, 1);
   texIdx[ct].GetPortalControl().Set(2, 1);
   pts1[ct].GetPortalControl().Set(2, p1);
@@ -499,6 +497,8 @@ void vtkCornellBox()
   angleArray[ct].GetPortalControl().Set(2, 15);
   flipped[ct].GetPortalControl().Set(2, 0);
 
+  p1 = vec3(0,0,0);
+  p2 = vec3(165,330,165);
   matIdx[ct].GetPortalControl().Set(3, 1);
   texIdx[ct].GetPortalControl().Set(3, 1);
   pts1[ct].GetPortalControl().Set(3, p1);
@@ -509,6 +509,8 @@ void vtkCornellBox()
 
   //xz_rect
   ct = 1;
+  p1 = vec3(0,330,0);
+  p2 = vec3(165,330,165);
   matIdx[ct].GetPortalControl().Set(3, 1);
   texIdx[ct].GetPortalControl().Set(3, 1);
   pts1[ct].GetPortalControl().Set(3, p1);
@@ -517,6 +519,8 @@ void vtkCornellBox()
   angleArray[ct].GetPortalControl().Set(3, 15);
   flipped[ct].GetPortalControl().Set(3, 0);
 
+  p1 = vec3(0,0,0);
+  p2 = vec3(165,330,165);
   matIdx[ct].GetPortalControl().Set(4, 1);
   texIdx[ct].GetPortalControl().Set(4, 1);
   pts1[ct].GetPortalControl().Set(4, p1);
@@ -822,9 +826,9 @@ int main() {
 
   constexpr int nx = 128;
   constexpr int ny = 128;
-  constexpr int ns = 1000;
+  constexpr int ns = 100;
 
-  constexpr int depthcount = 50;
+  constexpr int depthcount = 5;
   auto canvasSize = nx*ny;
 
   //std::cout << "P3\n" << nx << " " << ny << "\n255\n";
