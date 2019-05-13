@@ -29,6 +29,14 @@ public:
       return random_point - o;
   }
 
+  VTKM_EXEC
+  inline vec3 random_cosine_direction(float r1, float r2) const {
+      float z = sqrt(1-r2);
+      float phi = 2*M_PI*r1;
+      float x = cos(phi)*2*sqrt(r2);
+      float y = sin(phi)*2*sqrt(r2);
+      return vec3(x, y, z);
+  }
   using ControlSignature = void(FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
@@ -42,7 +50,7 @@ public:
   template<typename PtArrayType>
   void operator()(
       int which,
-       hit_record &hrec,
+       HitRecord &hrec,
        vec3 &generated,
        PtArrayType pt1,
        PtArrayType pt2
@@ -83,7 +91,7 @@ public:
   VTKM_EXEC
   template<typename PtArrayType>
   void operator()(int which,
-           hit_record &hrec,
+           HitRecord &hrec,
            vec3 &generated,
            PtArrayType pt1,
            PtArrayType pt2
@@ -109,6 +117,17 @@ class SphereGenerateDir : public vtkm::worklet::WorkletMapField
 public:
   VTKM_EXEC_CONT
   SphereGenerateDir(int cur = 2): current(cur) {}
+
+  VTKM_EXEC
+  inline vec3 random_to_sphere(float radius, float distance_squared, float r1, float r2) const {
+  //    float r1 = drand48();
+  //    float r2 = drand48();
+      float z = 1 + r2*(sqrt(1-radius*radius/distance_squared) - 1);
+      float phi = 2*M_PI*r1;
+      float x = cos(phi)*sqrt(1-z*z);
+      float y = sin(phi)*sqrt(1-z*z);
+      return vec3(x, y, z);
+  }
   VTKM_EXEC
   vec3 random(const vec3& o, float r1, float r2,
               const vec3 &center, float radius) const {
@@ -131,7 +150,7 @@ public:
   template<typename PtArrayType>
   void operator()(vtkm::Id idx,
           int &which,
-           hit_record &hrec,
+           HitRecord &hrec,
            vec3 &generated,
            PtArrayType pt1,
            PtArrayType pt2
@@ -159,9 +178,9 @@ public:
   VTKM_EXEC
   float  pdf_value(const vec3& o, const vec3& v,
                    float x0, float x1, float z0, float z1, float k) const {
-    hit_record rec;
+    HitRecord rec;
     int matId,texId;
-    if (surf.hit(ray(o,v), rec,0.001, FLT_MAX,x0,x1,z0,z1,k, matId, texId)) {
+    if (surf.hit(ray(o,v), rec,0.001, std::numeric_limits<float>::max(),x0,x1,z0,z1,k, matId, texId)) {
         float area = (x1-x0)*(z1-z0);
         float distance_squared = rec.t * rec.t * vtkm::MagnitudeSquared(v);
         float cosine = fabs(dot(v, rec.normal) * vtkm::RMagnitude(v));
@@ -188,7 +207,7 @@ public:
           typename FlippedType>
   void operator()(vtkm::Id idx,
                   ray &ray_io,
-                  hit_record &hrec,
+                  HitRecord &hrec,
                   FlippedType &scattered,
                   float &sum_value,
                   vec3 &generated,
@@ -228,9 +247,9 @@ public:
   VTKM_EXEC
   float  pdf_value(const vec3& o, const vec3& v,
                   vec3 center, float radius) const {
-    hit_record rec;
+    HitRecord rec;
     int matId,texId;
-    if (surf.hit(ray(o, v), rec, 0.001, FLT_MAX, center, radius, matId, texId )) {
+    if (surf.hit(ray(o, v), rec, 0.001, std::numeric_limits<float>::max(), center, radius, matId, texId )) {
         float cos_theta_max = sqrt(1 - radius*radius/vtkm::MagnitudeSquared(center-o));
         float solid_angle = 2*M_PI*(1-cos_theta_max);
         return  1 / solid_angle;
@@ -257,7 +276,7 @@ public:
           typename FlippedType>
   void operator()(vtkm::Id idx,
                   ray &ray_io,
-                  hit_record &hrec,
+                  HitRecord &hrec,
                   FlippedType &scattered,
                   float &sum_value,
                   vec3 &generated,

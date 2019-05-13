@@ -1,5 +1,6 @@
 #ifndef SURFACE_H
 #define SURFACE_H
+#include "Record.h"
 
 class XZRect
 {
@@ -7,7 +8,7 @@ public:
   VTKM_EXEC_CONT XZRect(){}
   VTKM_EXEC
   bool hit(const ray& r,
-                  hit_record& rec,
+                  HitRecord& rec,
                   float tmin, float tmax,
                   float x0, float x1, float z0, float z1,
                   float k,
@@ -41,8 +42,17 @@ class Sphere
 {
 public:
   VTKM_EXEC_CONT Sphere(){}
+
   VTKM_EXEC
-  bool hit(const ray& r,  hit_record& rec, float tmin, float tmax,
+  void get_sphere_uv(const vec3& p, float& u, float& v) const {
+      float phi = atan2(p[2], p[0]);
+      float theta = asin(p[1]);
+      u = 1-(phi + M_PI) / (2*M_PI);
+      v = (theta + M_PI/2) / M_PI;
+  }
+
+  VTKM_EXEC
+  bool hit(const ray& r,  HitRecord& rec, float tmin, float tmax,
            vec3 center, float radius,
            int matId, int texId) const {
       vec3 oc = r.origin() - center;

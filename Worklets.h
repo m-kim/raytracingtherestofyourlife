@@ -7,9 +7,6 @@
 #include <vtkm/cont/ArrayHandleCounting.h>
 #include <vtkm/rendering/xorShift.h>
 #include "ray.h"
-#include "hitable.h"
-#include "hitable_list.h"
-#include "material.h"
 
 using vec3 = vtkm::Vec<vtkm::Float32, 3>;
 
@@ -202,45 +199,5 @@ public:
 
 };
 
-class RayShade : public vtkm::worklet::WorkletMapField
-{
-public:
-  VTKM_CONT
-  RayShade(hitable *w,
-           int cs,
-           int d)
-    :world(w)
-    ,canvasSize(cs)
-    ,depth(d)
 
-  {
-  }
-
-  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>,
-  WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
-
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6);
-  VTKM_EXEC
-  template<typename VecArrayType, typename ColorArrayType>
-  void operator()(vtkm::Id idx,
-                  ray &ray_io, hit_record &hrec,
-                  vtkm::Int8 &scattered,
-                  ColorArrayType col,
-                  VecArrayType attenuation,
-                   VecArrayType emitted) const
-  {
-    if (scattered && world->hit(ray_io, 0.001, std::numeric_limits<float>::max(), hrec)){
-
-    }
-    else{
-      scattered = 0;
-      attenuation.Set(idx + canvasSize * depth, vec3(1.0));
-      emitted.Set(idx + canvasSize * depth, vec3(0.0f));
-    }
-  }
-
-  hitable *world;
-  int canvasSize;
-  int depth;
-};
 #endif

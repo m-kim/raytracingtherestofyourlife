@@ -25,7 +25,7 @@ ray rotAndTrans(ray &ray_io, vec3 offset, float angle)
   return rotateY(tran, angle);
 }
 
-void applyRotAndTrans(hit_record &temp_rec, vec3 offset, float angle)
+void applyRotAndTrans(HitRecord &temp_rec, vec3 offset, float angle)
 {
   vec3 p = temp_rec.p;
   vec3 normal = temp_rec.normal;
@@ -60,7 +60,7 @@ public:
   VTKM_EXEC
   bool hit(
           const ray& r,
-          hit_record& rec,
+          HitRecord& rec,
           float tmin, float tmax,
 
           float x0,
@@ -113,7 +113,7 @@ public:
           typename AngleArray>
   void operator()(vtkm::Id idx,
                   ray &ray_io,
-                  hit_record &hrec,
+                  HitRecord &hrec,
                   float &tmin,
                   float &tmax,
                   vtkm::Int8 &scattered,
@@ -134,7 +134,7 @@ public:
         float y0 = pt1.Get(i)[1];
         float y1 = pt2.Get(i)[1];
         float k = pt1.Get(i)[2];
-        hit_record  temp_rec;
+        HitRecord  temp_rec;
 
         auto offset = offsetArray.Get(i);
         auto angle = angleArray.Get(i);
@@ -171,7 +171,7 @@ public:
   }
   VTKM_EXEC
   bool hit(const ray& r,
-                  hit_record& rec,
+                  HitRecord& rec,
                   float tmin, float tmax,
                   float x0, float x1, float z0, float z1,
                   float k,
@@ -222,7 +222,7 @@ public:
           typename AngleArray>
   void operator()(vtkm::Id idx,
                   ray &ray_io,
-                  hit_record &hrec,
+                  HitRecord &hrec,
                   float &tmin,
                   float &tmax,
                   vtkm::Int8 &scattered,
@@ -243,7 +243,7 @@ public:
         float z0 = pt1.Get(i)[2];
         float z1 = pt2.Get(i)[2];
         float k = pt1.Get(i)[1];
-        hit_record  temp_rec;
+        HitRecord  temp_rec;
 
         auto offset = offsetArray.Get(i);
         auto angle = angleArray.Get(i);
@@ -284,7 +284,7 @@ public:
 
   VTKM_EXEC
   bool hit(const ray& r,
-            hit_record& rec,
+            HitRecord& rec,
             float tmin, float tmax,
             float y0, float y1, float z0, float z1,
             float k,
@@ -336,7 +336,7 @@ public:
           typename AngleArray>
   void operator()(vtkm::Id idx,
                   ray &ray_io,
-                  hit_record &hrec,
+                  HitRecord &hrec,
                   float &tmin,
                   float &tmax,
                   vtkm::Int8 &scattered,
@@ -358,7 +358,7 @@ public:
         float z1 = pt2.Get(i)[2];
         float k = pt1.Get(i)[0];
 
-        hit_record temp_rec;
+        HitRecord temp_rec;
 
         auto offset = offsetArray.Get(i);
         auto angle = angleArray.Get(i);
@@ -396,7 +396,7 @@ public:
   {
   }
   VTKM_EXEC
-  bool hit(const ray& r,  hit_record& rec, float tmin, float tmax,
+  bool hit(const ray& r,  HitRecord& rec, float tmin, float tmax,
            vec3 center, float radius,
            int matId, int texId) const {
       surf.hit(r,rec,tmin, tmax, center, radius, matId, texId);
@@ -421,7 +421,7 @@ public:
             typename IndexType>
   void operator()(vtkm::Id idx,
                   ray &ray_io,
-                  hit_record &hrec,
+                  HitRecord &hrec,
                   float &tmin,
                   float &tmax,
                   vtkm::Int8 &scattered,
@@ -434,7 +434,7 @@ public:
   {
     if (scattered){
       for (int i=0; i<pt1.GetNumberOfValues(); i++){
-        hit_record  temp_rec;
+        HitRecord  temp_rec;
         auto h =   hit(ray_io, temp_rec, tmin, tmax,
                        pt1.Get(i), pt2.Get(i)[0],matIdx.Get(i),texIdx.Get(i));
         if (h){

@@ -5,10 +5,6 @@
 #include <vtkm/worklet/WorkletMapField.h>
 #include <vtkm/cont/ArrayHandleCounting.h>
 #include <vtkm/rendering/xorShift.h>
-#include "ray.h"
-#include "hitable.h"
-#include "hitable_list.h"
-#include "material.h"
 
 class LambertianWorklet : public vtkm::worklet::WorkletMapField
 {
@@ -21,13 +17,13 @@ public:
   }
 
   VTKM_EXEC
-  bool scatter(const ray& r_in, const hit_record& hrec, scatter_record& srec, vec3 albedo) const {
+  bool scatter(const ray& r_in, const HitRecord& hrec, ScatterRecord& srec, vec3 albedo) const {
       srec.is_specular = false;
       srec.attenuation = albedo;
       return true;
   }
   VTKM_EXEC
-  vec3 emit(const ray& r_in, const hit_record& rec, vec3 emit) const { return vec3(0,0,0); }
+  vec3 emit(const ray& r_in, const HitRecord& rec, vec3 emit) const { return vec3(0,0,0); }
 
   using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>,WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8,_9);
@@ -38,8 +34,8 @@ public:
           typename TexTypeArray>
   void operator()(vtkm::Id idx,
                   ray &r_in,
-                  hit_record &hrec,
-                  scatter_record &srec,
+                  HitRecord &hrec,
+                  ScatterRecord &srec,
                   vtkm::Int8 &fin,
                   vtkm::Int8 &scattered,
                   ColorArrayType col,
@@ -75,10 +71,10 @@ public:
   }
 
   VTKM_EXEC
-  bool scatter(const ray& r_in, const hit_record& hrec, scatter_record& srec, vec3) const {
+  bool scatter(const ray& r_in, const HitRecord& hrec, ScatterRecord& srec, vec3) const {
         return false;}
   VTKM_EXEC
-  vec3 emit(const ray& r_in, const hit_record& rec, vec3 emit) const {
+  vec3 emit(const ray& r_in, const HitRecord& rec, vec3 emit) const {
       if (dot(rec.normal, r_in.direction()) < 0.0)
           return emit;
       else
@@ -94,8 +90,8 @@ public:
           typename TexTypeArray>
   void operator()(vtkm::Id idx,
                   ray &r_in,
-                  hit_record &hrec,
-                  scatter_record &srec,
+                  HitRecord &hrec,
+                  ScatterRecord &srec,
                   vtkm::Int8 &fin,
                   vtkm::Int8 &scattered,
                   ColorArrayType col,
@@ -131,7 +127,32 @@ public:
   }
 
   VTKM_EXEC
-  bool scatter(const ray& r_in, const hit_record& hrec, scatter_record& srec, vec3 albedo, double _rand) const {
+  float schlick(float cosine, float ref_idx) const {
+      float r0 = (1-ref_idx) / (1+ref_idx);
+      r0 = r0*r0;
+      return r0 + (1-r0)*pow((1 - cosine),5);
+  }
+
+  VTKM_EXEC
+  bool refract(const vec3& v, const vec3& n, float ni_over_nt, vec3& refracted) const {
+      vec3 uv = unit_vector(v);
+      float dt = dot(uv, n);
+      float discriminant = 1.0 - ni_over_nt*ni_over_nt*(1-dt*dt);
+      if (discriminant > 0) {
+          refracted = ni_over_nt*(uv - n*dt) - n*sqrt(discriminant);
+          return true;
+      }
+      else
+          return false;
+  }
+
+  VTKM_EXEC
+  vec3 reflect(const vec3& v, const vec3& n) const {
+       return v - 2*dot(v,n)*n;
+  }
+
+  VTKM_EXEC
+  bool scatter(const ray& r_in, const HitRecord& hrec, ScatterRecord& srec, vec3 albedo, double _rand) const {
       srec.is_specular = true;
       srec.attenuation = vec3(1.0, 1.0, 1.0);
       vec3 outward_normal;
@@ -165,7 +186,7 @@ public:
        return true;
   }
   VTKM_EXEC
-  vec3 emit(const ray& r_in, const hit_record& rec, vec3 emit) const { return vec3(0,0,0); }
+  vec3 emit(const ray& r_in, const HitRecord& rec, vec3 emit) const { return vec3(0,0,0); }
 
   using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9);
@@ -176,8 +197,8 @@ public:
           typename TexTypeArray>
   void operator()(vtkm::Id idx,
                   ray &r_in,
-                  hit_record &hrec,
-                  scatter_record &srec,
+                  HitRecord &hrec,
+                  ScatterRecord &srec,
                   vtkm::Int8 &fin,
                   vtkm::Int8 &scattered,
                   ColorArrayType col,
