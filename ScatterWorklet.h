@@ -17,14 +17,14 @@ class cosine_pdf {
       return vec3(x, y, z);
   }
   void SetW(const vec3& w) { uvw.build_from_w(w); }
-  virtual float value(const vec3& direction) const {
+  float value(const vec3& direction) const {
       float cosine = dot(unit_vector(direction), uvw.w());
       if (cosine > 0)
           return cosine/M_PI;
       else
           return 0;
   }
-  virtual vec3 generate(float r1, float r2, float r3) const  {
+  vec3 generate(float r1, float r2, float r3) const  {
       return uvw.local(random_cosine_direction(r1,r2));
   }
   onb uvw;
