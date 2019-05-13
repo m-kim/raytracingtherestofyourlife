@@ -837,13 +837,13 @@ int main() {
   camera *cam;
   constexpr float aspect = float(ny) / float(nx);
   cornell_box(&world, &cam, aspect);
-#endif
   hitable *light_shape = new xz_rect(213, 343, 227, 332, 554, 0,0);
   hitable *glass_sphere = new sphere(vec3(190, 90, 190), 90, 0,0);
-  hitable *a[1];
+  hitable *a[2];
   a[0] = light_shape;
-  //a[1] = glass_sphere;
-  hitable_list hlist(a,1);
+  a[1] = glass_sphere;
+  hitable_list hlist(a,2);
+#endif
 
   constexpr int lightables = 1;
   ArrayType light_box_pts[2], light_sphere_pts[2];
@@ -959,8 +959,11 @@ int main() {
 
       XZRectPDFWorklet xzPDFWorklet(lightables);
       SpherePDFWorklet spherePDFWorklet(lightables);
+#if USE_HITABLE
       PDFCosineWorklet pdfWorklet(canvasSize, depth, &hlist, rays.GetNumberOfValues(), lightables);
-
+#else
+      PDFCosineWorklet pdfWorklet(canvasSize, depth, rays.GetNumberOfValues(), lightables);
+#endif
       vtkm::worklet::AutoDispatcherMapField<LambertianWorklet>(lmbWorklet)
           .Invoke(rays, hrecs, srecs, finished, scattered,
                   tex, matType, texType, emitted);
@@ -973,32 +976,6 @@ int main() {
             .Invoke(rays, hrecs, srecs, finished, scattered,
                     tex, matType, texType, emitted);
 
-//      for (int i=0; i<rays.GetNumberOfValues(); i++){
-//        auto r_in = rays.GetPortalControl().Get(i);
-//        auto hrec= hrecs.GetPortalControl().Get(i);
-//        auto sctr = scattered.GetPortalControl().Get(i);
-//        auto sv = sum_values.GetPortalControl().Get(i);
-//        auto gd = generated_dir.GetPortalControl().Get(i);
-//        auto wPDF = whichPDF.GetPortalControl().Get(i);
-//        genDir.operator() (wPDF);
-//        cosGenDir.operator()(wPDF, hrec, gd,
-//                    light_box_pts[0].GetPortalControl(), light_box_pts[1].GetPortalControl());
-//        xzRectGenDir.operator()(wPDF, hrec, gd,
-//                        light_box_pts[0].GetPortalControl(), light_box_pts[1].GetPortalControl());
-
-//        xzRectGenDir.operator()(wPDF, hrec, gd,
-//                        light_box_pts[0].GetPortalControl(), light_box_pts[1].GetPortalControl());
-//        xzPDFWorklet.operator ()(i, r_in, hrec, sctr, sv, gd,
-//                                 light_box_pts[0].GetPortalControl(), light_box_pts[1].GetPortalControl());
-//        spherePDFWorklet.operator()(i, r_in, hrec, sctr, sv, gd,
-//                                    light_sphere_pts[0].GetPortalControl(), light_sphere_pts[1].GetPortalControl());
-//        auto fin = finished.GetPortalControl().Get(i);
-//        auto srec = srecs.GetPortalControl().Get(i);
-//        pdfWorklet.operator ()(i, r_in, hrec, srec, fin, sctr, sv, gd, r_in, attenuation.GetPortalControl());
-
-//        rays.GetPortalControl().Set(i, r_in);
-
-//      }
       vtkm::worklet::AutoDispatcherMapField<GenerateDir>(genDir)
           .Invoke(whichPDF);
       vtkm::worklet::AutoDispatcherMapField<CosineGenerateDir>(cosGenDir)

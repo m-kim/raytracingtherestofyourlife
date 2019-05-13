@@ -14,13 +14,20 @@ class PDFCosineWorklet : public vtkm::worklet::WorkletMapField
 {
 public:
   VTKM_CONT
+#if USE_HITABLE
   PDFCosineWorklet( int cs, int d, hitable *ls, vtkm::UInt32 rc, int ts)
       : canvasSize(cs)
       , depth(d)
       , light_shape(ls)
       , RayCount(rc)
       , type_size(ts)
-
+#else
+  PDFCosineWorklet( int cs, int d, vtkm::UInt32 rc, int ts)
+      : canvasSize(cs)
+      , depth(d)
+      , RayCount(rc)
+      , type_size(ts)
+#endif
   {
   }
 
@@ -65,10 +72,10 @@ public:
 //          randState[1] = vtkm::random::xorshift::getRand32(idx*2) + 2;
 //          randState[2] = vtkm::random::xorshift::getRand32(idx*3) + 3;
 //          randState[3] = vtkm::random::xorshift::getRand32(idx*4) + 4; //arbitrary random state based off number of rays being shot through
+#if USE_HITABLE
           float r1 = drand48();
           float r2 = drand48();
           float r3 = drand48();
-#if 0
           cosine_pdf newPdf;
 
           newPdf.SetW(hrec.normal);
@@ -115,7 +122,9 @@ public:
   }
 
   const int depth, canvasSize;
+#if USE_HITABLE
   hitable *light_shape;
+#endif
   vtkm::UInt32 RayCount;
 
   int type_size;
