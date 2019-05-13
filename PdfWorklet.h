@@ -4,16 +4,17 @@
 class GenerateDir : public vtkm::worklet::WorkletMapField
 {
 public:
+  VTKM_EXEC_CONT
   GenerateDir(int ts) : type_size(ts){}
 
   using ControlSignature = void(FieldInOut<>);
   using ExecutionSignature = void( _1);
 
   VTKM_EXEC
-  void operator()(int &which){
-    which = int(drand48() * vtkm::Max(type_size, (type_size+1)));
+  void operator()(int &which) const {
+    which = vtkm::Min(type_size,int(drand48() * type_size+1));
   }
-  int type_size;
+  const int type_size;
 };
 
 class CosineGenerateDir : public vtkm::worklet::WorkletMapField
@@ -37,6 +38,7 @@ public:
   );
   using ExecutionSignature = void(_1, _2, _3, _4, _5);
 
+  VTKM_EXEC
   template<typename PtArrayType>
   void operator()(
       int which,
@@ -44,22 +46,23 @@ public:
        vec3 &generated,
        PtArrayType pt1,
        PtArrayType pt2
-    )
+    ) const
   {
     if (which <= current ){
       float r1 =drand48();
       float r2 =drand48();
+      onb uvw;
       uvw.build_from_w(hrec.normal);
       generated = uvw.local(random_cosine_direction(r1,r2));
     }
   }
-  onb uvw;
   int current;
 };
 
 class XZRectGenerateDir : public vtkm::worklet::WorkletMapField
 {
 public:
+  VTKM_EXEC_CONT
   XZRectGenerateDir(int cur = 1): current(cur) {}
   VTKM_EXEC
   vec3 random(const vec3& o, float r1, float r2,
@@ -77,13 +80,14 @@ public:
   );
   using ExecutionSignature = void(_1, _2, _3, _4, _5);
 
+  VTKM_EXEC
   template<typename PtArrayType>
   void operator()(int which,
            hit_record &hrec,
            vec3 &generated,
            PtArrayType pt1,
            PtArrayType pt2
-           )
+           ) const
   {
     if (current == which){
       for (int i = 0; i < pt1.GetNumberOfValues(); i++){
@@ -103,6 +107,7 @@ public:
 class SphereGenerateDir : public vtkm::worklet::WorkletMapField
 {
 public:
+  VTKM_EXEC_CONT
   SphereGenerateDir(int cur = 2): current(cur) {}
   VTKM_EXEC
   vec3 random(const vec3& o, float r1, float r2,
@@ -120,16 +125,17 @@ public:
   WholeArrayInOut<>
 
   );
-  using ExecutionSignature = void(_1, _2, _3, _4, _5);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5);
 
+  VTKM_EXEC
   template<typename PtArrayType>
-  void operator()(
-      int which,
+  void operator()(vtkm::Id idx,
+          int &which,
            hit_record &hrec,
            vec3 &generated,
            PtArrayType pt1,
            PtArrayType pt2
-           )
+           ) const
   {
     if (which == current){
       for (int i = 0; i < pt1.GetNumberOfValues(); i++){
