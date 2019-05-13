@@ -14,11 +14,13 @@ class PDFCosineWorklet : public vtkm::worklet::WorkletMapField
 {
 public:
   VTKM_CONT
-  PDFCosineWorklet( int cs, int d, hitable *ls, vtkm::UInt32 rc)
+  PDFCosineWorklet( int cs, int d, hitable *ls, vtkm::UInt32 rc, int ts)
       : canvasSize(cs)
       , depth(d)
       , light_shape(ls)
       , RayCount(rc)
+      , type_size(ts)
+
   {
   }
 
@@ -32,8 +34,8 @@ public:
       return cosine / M_PI;
   }
 
-  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>);
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7);
+  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9);
   VTKM_EXEC
   template<typename VecArrayType>
   void operator()(vtkm::Id idx,
@@ -42,6 +44,8 @@ public:
                   scatter_record &srec,
                   vtkm::Int8 &fin,
                   vtkm::Int8 &is_scattered,
+                  float &sum_value,
+                  vec3 &direction,
                   ray &r_out,
                   VecArrayType attenuation) const
   {
@@ -65,33 +69,43 @@ public:
           float r2 = drand48();
           float r3 = drand48();
 #if 0
-          onb uvw;
-          vec3 direction;
-
-          //generate
-          uvw.build_from_w(hrec.normal);
-          if (r3 < 0.5)
-            direction = uvw.local(random_cosine_direction(r1,r2));
-          else
-            direction = light_shape->random(hrec.p, r1,r2,r3);
-
-          float pdf_val = 0.5 * value(direction, uvw);
-          pdf_val += 0.5 * light_shape->pdf_value(hrec.p, direction);
-
-          r_out = ray(hrec.p, direction, r_in.time());
-          atten = srec.attenuation * scattering_pdf(r_in, hrec, r_out)/pdf_val;
-#else
           cosine_pdf newPdf;
 
           newPdf.SetW(hrec.normal);
           hitable_pdf plight(light_shape, hrec.p);
           mixture_pdf p(&plight, &newPdf);
-          r_out = ray(hrec.p, p.generate(r1,r2,r3), r_in.time());
+          direction = p.generate(r1,r2,r3);
+          r_out = ray(hrec.p, direction, r_in.time());
           float pdf_val = p.value(r_out.direction());
           auto sctr = scattering_pdf(r_in, hrec, r_out)/pdf_val;
           atten = srec.attenuation * sctr;
-          //auto ret = scatter(r, srec, hrec, light_shape, mat);
-          //return std::make_tuple(2, srec.attenuation*std::get<0>(ret), emitted, std::get<1>(ret));
+//          onb uvw;
+//          vec3 direction;
+
+//          //generate
+//          uvw.build_from_w(hrec.normal);
+//          if (r3 < 0.5)
+//            direction = uvw.local(random_cosine_direction(r1,r2));
+//          else
+//            direction = light_shape->random(hrec.p, r1,r2,r3);
+
+//          float pdf_val = 0.5 * value(direction, uvw);
+//          pdf_val += 0.5 * light_shape->pdf_value(hrec.p, direction);
+
+//          r_out = ray(hrec.p, direction, r_in.time());
+//          atten = srec.attenuation * scattering_pdf(r_in, hrec, r_out)/pdf_val;
+#else
+          cosine_pdf newPdf;
+          newPdf.SetW(hrec.normal);
+
+          r_out = ray(hrec.p, direction, r_in.time());
+
+          //float pdf_val = p.value(r_out.direction());
+          auto pdf_val = 0.5 * sum_value + 0.5 * newPdf.value(direction);
+
+          auto sctr = scattering_pdf(r_in, hrec, r_out)/pdf_val;
+          atten = srec.attenuation * sctr;
+
 #endif
         }
       }
@@ -103,5 +117,7 @@ public:
   const int depth, canvasSize;
   hitable *light_shape;
   vtkm::UInt32 RayCount;
+
+  int type_size;
 };
 #endif

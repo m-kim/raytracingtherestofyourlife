@@ -39,7 +39,7 @@
 #include "pdf.h"
 #include "EmitWorklet.h"
 #include "ScatterWorklet.h"
-
+#include "PdfWorklet.h"
 using ArrayType = vtkm::cont::ArrayHandle<vec3>;
 
 
@@ -826,7 +826,7 @@ int main() {
 
   constexpr int nx = 128;
   constexpr int ny = 128;
-  constexpr int ns = 100;
+  constexpr int ns = 1;
 
   constexpr int depthcount = 5;
   auto canvasSize = nx*ny;
@@ -840,10 +840,23 @@ int main() {
 #endif
   hitable *light_shape = new xz_rect(213, 343, 227, 332, 554, 0,0);
   hitable *glass_sphere = new sphere(vec3(190, 90, 190), 90, 0,0);
-  hitable *a[2];
+  hitable *a[1];
   a[0] = light_shape;
-  a[1] = glass_sphere;
-  hitable_list hlist(a,2);
+  //a[1] = glass_sphere;
+  hitable_list hlist(a,1);
+
+  constexpr int lightables = 1;
+  ArrayType light_box_pts[2], light_sphere_pts[2];
+  light_box_pts[0].Allocate(1);
+  light_box_pts[0].GetPortalControl().Set(0, vec3(213, 554, 227));
+  light_box_pts[1].Allocate(1);
+  light_box_pts[1].GetPortalControl().Set(0, vec3(343, 554, 332));
+
+  light_sphere_pts[0].Allocate(1);
+  light_sphere_pts[0].GetPortalControl().Set(0, vec3(190, 90, 190));
+  light_sphere_pts[1].Allocate(1);
+  light_sphere_pts[1].GetPortalControl().Set(0, vec3(90,0,0));
+
 #ifndef USE_HITABLE
   vtkCornellBox();
 #endif
@@ -858,7 +871,7 @@ int main() {
   cols.Allocate(nx*ny);
   MyAlgos::Copy<vec3, vec3, StorageTag>(vec3(0.0f), cols);
 
-  vtkm::cont::ArrayHandle<vtkm::Float32> DirX, DirY, DirZ;
+  vtkm::cont::ArrayHandle<vtkm::Float32> DirX, DirY, DirZ, sum_values;
   DirX.Allocate(nx*ny); DirY.Allocate(nx*ny); DirZ.Allocate(nx*ny);
   vtkm::cont::ArrayHandle<vtkm::Id> PixelIdx;
   PixelIdx.Allocate(nx*ny);
@@ -871,6 +884,9 @@ int main() {
   vtkm::cont::ArrayHandle<float> closest, tmin;
   ArrayType attenuation;
   ArrayType emitted;
+  ArrayType generated_dir;
+  vtkm::cont::ArrayHandle<int> whichPDF;
+
   attenuation.Allocate(rays.GetNumberOfValues() * depthcount);
   emitted.Allocate(rays.GetNumberOfValues() * depthcount);
   scattered.Allocate(rays.GetNumberOfValues());
@@ -882,6 +898,9 @@ int main() {
   sumtotl.Allocate(rays.GetNumberOfValues());
   closest.Allocate(rays.GetNumberOfValues());
   tmin.Allocate(rays.GetNumberOfValues());
+  sum_values.Allocate(nx*ny);
+  generated_dir.Allocate(nx*ny);
+  whichPDF.Allocate(nx*ny);
   for (int s =0; s<ns; s++){
     UVGen uvgen(nx, ny, s);
     vtkm::worklet::AutoDispatcherMapField<UVGen>(
@@ -906,6 +925,8 @@ int main() {
 
 
     for (int depth=0; depth<depthcount; depth++){
+      MyAlgos::Copy<float, float, StorageTag>(0, sum_values);
+
       MyAlgos::Copy<float, float, StorageTag>(std::numeric_limits<float>::max(), closest);
       MyAlgos::Copy<float, float, StorageTag>(0.001, tmin);
 //      float tmin = 0.001;
@@ -931,7 +952,14 @@ int main() {
       LambertianWorklet lmbWorklet( canvasSize, depth);
       DiffuseLightWorklet dlWorklet(canvasSize ,depth);
       DielectricWorklet deWorklet( canvasSize ,depth, 1.5, rays.GetNumberOfValues());
-      PDFCosineWorklet pdfWorklet(canvasSize, depth, &hlist, rays.GetNumberOfValues());
+      GenerateDir genDir(3);
+      CosineGenerateDir cosGenDir;
+      XZRectGenerateDir xzRectGenDir;
+      SphereGenerateDir sphereGenDir;
+
+      XZRectPDFWorklet xzPDFWorklet(lightables);
+      SpherePDFWorklet spherePDFWorklet(lightables);
+      PDFCosineWorklet pdfWorklet(canvasSize, depth, &hlist, rays.GetNumberOfValues(), lightables);
 
       vtkm::worklet::AutoDispatcherMapField<LambertianWorklet>(lmbWorklet)
           .Invoke(rays, hrecs, srecs, finished, scattered,
@@ -945,8 +973,38 @@ int main() {
             .Invoke(rays, hrecs, srecs, finished, scattered,
                     tex, matType, texType, emitted);
 
-      vtkm::worklet::AutoDispatcherMapField<PDFCosineWorklet>(pdfWorklet)
-            .Invoke(rays, hrecs, srecs, finished, scattered, rays, attenuation);
+      for (int i=0; i<rays.GetNumberOfValues(); i++){
+        auto r_in = rays.GetPortalControl().Get(i);
+        auto hrec= hrecs.GetPortalControl().Get(i);
+        auto sctr = scattered.GetPortalControl().Get(i);
+        auto sv = sum_values.GetPortalControl().Get(i);
+        auto gd = generated_dir.GetPortalControl().Get(i);
+        auto wPDF = whichPDF.GetPortalControl().Get(i);
+        genDir.operator() (wPDF);
+        cosGenDir.operator()(wPDF, hrec, gd,
+                    light_box_pts[0].GetPortalControl(), light_box_pts[1].GetPortalControl());
+        xzRectGenDir.operator()(wPDF, hrec, gd,
+                        light_box_pts[0].GetPortalControl(), light_box_pts[1].GetPortalControl());
+
+        xzPDFWorklet.operator ()(i, r_in, hrec, sctr, sv, gd,
+                                 light_box_pts[0].GetPortalControl(), light_box_pts[1].GetPortalControl());
+        spherePDFWorklet.operator()(i, r_in, hrec, sctr, sv, gd,
+                                    light_sphere_pts[0].GetPortalControl(), light_sphere_pts[1].GetPortalControl());
+        auto fin = finished.GetPortalControl().Get(i);
+        auto srec = srecs.GetPortalControl().Get(i);
+        pdfWorklet.operator ()(i, r_in, hrec, srec, fin, sctr, sv, gd, r_in, attenuation.GetPortalControl());
+
+        rays.GetPortalControl().Set(i, r_in);
+
+      }
+
+//      vtkm::worklet::AutoDispatcherMapField<XZRectPDFWorklet>(xzPDFWorklet)
+//          .Invoke(rays,hrecs, scattered, sum_values, generated_dir, light_box_pts[0], light_box_pts[1]);
+//      vtkm::worklet::AutoDispatcherMapField<SpherePDFWorklet>(spherePDFWorklet)
+//          .Invoke(rays,hrecs, scattered, sum_values, generated_dir, light_sphere_pts[0], light_sphere_pts[1]);
+
+//      vtkm::worklet::AutoDispatcherMapField<PDFCosineWorklet>(pdfWorklet)
+//            .Invoke(rays, hrecs, srecs, finished, scattered, sum_values, generated_dir,  rays, attenuation);
     }
 
     using CountType = vtkm::cont::ArrayHandleCounting<vtkm::Id>;
