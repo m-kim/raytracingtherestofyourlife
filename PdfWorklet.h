@@ -7,7 +7,7 @@ public:
   GenerateDir(int ts) : type_size(ts){}
   VTKM_EXEC
   void operator()(int &which){
-    which = drand48() * type_size;
+    which = int(drand48() * type_size);
   }
   int type_size;
 };
@@ -102,9 +102,8 @@ public:
   {
     if (which == current){
       for (int i = 0; i < pt1.GetNumberOfValues(); i++){
-        float radius = pt1.Get(i)[0];
-  //        if (!index)
-  //          generated = random(hrec.p, drand48(), drand48(), pt1.Get(i), radius);
+        float radius = pt2.Get(i)[0];
+        generated = random(hrec.p, drand48(), drand48(), pt1.Get(i), radius);
       }
     }
   }
@@ -233,7 +232,7 @@ public:
       float weight = 1.0/list_size;
       int index = int(drand48() *list_size);
       for (int i = 0; i < pt1.GetNumberOfValues(); i++){
-        float radius = pt1.Get(i)[0];
+        float radius = pt2.Get(i)[0];
         sum_value += weight*pdf_value(hrec.p, generated, pt1.Get(i), radius);
       }
     }
