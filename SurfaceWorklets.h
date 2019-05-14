@@ -461,4 +461,46 @@ public:
   int canvasSize;
   int depth;
 };
+
+
+class CollectIntersecttWorklet : public vtkm::worklet::WorkletMapField
+{
+public:
+  VTKM_CONT
+  CollectIntersecttWorklet(
+           int cs,
+           int d)
+    :canvasSize(cs)
+    ,depth(d)
+  {
+  }
+
+
+  using ControlSignature = void(FieldInOut<>,
+  FieldInOut<>,
+  WholeArrayInOut<>,
+  WholeArrayInOut<>
+  );
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4);
+
+  VTKM_EXEC
+  template<typename PtArrayType>
+  void operator()(vtkm::Id idx,
+                  vtkm::Int8 &sctr,
+                  vtkm::Int8 &hit,
+                  PtArrayType &emitted,
+                  PtArrayType &attenuation
+                  ) const
+  {
+    if (!(sctr && hit)){
+      sctr = false;
+      attenuation.Set(idx + canvasSize * depth, vec3(1.0));
+      emitted.Set(idx + canvasSize * depth, vec3(0.0f));
+    }
+
+    //scattered.GetPortalControl().Set(i,sctr);
+  }
+
+  int depth, canvasSize;
+};
 #endif

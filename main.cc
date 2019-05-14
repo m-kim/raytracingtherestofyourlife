@@ -568,18 +568,32 @@ void intersect(RayType &rays,
   }
 
 
-  for (int i=0; i<canvasSize; i++){
-    auto sctr = scattered.GetPortalControl().Get(i);
-    auto hit = hitArray.GetPortalControl().Get(i);
-    if (!(sctr && hit)){
-      sctr = false;
-      attenuation.GetPortalControl().Set(i + canvasSize * depth, vec3(1.0));
-      emitted.GetPortalControl().Set(i + canvasSize * depth, vec3(0.0f));
-    }
+  CollectIntersecttWorklet collectIntersect(canvasSize, depth);
+  vtkm::worklet::AutoDispatcherMapField<CollectIntersecttWorklet>(collectIntersect)
+      .Invoke( scattered, hitArray, emitted, attenuation);
 
-    scattered.GetPortalControl().Set(i,sctr);
-    //std::cout << sctr *255 <<  " " << sctr * 255 << " " << sctr * 255 << std::endl;
-  }
+//  for (int i=0; i<canvasSize; i++){
+//    auto sctr = scattered.GetPortalControl().Get(i);
+//    auto hit = hitArray.GetPortalControl().Get(i);
+//    if (!(sctr && hit)){
+//      sctr = false;
+//      attenuation.GetPortalControl().Set(i + canvasSize * depth, vec3(1.0));
+//      emitted.GetPortalControl().Set(i + canvasSize * depth, vec3(0.0f));
+//    }
+
+//    scattered.GetPortalControl().Set(i,sctr);
+//    //std::cout << sctr *255 <<  " " << sctr * 255 << " " << sctr * 255 << std::endl;
+//  }
+}
+
+
+template <typename T, typename U, class CIn, class COut, class BinaryFunctor>
+VTKM_CONT static T MyScanInclusive(const vtkm::cont::ArrayHandle<T, CIn>& input,
+                                 vtkm::cont::ArrayHandle<U, COut>& output)
+{
+  vtkm::cont::ScanInclusiveResultFunctor<U> functor;
+  vtkm::cont::TryExecute(functor, input, output);
+  return functor.result;
 }
 
 template<typename DeviceAdapterTag>
@@ -592,11 +606,11 @@ int main() {
   using StorageTag = vtkm::cont::StorageTagBasic;
   using Device = VTKM_DEFAULT_DEVICE_ADAPTER_TAG;
 
-  constexpr int nx = 128;
-  constexpr int ny = 128;
-  constexpr int ns = 2;
+  constexpr int nx = 512;
+  constexpr int ny = 512;
+  constexpr int ns = 1;
 
-  constexpr int depthcount = 5;
+  constexpr int depthcount = 50;
   auto canvasSize = nx*ny;
 
   constexpr int lightables = 2;
@@ -611,15 +625,18 @@ int main() {
   light_sphere_pts[1].Allocate(1);
   light_sphere_pts[1].GetPortalControl().Set(0, vec3(90,0,0));
 
-#ifndef USE_HITABLE
   vtkCornellBox();
-#endif
 
   vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32, 2>> uvs;
   uvs.Allocate(nx*ny);
 
+  vtkm::cont::ArrayHandle<vtkm::Id> rays_index;
+
   vtkm::rendering::raytracing::Ray<float> rays;
   vtkm::rendering::raytracing::RayOperations::Resize(rays, canvasSize, Device());
+
+
+  MyAlgos::Copy<vtkm::UInt8, vtkm::UInt8, StorageTag>(1, rays.Status);
 
   vtkm::cont::ArrayHandleConstant<vec3> zero(vec3(0.0f), nx*ny);
   vtkm::cont::ArrayHandle<vec3> cols;
@@ -643,7 +660,6 @@ int main() {
   emitted.Allocate(canvasSize * depthcount);
   scattered.Allocate(canvasSize);
   hitArray.Allocate(canvasSize);
-  finished.Allocate(canvasSize);
   hrecs.Allocate(canvasSize);
   srecs.Allocate(canvasSize);
   ArrayType sumtotl;
@@ -673,7 +689,7 @@ int main() {
 
 
     MyAlgos::Copy<vtkm::Int8, vtkm::Int8, StorageTag>(1, scattered);
-    MyAlgos::Copy<vtkm::Int8, vtkm::Int8, StorageTag>(0, finished);
+    MyAlgos::Copy<vtkm::UInt8, vtkm::UInt8, StorageTag>(0, rays.Status);
 
 
     for (int depth=0; depth<depthcount; depth++){
@@ -699,28 +715,25 @@ int main() {
       SpherePDFWorklet spherePDFWorklet(lightables);
       PDFCosineWorklet pdfWorklet(canvasSize, depth, canvasSize, lightables);
       vtkm::worklet::AutoDispatcherMapField<LambertianWorklet>(lmbWorklet)
-          .Invoke(rays.Origin, rays.Dir, hrecs, srecs, finished, scattered,
+          .Invoke(rays.Origin, rays.Dir, hrecs, srecs, rays.Status, scattered,
                   tex, matType, texType, emitted);
 
       vtkm::worklet::AutoDispatcherMapField<DiffuseLightWorklet>(dlWorklet)
-          .Invoke(rays.Origin, rays.Dir, hrecs, srecs, finished, scattered,
+          .Invoke(rays.Origin, rays.Dir, hrecs, srecs, rays.Status, scattered,
                   tex, matType, texType, emitted);
 
       vtkm::worklet::AutoDispatcherMapField<DielectricWorklet>(deWorklet)
-            .Invoke(rays.Origin, rays.Dir, hrecs, srecs, finished, scattered,
+            .Invoke(rays.Origin, rays.Dir, hrecs, srecs, rays.Status, scattered,
                     tex, matType, texType, emitted);
 
       vtkm::worklet::AutoDispatcherMapField<GenerateDir>(genDir)
           .Invoke(whichPDF);
       vtkm::worklet::AutoDispatcherMapField<CosineGenerateDir>(cosGenDir)
           .Invoke(whichPDF, hrecs, generated_dir, light_sphere_pts[0], light_sphere_pts[1]);
-      std::cout << s << " cosineGen " << vtkm::cont::Algorithm::Reduce(generated_dir, vec3(0.0)) << std::endl;
       vtkm::worklet::AutoDispatcherMapField<XZRectGenerateDir>(xzRectGenDir)
           .Invoke(whichPDF, hrecs, generated_dir, light_box_pts[0], light_box_pts[1]);
-      std::cout << s << " xzRectGen " << vtkm::cont::Algorithm::Reduce(generated_dir, vec3(0.0)) << std::endl;
       vtkm::worklet::AutoDispatcherMapField<SphereGenerateDir>(sphereGenDir)
           .Invoke(whichPDF, hrecs, generated_dir, light_sphere_pts[0], light_sphere_pts[1]);
-      std::cout << s << " sphereGen " << vtkm::cont::Algorithm::Reduce(generated_dir, vec3(0.0)) << std::endl;
 
       vtkm::worklet::AutoDispatcherMapField<XZRectPDFWorklet>(xzPDFWorklet)
           .Invoke(rays.Origin, rays.Dir,hrecs, scattered, sum_values, generated_dir, light_box_pts[0], light_box_pts[1]);
@@ -728,7 +741,12 @@ int main() {
           .Invoke(rays.Origin, rays.Dir,hrecs, scattered, sum_values, generated_dir, light_sphere_pts[0], light_sphere_pts[1]);
 
       vtkm::worklet::AutoDispatcherMapField<PDFCosineWorklet>(pdfWorklet)
-            .Invoke(rays.Origin, rays.Dir, hrecs, srecs, finished, scattered, sum_values, generated_dir,  rays.Origin, rays.Dir, attenuation);
+            .Invoke(rays.Origin, rays.Dir, hrecs, srecs, rays.Status, scattered, sum_values, generated_dir,  rays.Origin, rays.Dir, attenuation);
+
+
+      vtkm::cont::ArrayHandleCast<vtkm::Int32, vtkm::cont::ArrayHandle<vtkm::UInt8>> castedStatus(rays.Status);
+
+      std::cout << "fin: " << depth << " " << static_cast<int>(vtkm::cont::Algorithm::Reduce(castedStatus, vtkm::Int32(0))) << std::endl;
     }
 
     using CountType = vtkm::cont::ArrayHandleCounting<vtkm::Id>;
@@ -742,12 +760,6 @@ int main() {
         (std::make_tuple((depthcount-1)*canvasSize, (depthcount-1)*canvasSize + canvasSize), emitted,
          std::make_tuple(0, canvasSize), zero,
          std::make_tuple(0, canvasSize), sumtotl, vtkm::Sum());
-
-     std::cout << s << " generated_dir " << vtkm::cont::Algorithm::Reduce(generated_dir, vec3(0.0)) << std::endl;
-     std::cout << s << " emitted " << vtkm::cont::Algorithm::Reduce(emitted, vec3(0.0)) << std::endl;
-     std::cout << s << " attenuation " << vtkm::cont::Algorithm::Reduce(attenuation, vec3(0.0)) << std::endl;
-     std::cout << s << " scattered " << vtkm::cont::Algorithm::Reduce(scattered, vtkm::Int8(0)) << std::endl;
-     std::cout << s << " generated_dir " << vtkm::cont::Algorithm::Reduce(scattered, vtkm::Int8(0)) << std::endl;
 
     for (int depth = depthcount-2; depth >=0; depth--){
       MyAlgos::SliceTransform<
@@ -772,6 +784,9 @@ int main() {
     }
 
     vtkm::cont::Algorithm::Transform(cols, sumtotl, cols, vtkm::Sum());
+
+    std::cout << "ns: " << s <<" " << vtkm::cont::Algorithm::Reduce(sumtotl, vec3(0.0)) << std::endl;
+
   }
 
   std::vector<std::uint8_t> ImageBuffer;

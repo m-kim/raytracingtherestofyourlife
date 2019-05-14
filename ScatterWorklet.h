@@ -61,7 +61,7 @@ public:
                   vec3 &r_direction,
                   HitRecord &hrec,
                   ScatterRecord &srec,
-                  vtkm::Int8 &fin,
+                  vtkm::UInt8 &fin,
                   vtkm::Int8 &is_scattered,
                   float &sum_value,
                   vec3 &generated_dir,
