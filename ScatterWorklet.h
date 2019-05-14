@@ -45,48 +45,52 @@ public:
 
 
   VTKM_EXEC
-  float scattering_pdf(const ray& r_in, const HitRecord& rec, const ray& scattered) const {
-      float cosine = dot(rec.normal, unit_vector(scattered.direction()));
+  float scattering_pdf(const vec3 &origin, const vec3 &direction, const HitRecord& rec, const vec3& scattered_origin, const vec3 &scattered_direction) const {
+      float cosine = dot(rec.normal, unit_vector(scattered_direction));
       if (cosine < 0)
           return 0;
       return cosine / M_PI;
   }
 
-  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>);
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9);
+  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
   VTKM_EXEC
   template<typename VecArrayType>
   void operator()(vtkm::Id idx,
-                  ray &r_in,
+                  vec3 &r_origin,
+                  vec3 &r_direction,
                   HitRecord &hrec,
                   ScatterRecord &srec,
                   vtkm::Int8 &fin,
                   vtkm::Int8 &is_scattered,
                   float &sum_value,
-                  vec3 &direction,
-                  ray &r_out,
+                  vec3 &generated_dir,
+                  vec3 &out_origin,
+                  vec3 &out_direction,
                   VecArrayType attenuation) const
   {
     if (!fin){
       vec3 atten(1.0);
-      r_out = r_in;
+      out_origin = r_origin;
+      out_direction = r_direction;
 
       if (is_scattered){
         if (srec.is_specular) {
           atten = srec.attenuation;
-          r_out = srec.specular_ray;
+          out_origin = srec.o;
+          out_direction = srec.dir;
         }
         else {
 
           cosine_pdf newPdf;
           newPdf.SetW(hrec.normal);
 
-          r_out = ray(hrec.p, direction, r_in.time());
-
+          out_origin = hrec.p;
+          out_direction = generated_dir;
           //float pdf_val = p.value(r_out.direction());
-          auto pdf_val = 0.5 * sum_value + 0.5 * newPdf.value(direction);
+          auto pdf_val = 0.5 * sum_value + 0.5 * newPdf.value(generated_dir);
 
-          auto sctr = scattering_pdf(r_in, hrec, r_out)/pdf_val;
+          auto sctr = scattering_pdf(r_origin, r_direction, hrec, out_origin, out_direction)/pdf_val;
           atten = srec.attenuation * sctr;
         }
       }

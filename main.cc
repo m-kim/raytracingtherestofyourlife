@@ -16,8 +16,13 @@
 #include <JSONPNGConvert.h>
 #include <lodepng.h>
 #include <vtkm/cont/ArrayHandleConstant.h>
+#include <vtkm/rendering/CanvasRayTracer.h>
 #include <vtkm/rendering/raytracing/Camera.h>
 #include <vtkm/cont/internal/DeviceAdapterAlgorithmGeneral.h>
+#include <vtkm/cont/ArrayHandle.h>
+#include <vtkm/cont/ArrayHandleCompositeVector.h>
+#include <vtkm/rendering/raytracing/Ray.h>
+#include <vtkm/rendering/raytracing/RayOperations.h>
 #include <omp.h>
 #include <vtkm/cont/Algorithm.h>
 #include <fstream>
@@ -517,7 +522,9 @@ void vtkCornellBox()
 
 }
 
-void intersect(vtkm::cont::ArrayHandle<ray> &rays,
+using RayType = vtkm::rendering::raytracing::Ray<float>;
+
+void intersect(RayType &rays,
                vtkm::cont::ArrayHandle<HitRecord> &hrecs,
                vtkm::cont::ArrayHandle<float> &tmin,
                vtkm::cont::ArrayHandle<float> &closest,
@@ -527,18 +534,18 @@ void intersect(vtkm::cont::ArrayHandle<ray> &rays,
                ArrayType &attenuation,
                const int depth)
 {
-  vtkm::Id canvasSize = rays.GetNumberOfValues();
+  vtkm::Id canvasSize = rays.DirX.GetNumberOfValues();
   for (int i=0; i<cellTypeArray.size(); i++){
     if (cellTypeArray[i] == 0){
       YZRectWorklet yz(canvasSize, depth);
         vtkm::worklet::AutoDispatcherMapField<YZRectWorklet>(yz)
-            .Invoke(rays, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
+            .Invoke(rays.Origin, rays.Dir, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
                     matIdx[i], texIdx[i],translateOffset[i], angleArray[i],flipped[i]);
     }
     else if (cellTypeArray[i] == 1){
       XZRectWorklet xz(canvasSize, depth);
       vtkm::worklet::AutoDispatcherMapField<XZRectWorklet>(xz)
-          .Invoke(rays, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
+          .Invoke(rays.Origin, rays.Dir, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
                   matIdx[i], texIdx[i],translateOffset[i], angleArray[i],flipped[i]);
 
 
@@ -547,21 +554,21 @@ void intersect(vtkm::cont::ArrayHandle<ray> &rays,
       //xy
       XYRectWorklet xy(canvasSize, depth);
       vtkm::worklet::AutoDispatcherMapField<XYRectWorklet>(xy)
-          .Invoke(rays, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
+          .Invoke(rays.Origin, rays.Dir, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
                   matIdx[i], texIdx[i],translateOffset[i], angleArray[i],flipped[i]);
 
     }
     else if (cellTypeArray[i] == 3){
       SphereIntersecttWorklet sphereIntersect(canvasSize, depth);
       vtkm::worklet::AutoDispatcherMapField<SphereIntersecttWorklet>(sphereIntersect)
-          .Invoke(rays, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
+          .Invoke(rays.Origin, rays.Dir, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
                   matIdx[i], texIdx[i]);
 
     }
   }
 
 
-  for (int i=0; i<rays.GetNumberOfValues(); i++){
+  for (int i=0; i<canvasSize; i++){
     auto sctr = scattered.GetPortalControl().Get(i);
     auto hit = hitArray.GetPortalControl().Get(i);
     if (!(sctr && hit)){
@@ -575,16 +582,21 @@ void intersect(vtkm::cont::ArrayHandle<ray> &rays,
   }
 }
 
-
+template<typename DeviceAdapterTag>
+void resizeRays(vtkm::rendering::raytracing::Ray<float> &rays, int canvasSize)
+{
+  rays.Resize(canvasSize);
+}
 int main() {
   using MyAlgos = MyAlgorithms<vtkm::cont::DeviceAdapterAlgorithm<VTKM_DEFAULT_DEVICE_ADAPTER_TAG>, VTKM_DEFAULT_DEVICE_ADAPTER_TAG>;
   using StorageTag = vtkm::cont::StorageTagBasic;
+  using Device = VTKM_DEFAULT_DEVICE_ADAPTER_TAG;
 
   constexpr int nx = 128;
   constexpr int ny = 128;
-  constexpr int ns = 100;
+  constexpr int ns = 2;
 
-  constexpr int depthcount = 20;
+  constexpr int depthcount = 5;
   auto canvasSize = nx*ny;
 
   constexpr int lightables = 2;
@@ -602,21 +614,19 @@ int main() {
 #ifndef USE_HITABLE
   vtkCornellBox();
 #endif
-  vtkm::cont::ArrayHandle<ray> rays;
-  rays.Allocate(nx*ny);
 
   vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32, 2>> uvs;
   uvs.Allocate(nx*ny);
+
+  vtkm::rendering::raytracing::Ray<float> rays;
+  vtkm::rendering::raytracing::RayOperations::Resize(rays, canvasSize, Device());
 
   vtkm::cont::ArrayHandleConstant<vec3> zero(vec3(0.0f), nx*ny);
   vtkm::cont::ArrayHandle<vec3> cols;
   cols.Allocate(nx*ny);
   MyAlgos::Copy<vec3, vec3, StorageTag>(vec3(0.0f), cols);
 
-  vtkm::cont::ArrayHandle<vtkm::Float32> DirX, DirY, DirZ, sum_values;
-  DirX.Allocate(nx*ny); DirY.Allocate(nx*ny); DirZ.Allocate(nx*ny);
-  vtkm::cont::ArrayHandle<vtkm::Id> PixelIdx;
-  PixelIdx.Allocate(nx*ny);
+  vtkm::cont::ArrayHandle<vtkm::Float32> sum_values;
 
   vtkm::cont::ArrayHandle<ScatterRecord> srecs;
   vtkm::cont::ArrayHandle<vtkm::Int8> scattered, hitArray, finished;
@@ -629,17 +639,17 @@ int main() {
   ArrayType generated_dir;
   vtkm::cont::ArrayHandle<int> whichPDF;
 
-  attenuation.Allocate(rays.GetNumberOfValues() * depthcount);
-  emitted.Allocate(rays.GetNumberOfValues() * depthcount);
-  scattered.Allocate(rays.GetNumberOfValues());
-  hitArray.Allocate(rays.GetNumberOfValues());
-  finished.Allocate(rays.GetNumberOfValues());
-  hrecs.Allocate(rays.GetNumberOfValues());
-  srecs.Allocate(rays.GetNumberOfValues());
+  attenuation.Allocate(canvasSize* depthcount);
+  emitted.Allocate(canvasSize * depthcount);
+  scattered.Allocate(canvasSize);
+  hitArray.Allocate(canvasSize);
+  finished.Allocate(canvasSize);
+  hrecs.Allocate(canvasSize);
+  srecs.Allocate(canvasSize);
   ArrayType sumtotl;
-  sumtotl.Allocate(rays.GetNumberOfValues());
-  closest.Allocate(rays.GetNumberOfValues());
-  tmin.Allocate(rays.GetNumberOfValues());
+  sumtotl.Allocate(canvasSize);
+  closest.Allocate(canvasSize);
+  tmin.Allocate(canvasSize);
   sum_values.Allocate(nx*ny);
   generated_dir.Allocate(nx*ny);
   whichPDF.Allocate(nx*ny);
@@ -653,13 +663,13 @@ int main() {
                   vtkm::Vec<vtkm::Float32,3>(0,1,0),
                   0, nx, 0, 0, ns);
     vtkm::worklet::AutoDispatcherMapField<RayGen>(raygen)
-          .Invoke(DirX, DirY, DirZ, PixelIdx);
+          .Invoke(rays.DirX, rays.DirY, rays.DirZ, rays.PixelIdx);
 
     vec3 lookfrom(278, 278, -800);
-    RayLook rl(lookfrom);
-    vtkm::worklet::AutoDispatcherMapField<RayLook>(rl)
-          .Invoke(DirX, DirY, DirZ, uvs, rays);
 
+    MyAlgos::Copy<float, float, StorageTag>(lookfrom[0], rays.OriginX);
+    MyAlgos::Copy<float, float, StorageTag>(lookfrom[1], rays.OriginY);
+    MyAlgos::Copy<float, float, StorageTag>(lookfrom[2], rays.OriginZ);
 
 
     MyAlgos::Copy<vtkm::Int8, vtkm::Int8, StorageTag>(1, scattered);
@@ -679,7 +689,7 @@ int main() {
       MyAlgos::Copy<vtkm::Int8, vtkm::Int8, StorageTag>(0, hitArray);
       LambertianWorklet lmbWorklet( canvasSize, depth);
       DiffuseLightWorklet dlWorklet(canvasSize ,depth);
-      DielectricWorklet deWorklet( canvasSize ,depth, 1.5, rays.GetNumberOfValues());
+      DielectricWorklet deWorklet( canvasSize ,depth, 1.5, canvasSize);
       GenerateDir genDir(3);
       CosineGenerateDir cosGenDir(1);
       XZRectGenerateDir xzRectGenDir(2);
@@ -687,35 +697,38 @@ int main() {
 
       XZRectPDFWorklet xzPDFWorklet(lightables);
       SpherePDFWorklet spherePDFWorklet(lightables);
-      PDFCosineWorklet pdfWorklet(canvasSize, depth, rays.GetNumberOfValues(), lightables);
+      PDFCosineWorklet pdfWorklet(canvasSize, depth, canvasSize, lightables);
       vtkm::worklet::AutoDispatcherMapField<LambertianWorklet>(lmbWorklet)
-          .Invoke(rays, hrecs, srecs, finished, scattered,
+          .Invoke(rays.Origin, rays.Dir, hrecs, srecs, finished, scattered,
                   tex, matType, texType, emitted);
 
       vtkm::worklet::AutoDispatcherMapField<DiffuseLightWorklet>(dlWorklet)
-          .Invoke(rays, hrecs, srecs, finished, scattered,
+          .Invoke(rays.Origin, rays.Dir, hrecs, srecs, finished, scattered,
                   tex, matType, texType, emitted);
 
       vtkm::worklet::AutoDispatcherMapField<DielectricWorklet>(deWorklet)
-            .Invoke(rays, hrecs, srecs, finished, scattered,
+            .Invoke(rays.Origin, rays.Dir, hrecs, srecs, finished, scattered,
                     tex, matType, texType, emitted);
 
       vtkm::worklet::AutoDispatcherMapField<GenerateDir>(genDir)
           .Invoke(whichPDF);
       vtkm::worklet::AutoDispatcherMapField<CosineGenerateDir>(cosGenDir)
           .Invoke(whichPDF, hrecs, generated_dir, light_sphere_pts[0], light_sphere_pts[1]);
+      std::cout << s << " cosineGen " << vtkm::cont::Algorithm::Reduce(generated_dir, vec3(0.0)) << std::endl;
       vtkm::worklet::AutoDispatcherMapField<XZRectGenerateDir>(xzRectGenDir)
           .Invoke(whichPDF, hrecs, generated_dir, light_box_pts[0], light_box_pts[1]);
+      std::cout << s << " xzRectGen " << vtkm::cont::Algorithm::Reduce(generated_dir, vec3(0.0)) << std::endl;
       vtkm::worklet::AutoDispatcherMapField<SphereGenerateDir>(sphereGenDir)
           .Invoke(whichPDF, hrecs, generated_dir, light_sphere_pts[0], light_sphere_pts[1]);
+      std::cout << s << " sphereGen " << vtkm::cont::Algorithm::Reduce(generated_dir, vec3(0.0)) << std::endl;
 
       vtkm::worklet::AutoDispatcherMapField<XZRectPDFWorklet>(xzPDFWorklet)
-          .Invoke(rays,hrecs, scattered, sum_values, generated_dir, light_box_pts[0], light_box_pts[1]);
+          .Invoke(rays.Origin, rays.Dir,hrecs, scattered, sum_values, generated_dir, light_box_pts[0], light_box_pts[1]);
       vtkm::worklet::AutoDispatcherMapField<SpherePDFWorklet>(spherePDFWorklet)
-          .Invoke(rays,hrecs, scattered, sum_values, generated_dir, light_sphere_pts[0], light_sphere_pts[1]);
+          .Invoke(rays.Origin, rays.Dir,hrecs, scattered, sum_values, generated_dir, light_sphere_pts[0], light_sphere_pts[1]);
 
       vtkm::worklet::AutoDispatcherMapField<PDFCosineWorklet>(pdfWorklet)
-            .Invoke(rays, hrecs, srecs, finished, scattered, sum_values, generated_dir,  rays, attenuation);
+            .Invoke(rays.Origin, rays.Dir, hrecs, srecs, finished, scattered, sum_values, generated_dir,  rays.Origin, rays.Dir, attenuation);
     }
 
     using CountType = vtkm::cont::ArrayHandleCounting<vtkm::Id>;
@@ -730,7 +743,11 @@ int main() {
          std::make_tuple(0, canvasSize), zero,
          std::make_tuple(0, canvasSize), sumtotl, vtkm::Sum());
 
-     std::cout << s << " " << vtkm::cont::Algorithm::Reduce(emitted, vec3(0.0)) << std::endl;
+     std::cout << s << " generated_dir " << vtkm::cont::Algorithm::Reduce(generated_dir, vec3(0.0)) << std::endl;
+     std::cout << s << " emitted " << vtkm::cont::Algorithm::Reduce(emitted, vec3(0.0)) << std::endl;
+     std::cout << s << " attenuation " << vtkm::cont::Algorithm::Reduce(attenuation, vec3(0.0)) << std::endl;
+     std::cout << s << " scattered " << vtkm::cont::Algorithm::Reduce(scattered, vtkm::Int8(0)) << std::endl;
+     std::cout << s << " generated_dir " << vtkm::cont::Algorithm::Reduce(scattered, vtkm::Int8(0)) << std::endl;
 
     for (int depth = depthcount-2; depth >=0; depth--){
       MyAlgos::SliceTransform<

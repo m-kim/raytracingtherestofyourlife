@@ -30,6 +30,15 @@ public:
   }
 
   VTKM_EXEC
+  inline vec3 de_nan(const vec3& c) const {
+      vec3 temp = c;
+      if (!(temp[0] == temp[0])) temp[0] = 0;
+      if (!(temp[1] == temp[1])) temp[1] = 0;
+      if (!(temp[2] == temp[2])) temp[2] = 0;
+      return temp;
+  }
+
+  VTKM_EXEC
   inline vec3 random_cosine_direction(float r1, float r2) const {
       float z = sqrt(1-r2);
       float phi = 2*M_PI*r1;
@@ -61,7 +70,7 @@ public:
       float r2 =drand48();
       onb uvw;
       uvw.build_from_w(hrec.normal);
-      generated = uvw.local(random_cosine_direction(r1,r2));
+      generated = de_nan(uvw.local(random_cosine_direction(r1,r2)));
     }
   }
   int current;
@@ -119,7 +128,16 @@ public:
   SphereGenerateDir(int cur = 2): current(cur) {}
 
   VTKM_EXEC
-  inline vec3 random_to_sphere(float radius, float distance_squared, float r1, float r2) const {
+  inline vec3 de_nan(const vec3& c) const {
+      vec3 temp = c;
+      if (!(temp[0] == temp[0])) temp[0] = 0;
+      if (!(temp[1] == temp[1])) temp[1] = 0;
+      if (!(temp[2] == temp[2])) temp[2] = 0;
+      return temp;
+  }
+
+  VTKM_EXEC
+  vec3 random_to_sphere(float radius, float distance_squared, float r1, float r2) const {
   //    float r1 = drand48();
   //    float r2 = drand48();
       float z = 1 + r2*(sqrt(1-radius*radius/distance_squared) - 1);
@@ -135,7 +153,7 @@ public:
        float distance_squared = MagnitudeSquared(direction);
        onb uvw;
        uvw.build_from_w(direction);
-       return uvw.local(random_to_sphere(radius, distance_squared, r1,r2));
+       return de_nan(uvw.local(random_to_sphere(radius, distance_squared, r1,r2)));
   }
   using ControlSignature = void(FieldInOut<>,
   FieldInOut<>,
@@ -180,7 +198,7 @@ public:
                    float x0, float x1, float z0, float z1, float k) const {
     HitRecord rec;
     int matId,texId;
-    if (surf.hit(ray(o,v), rec,0.001, std::numeric_limits<float>::max(),x0,x1,z0,z1,k, matId, texId)) {
+    if (surf.hit(o,v, rec,0.001, std::numeric_limits<float>::max(),x0,x1,z0,z1,k, matId, texId)) {
         float area = (x1-x0)*(z1-z0);
         float distance_squared = rec.t * rec.t * vtkm::MagnitudeSquared(v);
         float cosine = fabs(dot(v, rec.normal) * vtkm::RMagnitude(v));
@@ -196,17 +214,19 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
+  FieldInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>
 
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8);
 
   VTKM_EXEC
   template<typename PtArrayType,
           typename FlippedType>
   void operator()(vtkm::Id idx,
-                  ray &ray_io,
+                  vec3 &origin,
+                  vec3 &direction,
                   HitRecord &hrec,
                   FlippedType &scattered,
                   float &sum_value,
@@ -249,7 +269,7 @@ public:
                   vec3 center, float radius) const {
     HitRecord rec;
     int matId,texId;
-    if (surf.hit(ray(o, v), rec, 0.001, std::numeric_limits<float>::max(), center, radius, matId, texId )) {
+    if (surf.hit(o, v, rec, 0.001, std::numeric_limits<float>::max(), center, radius, matId, texId )) {
         float cos_theta_max = sqrt(1 - radius*radius/vtkm::MagnitudeSquared(center-o));
         float solid_angle = 2*M_PI*(1-cos_theta_max);
         return  1 / solid_angle;
@@ -265,17 +285,19 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
+  FieldInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>
 
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8);
 
   VTKM_EXEC
   template<typename PtArrayType,
           typename FlippedType>
   void operator()(vtkm::Id idx,
-                  ray &ray_io,
+                  vec3 &origin,
+                  vec3 &direction,
                   HitRecord &hrec,
                   FlippedType &scattered,
                   float &sum_value,

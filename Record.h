@@ -16,7 +16,7 @@ struct HitRecord
 
 struct ScatterRecord
 {
-    ray specular_ray;
+    vec3 o, dir;
     bool is_specular;
     vec3 attenuation;
 
