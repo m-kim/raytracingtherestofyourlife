@@ -1,6 +1,7 @@
 #ifndef PDFWORKLET_H
 #define PDFWORKLET_H
 #include "Surface.h"
+#include "Record.h"
 class GenerateDir : public vtkm::worklet::WorkletMapField
 {
 public:
@@ -56,7 +57,7 @@ public:
   using ExecutionSignature = void(_1, _2, _3, _4, _5);
 
   VTKM_EXEC
-  template<typename PtArrayType>
+  template<typename PtArrayType, typename HitRecord>
   void operator()(
       int which,
        HitRecord &hrec,
@@ -69,7 +70,9 @@ public:
       float r1 =drand48();
       float r2 =drand48();
       onb uvw;
-      uvw.build_from_w(hrec.normal);
+
+      vec3 hrecn(hrec[static_cast<vtkm::Id>(HR::Nx)], hrec[static_cast<vtkm::Id>(HR::Ny)], hrec[static_cast<vtkm::Id>(HR::Nz)]);
+      uvw.build_from_w(hrecn);
       generated = de_nan(uvw.local(random_cosine_direction(r1,r2)));
     }
   }
@@ -98,7 +101,7 @@ public:
   using ExecutionSignature = void(_1, _2, _3, _4, _5);
 
   VTKM_EXEC
-  template<typename PtArrayType>
+  template<typename PtArrayType, typename HitRecord>
   void operator()(int which,
            HitRecord &hrec,
            vec3 &generated,
@@ -113,7 +116,8 @@ public:
         float z0 = pt1.Get(i)[2];
         float z1 = pt2.Get(i)[2];
         float k = pt1.Get(i)[1];
-        generated = random(hrec.p, drand48(), drand48(),
+        vec3 p(hrec[static_cast<vtkm::Id>(HR::Px)], hrec[static_cast<vtkm::Id>(HR::Py)], hrec[static_cast<vtkm::Id>(HR::Pz)]);
+        generated = random(p, drand48(), drand48(),
                            x0,x1,z0,z1,k);
       }
     }
@@ -165,7 +169,7 @@ public:
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5);
 
   VTKM_EXEC
-  template<typename PtArrayType>
+  template<typename PtArrayType, typename HitRecord>
   void operator()(vtkm::Id idx,
           int &which,
            HitRecord &hrec,
@@ -177,7 +181,8 @@ public:
     if (which == current){
       for (int i = 0; i < pt1.GetNumberOfValues(); i++){
         float radius = pt2.Get(i)[0];
-        generated = random(hrec.p, drand48(), drand48(), pt1.Get(i), radius);
+        vec3 p(hrec[static_cast<vtkm::Id>(HR::Px)], hrec[static_cast<vtkm::Id>(HR::Py)], hrec[static_cast<vtkm::Id>(HR::Pz)]);
+        generated = random(p, drand48(), drand48(), pt1.Get(i), radius);
       }
     }
   }
@@ -194,14 +199,18 @@ public:
   {
   }
   VTKM_EXEC
+
   float  pdf_value(const vec3& o, const vec3& v,
                    float x0, float x1, float z0, float z1, float k) const {
-    HitRecord rec;
+    vtkm::Vec<vtkm::Float32, 9> rec;
+    vtkm::Vec<vtkm::Int8,2> hid;
     int matId,texId;
-    if (surf.hit(o,v, rec,0.001, std::numeric_limits<float>::max(),x0,x1,z0,z1,k, matId, texId)) {
+    if (surf.hit(o,v, rec, hid, 0.001, std::numeric_limits<float>::max(),x0,x1,z0,z1,k, matId, texId)) {
         float area = (x1-x0)*(z1-z0);
-        float distance_squared = rec.t * rec.t * vtkm::MagnitudeSquared(v);
-        float cosine = fabs(dot(v, rec.normal) * vtkm::RMagnitude(v));
+        auto rect = rec[static_cast<vtkm::Id>(HR::T)];
+        float distance_squared = rect * rect * vtkm::MagnitudeSquared(v);
+        vec3 n(rec[static_cast<vtkm::Id>(HR::Nx)],rec[static_cast<vtkm::Id>(HR::Ny)],rec[static_cast<vtkm::Id>(HR::Nz)]);
+        float cosine = fabs(dot(v, n) * vtkm::RMagnitude(v));
         return  distance_squared / (cosine * area);
     }
     else
@@ -223,7 +232,8 @@ public:
 
   VTKM_EXEC
   template<typename PtArrayType,
-          typename FlippedType>
+          typename FlippedType,
+  typename HitRecord>
   void operator()(vtkm::Id idx,
                   vec3 &origin,
                   vec3 &direction,
@@ -244,7 +254,8 @@ public:
         float z0 = pt1.Get(i)[2];
         float z1 = pt2.Get(i)[2];
         float k = pt1.Get(i)[1];
-        sum_value += weight*pdf_value(hrec.p, generated, x0,x1,z0,z1,k);
+        vec3 p(hrec[static_cast<vtkm::Id>(HR::Px)], hrec[static_cast<vtkm::Id>(HR::Py)], hrec[static_cast<vtkm::Id>(HR::Pz)]);
+        sum_value += weight*pdf_value(p, generated, x0,x1,z0,z1,k);
         //if (!index)
 
       }
@@ -265,11 +276,14 @@ public:
   {
   }
   VTKM_EXEC
+
   float  pdf_value(const vec3& o, const vec3& v,
                   vec3 center, float radius) const {
-    HitRecord rec;
+
+    vtkm::Vec<vtkm::Float32, 9> rec;
+    vtkm::Vec<vtkm::Id,2> hid;
     int matId,texId;
-    if (surf.hit(o, v, rec, 0.001, std::numeric_limits<float>::max(), center, radius, matId, texId )) {
+    if (surf.hit(o, v, rec, hid, 0.001, std::numeric_limits<float>::max(), center, radius, matId, texId )) {
         float cos_theta_max = sqrt(1 - radius*radius/vtkm::MagnitudeSquared(center-o));
         float solid_angle = 2*M_PI*(1-cos_theta_max);
         return  1 / solid_angle;
@@ -294,7 +308,8 @@ public:
 
   VTKM_EXEC
   template<typename PtArrayType,
-          typename FlippedType>
+          typename FlippedType,
+  typename HitRecord>
   void operator()(vtkm::Id idx,
                   vec3 &origin,
                   vec3 &direction,
@@ -311,7 +326,8 @@ public:
       int index = int(drand48() *list_size);
       for (int i = 0; i < pt1.GetNumberOfValues(); i++){
         float radius = pt2.Get(i)[0];
-        sum_value += weight*pdf_value(hrec.p, generated, pt1.Get(i), radius);
+        vec3 p(hrec[static_cast<vtkm::Id>(HR::Px)], hrec[static_cast<vtkm::Id>(HR::Py)], hrec[static_cast<vtkm::Id>(HR::Pz)]);
+        sum_value += weight*pdf_value(p, generated, pt1.Get(i), radius);
       }
     }
   }

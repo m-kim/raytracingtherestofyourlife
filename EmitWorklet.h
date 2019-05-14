@@ -5,6 +5,7 @@
 #include <vtkm/worklet/WorkletMapField.h>
 #include <vtkm/cont/ArrayHandleCounting.h>
 #include <vtkm/rendering/xorShift.h>
+#include "Record.h"
 #include "vec3.h"
 
 class LambertianWorklet : public vtkm::worklet::WorkletMapField
@@ -18,25 +19,29 @@ public:
   }
 
   VTKM_EXEC
+  template<typename HitRecord>
   bool scatter(const vec3 &origin, const vec3 &direction, const HitRecord& hrec, ScatterRecord& srec, vec3 albedo) const {
       srec.is_specular = false;
       srec.attenuation = albedo;
       return true;
   }
   VTKM_EXEC
+  template<typename HitRecord>
   vec3 emit(const vec3 &origin, const vec3 &direction, const HitRecord& rec, vec3 emit) const { return vec3(0,0,0); }
 
-  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>,FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>,WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8,_9, _10);
+  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>,FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>,WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8,_9, _10, _11);
   VTKM_EXEC
   template<typename VecArrayType,
           typename ColorArrayType,
           typename MatTypeArray,
-          typename TexTypeArray>
+          typename TexTypeArray,
+  typename HitRecord, typename HitId>
   void operator()(vtkm::Id idx,
                   vec3 &origin,
                   vec3 &direction,
                   HitRecord &hrec,
+                  HitId &hid,
                   ScatterRecord &srec,
                   vtkm::UInt8 &fin,
                   vtkm::Int8 &scattered,
@@ -47,10 +52,11 @@ public:
   {
     if (!fin){
       if (scattered){
-        auto mt = matType.Get(hrec.matId);
+        auto mt = matType.Get(hid[static_cast<vtkm::Id>(HI::M)]);
         if (mt == 0){
-          vec3 em = emit(origin, direction, hrec, col.Get(texType.Get(hrec.texId)));
-          scattered = scatter(origin, direction, hrec, srec, col.Get(texType.Get(hrec.texId)));
+          auto tt = texType.Get(hid[static_cast<vtkm::Id>(HI::T)]);
+          vec3 em = emit(origin, direction, hrec, col.Get(tt));
+          scattered = scatter(origin, direction, hrec, srec, col.Get(tt));
           emitted.Set(canvasSize * depth + idx, em);
 
         }
@@ -73,27 +79,32 @@ public:
   }
 
   VTKM_EXEC
+  template<typename HitRecord>
   bool scatter(const vec3 &origin, const vec3 &direction, const HitRecord& hrec, ScatterRecord& srec, vec3) const {
         return false;}
   VTKM_EXEC
+  template<typename HitRecord>
   vec3 emit(const vec3 &origin, const vec3 &direction, const HitRecord& rec, vec3 emit) const {
-      if (dot(rec.normal, direction) < 0.0)
+    vec3 n(rec[static_cast<vtkm::Id>(HR::Nx)], rec[static_cast<vtkm::Id>(HR::Ny)],rec[static_cast<vtkm::Id>(HR::Nz)]);
+      if (dot(n, direction) < 0.0)
           return emit;
       else
           return vec3(0,0,0);
   }
 
-  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10);
+  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
   VTKM_EXEC
   template<typename VecArrayType,
           typename ColorArrayType,
           typename MatTypeArray,
-          typename TexTypeArray>
+          typename TexTypeArray,
+  typename HitRecord, typename HitId>
   void operator()(vtkm::Id idx,
                   vec3 &origin,
                   vec3 &direction,
                   HitRecord &hrec,
+                  HitId &hid,
                   ScatterRecord &srec,
                   vtkm::UInt8 &fin,
                   vtkm::Int8 &scattered,
@@ -104,10 +115,11 @@ public:
   {
     if(!fin){
       if (scattered){
-        auto mt = matType.Get(hrec.matId);
+        auto mt = matType.Get(hid[static_cast<vtkm::Id>(HI::M)]);
         if (mt == 1){
-          vec3 em = emit(origin, direction, hrec, col.Get(texType.Get(hrec.texId)));
-          scattered = scatter(origin, direction, hrec, srec, col.Get(texType.Get(hrec.texId)));
+          auto tt = texType.Get(hid[static_cast<vtkm::Id>(HI::T)]);
+          vec3 em = emit(origin, direction, hrec, col.Get(tt));
+          scattered = scatter(origin, direction, hrec, srec, col.Get(tt));
           emitted.Set(canvasSize * depth + idx, em);
         }
       }
@@ -155,24 +167,27 @@ public:
   }
 
   VTKM_EXEC
+  template<typename HitRecord>
   bool scatter(const vec3 &origin, const vec3 &direction, const HitRecord& hrec, ScatterRecord& srec, vec3 albedo, double _rand) const {
       srec.is_specular = true;
       srec.attenuation = vec3(1.0, 1.0, 1.0);
       vec3 outward_normal;
-       vec3 reflected = reflect(direction, hrec.normal);
+      vec3 n(hrec[static_cast<vtkm::Id>(HR::Nx)], hrec[static_cast<vtkm::Id>(HR::Ny)],hrec[static_cast<vtkm::Id>(HR::Nz)]);
+
+       vec3 reflected = reflect(direction, n);
        vec3 refracted;
        float ni_over_nt;
        float reflect_prob;
        float cosine;
-       if (dot(direction, hrec.normal) > 0) {
-            outward_normal = -hrec.normal;
+       if (dot(direction, n) > 0) {
+            outward_normal = -n;
             ni_over_nt = ref_idx;
-            cosine = ref_idx * dot(direction, hrec.normal) * vtkm::RMagnitude(direction);
+            cosine = ref_idx * dot(direction, n) * vtkm::RMagnitude(direction);
        }
        else {
-            outward_normal = hrec.normal;
+            outward_normal = n;
             ni_over_nt = 1.0 / ref_idx;
-            cosine = -dot(direction, hrec.normal) * vtkm::RMagnitude(direction);
+            cosine = -dot(direction, n) * vtkm::RMagnitude(direction);
        }
        if (refract(direction, outward_normal, ni_over_nt, refracted)) {
           reflect_prob = schlick(cosine, ref_idx);
@@ -181,29 +196,37 @@ public:
           reflect_prob = 1.0;
        }
        if (_rand < reflect_prob) {
-          srec.o = hrec.p;
+          srec.o[0] = hrec[static_cast<vtkm::Id>(HR::Px)];
+          srec.o[1] = hrec[static_cast<vtkm::Id>(HR::Py)];
+          srec.o[2] = hrec[static_cast<vtkm::Id>(HR::Pz)];
           srec.dir = reflected;
        }
        else {
-          srec.o = hrec.p;
+         srec.o[0] = hrec[static_cast<vtkm::Id>(HR::Px)];
+         srec.o[1] = hrec[static_cast<vtkm::Id>(HR::Py)];
+         srec.o[2] = hrec[static_cast<vtkm::Id>(HR::Pz)];
           srec.dir = refracted;
        }
        return true;
   }
   VTKM_EXEC
+  template<typename HitRecord>
   vec3 emit(const vec3 &origin, const vec3 &direction, const HitRecord& rec, vec3 emit) const { return vec3(0,0,0); }
 
-  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10);
+  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
   VTKM_EXEC
   template<typename VecArrayType,
           typename ColorArrayType,
           typename MatTypeArray,
-          typename TexTypeArray>
+          typename TexTypeArray,
+          typename HitRecord,
+          typename HitId>
   void operator()(vtkm::Id idx,
                   vec3 &origin,
                   vec3 &direction,
                   HitRecord &hrec,
+                  HitId &hid,
                   ScatterRecord &srec,
                   vtkm::UInt8 &fin,
                   vtkm::Int8 &scattered,
@@ -214,16 +237,17 @@ public:
   {
     if (!fin){
       if (scattered){
-        auto mt = matType.Get(hrec.matId);
+
+        auto mt = matType.Get(hid[static_cast<vtkm::Id>(HI::M)]);
         if (mt == 2){
           vtkm::Vec<vtkm::UInt32, 4> randState;
           randState[0] = vtkm::random::xorshift::getRand32(idx*1) + 1;
           randState[1] = vtkm::random::xorshift::getRand32(idx*2) + 2;
           randState[2] = vtkm::random::xorshift::getRand32(idx*3) + 3;
           randState[3] = vtkm::random::xorshift::getRand32(idx*4) + 4; //arbitrary random state based off number of rays being shot through
-
-          vec3 em = emit(origin, direction, hrec, col.Get(texType.Get(hrec.texId)));
-          scattered = scatter(origin, direction, hrec, srec, col.Get(texType.Get(hrec.texId)), drand48());//vtkm::random::xorshift::getRandF(randState));
+          auto tt = texType.Get(hid[static_cast<vtkm::Id>(HI::T)]);
+          vec3 em = emit(origin, direction, hrec, col.Get(tt));
+          scattered = scatter(origin, direction, hrec, srec, col.Get(tt), drand48());//vtkm::random::xorshift::getRandF(randState));
           emitted.Set(canvasSize * depth + idx, em);
 
         }

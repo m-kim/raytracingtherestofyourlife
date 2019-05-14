@@ -5,6 +5,7 @@
 #include <vtkm/worklet/WorkletMapField.h>
 #include <vtkm/cont/ArrayHandleCounting.h>
 #include <vtkm/rendering/xorShift.h>
+#include "Record.h"
 #include "onb.h"
 
 class cosine_pdf {
@@ -45,8 +46,10 @@ public:
 
 
   VTKM_EXEC
+  template<typename HitRecord>
   float scattering_pdf(const vec3 &origin, const vec3 &direction, const HitRecord& rec, const vec3& scattered_origin, const vec3 &scattered_direction) const {
-      float cosine = dot(rec.normal, unit_vector(scattered_direction));
+    vec3 n(rec[static_cast<vtkm::Id>(HR::Nx)], rec[static_cast<vtkm::Id>(HR::Ny)], rec[static_cast<vtkm::Id>(HR::Nz)]);
+      float cosine = dot(n, unit_vector(scattered_direction));
       if (cosine < 0)
           return 0;
       return cosine / M_PI;
@@ -55,7 +58,7 @@ public:
   using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>);
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
   VTKM_EXEC
-  template<typename VecArrayType>
+  template<typename VecArrayType, typename HitRecord>
   void operator()(vtkm::Id idx,
                   vec3 &r_origin,
                   vec3 &r_direction,
@@ -83,9 +86,11 @@ public:
         else {
 
           cosine_pdf newPdf;
-          newPdf.SetW(hrec.normal);
+          vec3 n(hrec[static_cast<vtkm::Id>(HR::Nx)], hrec[static_cast<vtkm::Id>(HR::Ny)], hrec[static_cast<vtkm::Id>(HR::Nz)]);
+          newPdf.SetW(n);
 
-          out_origin = hrec.p;
+
+          out_origin = vec3(hrec[static_cast<vtkm::Id>(HR::Px)], hrec[static_cast<vtkm::Id>(HR::Py)], hrec[static_cast<vtkm::Id>(HR::Pz)]);
           out_direction = generated_dir;
           //float pdf_val = p.value(r_out.direction());
           auto pdf_val = 0.5 * sum_value + 0.5 * newPdf.value(generated_dir);

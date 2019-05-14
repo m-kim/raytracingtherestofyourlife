@@ -1,18 +1,8 @@
 #ifndef RECORD_H
 #define RECORD_H
 
-struct HitRecord
-{
-  vtkm::Id hitIdx;
-    float t;
-    float u;
-    float v;
-    vec3 p;
-    vec3 normal;
-
-    int texId, matId;
-};
-
+enum class HR {U,V,T, Nx, Ny, Nz, Px, Py, Pz};
+enum class HI {M, T};
 
 struct ScatterRecord
 {

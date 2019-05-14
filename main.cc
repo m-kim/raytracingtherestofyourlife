@@ -524,8 +524,10 @@ void vtkCornellBox()
 
 using RayType = vtkm::rendering::raytracing::Ray<float>;
 
+template<typename HitRecord, typename HitId>
 void intersect(RayType &rays,
-               vtkm::cont::ArrayHandle<HitRecord> &hrecs,
+               HitRecord &hrecs,
+               HitId &hids,
                vtkm::cont::ArrayHandle<float> &tmin,
                vtkm::cont::ArrayHandle<float> &closest,
                vtkm::cont::ArrayHandle<vtkm::Int8> &scattered,
@@ -539,13 +541,13 @@ void intersect(RayType &rays,
     if (cellTypeArray[i] == 0){
       YZRectWorklet yz(canvasSize, depth);
         vtkm::worklet::AutoDispatcherMapField<YZRectWorklet>(yz)
-            .Invoke(rays.Origin, rays.Dir, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
+            .Invoke(rays.Origin, rays.Dir, hrecs, hids, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
                     matIdx[i], texIdx[i],translateOffset[i], angleArray[i],flipped[i]);
     }
     else if (cellTypeArray[i] == 1){
       XZRectWorklet xz(canvasSize, depth);
       vtkm::worklet::AutoDispatcherMapField<XZRectWorklet>(xz)
-          .Invoke(rays.Origin, rays.Dir, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
+          .Invoke(rays.Origin, rays.Dir, hrecs, hids, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
                   matIdx[i], texIdx[i],translateOffset[i], angleArray[i],flipped[i]);
 
 
@@ -554,14 +556,14 @@ void intersect(RayType &rays,
       //xy
       XYRectWorklet xy(canvasSize, depth);
       vtkm::worklet::AutoDispatcherMapField<XYRectWorklet>(xy)
-          .Invoke(rays.Origin, rays.Dir, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
+          .Invoke(rays.Origin, rays.Dir, hrecs, hids, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
                   matIdx[i], texIdx[i],translateOffset[i], angleArray[i],flipped[i]);
 
     }
     else if (cellTypeArray[i] == 3){
       SphereIntersecttWorklet sphereIntersect(canvasSize, depth);
       vtkm::worklet::AutoDispatcherMapField<SphereIntersecttWorklet>(sphereIntersect)
-          .Invoke(rays.Origin, rays.Dir, hrecs, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
+          .Invoke(rays.Origin, rays.Dir, hrecs,hids, tmin, closest, scattered, hitArray, pts1[i], pts2[i],
                   matIdx[i], texIdx[i]);
 
     }
@@ -606,11 +608,11 @@ int main() {
   using StorageTag = vtkm::cont::StorageTagBasic;
   using Device = VTKM_DEFAULT_DEVICE_ADAPTER_TAG;
 
-  constexpr int nx = 512;
-  constexpr int ny = 512;
-  constexpr int ns = 1;
+  constexpr int nx = 128;
+  constexpr int ny = 128;
+  constexpr int ns = 100;
 
-  constexpr int depthcount = 50;
+  constexpr int depthcount = 5;
   auto canvasSize = nx*ny;
 
   constexpr int lightables = 2;
@@ -633,6 +635,7 @@ int main() {
   vtkm::cont::ArrayHandle<vtkm::Id> rays_index;
 
   vtkm::rendering::raytracing::Ray<float> rays;
+  rays.EnableIntersectionData();
   vtkm::rendering::raytracing::RayOperations::Resize(rays, canvasSize, Device());
 
 
@@ -646,9 +649,31 @@ int main() {
   vtkm::cont::ArrayHandle<vtkm::Float32> sum_values;
 
   vtkm::cont::ArrayHandle<ScatterRecord> srecs;
-  vtkm::cont::ArrayHandle<vtkm::Int8> scattered, hitArray, finished;
+  vtkm::cont::ArrayHandle<vtkm::Int8> scattered, hitArray;
 
-  vtkm::cont::ArrayHandle<HitRecord> hrecs;
+  vtkm::cont::ArrayHandle<vtkm::Int32> matIdArray, texIdArray;
+  matIdArray.Allocate(canvasSize);
+  texIdArray.Allocate(canvasSize);
+
+  vtkm::cont::ArrayHandle<vtkm::Float32> pxArray,pyArray,pzArray;
+  pxArray.Allocate(rays.U.GetNumberOfValues());
+  pyArray.Allocate(rays.U.GetNumberOfValues());
+  pzArray.Allocate(rays.U.GetNumberOfValues());
+
+  using HitRecord = vtkm::cont::ArrayHandleCompositeVector<decltype(rays.U),
+  decltype(rays.V),
+  decltype(rays.Distance),
+  decltype(rays.NormalX),
+  decltype(rays.NormalY),
+  decltype(rays.NormalZ),
+  decltype(pxArray),
+  decltype(pyArray),
+  decltype(pzArray)>;
+
+  auto hrecs = HitRecord(rays.U, rays.V, rays.Distance, rays.NormalX, rays.NormalY, rays.NormalZ, pxArray, pyArray, pzArray);
+
+  using HitId = vtkm::cont::ArrayHandleCompositeVector<decltype(matIdArray), decltype(texIdArray)>;
+  auto hids = HitId(matIdArray, texIdArray);
 
   vtkm::cont::ArrayHandle<float> closest, tmin;
   ArrayType attenuation;
@@ -660,7 +685,6 @@ int main() {
   emitted.Allocate(canvasSize * depthcount);
   scattered.Allocate(canvasSize);
   hitArray.Allocate(canvasSize);
-  hrecs.Allocate(canvasSize);
   srecs.Allocate(canvasSize);
   ArrayType sumtotl;
   sumtotl.Allocate(canvasSize);
@@ -700,7 +724,7 @@ int main() {
 //      float tmin = 0.001;
 //      float tmax = std::numeric_limits<float>::max();
 
-      intersect(rays, hrecs, tmin, closest, scattered, hitArray,
+      intersect(rays, hrecs,hids, tmin, closest, scattered, hitArray,
                 emitted, attenuation, depth);
       MyAlgos::Copy<vtkm::Int8, vtkm::Int8, StorageTag>(0, hitArray);
       LambertianWorklet lmbWorklet( canvasSize, depth);
@@ -715,15 +739,15 @@ int main() {
       SpherePDFWorklet spherePDFWorklet(lightables);
       PDFCosineWorklet pdfWorklet(canvasSize, depth, canvasSize, lightables);
       vtkm::worklet::AutoDispatcherMapField<LambertianWorklet>(lmbWorklet)
-          .Invoke(rays.Origin, rays.Dir, hrecs, srecs, rays.Status, scattered,
+          .Invoke(rays.Origin, rays.Dir, hrecs, hids, srecs, rays.Status, scattered,
                   tex, matType, texType, emitted);
 
       vtkm::worklet::AutoDispatcherMapField<DiffuseLightWorklet>(dlWorklet)
-          .Invoke(rays.Origin, rays.Dir, hrecs, srecs, rays.Status, scattered,
+          .Invoke(rays.Origin, rays.Dir, hrecs, hids, srecs, rays.Status, scattered,
                   tex, matType, texType, emitted);
 
       vtkm::worklet::AutoDispatcherMapField<DielectricWorklet>(deWorklet)
-            .Invoke(rays.Origin, rays.Dir, hrecs, srecs, rays.Status, scattered,
+            .Invoke(rays.Origin, rays.Dir, hrecs, hids, srecs, rays.Status, scattered,
                     tex, matType, texType, emitted);
 
       vtkm::worklet::AutoDispatcherMapField<GenerateDir>(genDir)
