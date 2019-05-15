@@ -1,0 +1,9 @@
+
+name: raytracingfortherestofyourlife
+
+channels:
+  - conda-forge
+  - m-kim
+
+dependencies:
+  - lodepng
