@@ -29,8 +29,8 @@ public:
   template<typename HitRecord>
   vec3 emit(const vec3 &origin, const vec3 &direction, const HitRecord& rec, vec3 emit) const { return vec3(0,0,0); }
 
-  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>,FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>,WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8,_9, _10, _11);
+  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>,FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>,WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8,_9, _10);
   VTKM_EXEC
   template<typename VecArrayType,
           typename ColorArrayType,
@@ -44,19 +44,18 @@ public:
                   HitId &hid,
                   ScatterRecord &srec,
                   vtkm::UInt8 &fin,
-                  vtkm::Int8 &scattered,
                   ColorArrayType col,
                   MatTypeArray matType,
                   TexTypeArray texType,
                   VecArrayType emitted) const
   {
-    if (!fin){
-      if (scattered){
+    if (!(fin & (1UL << 1))){ //fin
+      if (fin & (1UL << 3)){ //scattered
         auto mt = matType.Get(hid[static_cast<vtkm::Id>(HI::M)]);
         if (mt == 0){
           auto tt = texType.Get(hid[static_cast<vtkm::Id>(HI::T)]);
           vec3 em = emit(origin, direction, hrec, col.Get(tt));
-          scattered = scatter(origin, direction, hrec, srec, col.Get(tt));
+          fin |= (scatter(origin, direction, hrec, srec, col.Get(tt)) << 3); //scattered
           emitted.Set(canvasSize * depth + idx, em);
 
         }
@@ -92,8 +91,8 @@ public:
           return vec3(0,0,0);
   }
 
-  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
+  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10);
   VTKM_EXEC
   template<typename VecArrayType,
           typename ColorArrayType,
@@ -107,19 +106,18 @@ public:
                   HitId &hid,
                   ScatterRecord &srec,
                   vtkm::UInt8 &fin,
-                  vtkm::Int8 &scattered,
                   ColorArrayType col,
                   MatTypeArray matType,
                   TexTypeArray texType,
                   VecArrayType emitted) const
   {
-    if(!fin){
-      if (scattered){
+    if(!(fin & (1UL << 1))){
+      if ( (fin & (1UL << 3))){ //scattered
         auto mt = matType.Get(hid[static_cast<vtkm::Id>(HI::M)]);
         if (mt == 1){
           auto tt = texType.Get(hid[static_cast<vtkm::Id>(HI::T)]);
           vec3 em = emit(origin, direction, hrec, col.Get(tt));
-          scattered = scatter(origin, direction, hrec, srec, col.Get(tt));
+          fin |= (scatter(origin, direction, hrec, srec, col.Get(tt)) << 3); //scattered
           emitted.Set(canvasSize * depth + idx, em);
         }
       }
@@ -213,8 +211,8 @@ public:
   template<typename HitRecord>
   vec3 emit(const vec3 &origin, const vec3 &direction, const HitRecord& rec, vec3 emit) const { return vec3(0,0,0); }
 
-  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
+  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10);
   VTKM_EXEC
   template<typename VecArrayType,
           typename ColorArrayType,
@@ -229,14 +227,13 @@ public:
                   HitId &hid,
                   ScatterRecord &srec,
                   vtkm::UInt8 &fin,
-                  vtkm::Int8 &scattered,
                   ColorArrayType col,
                   MatTypeArray matType,
                   TexTypeArray texType,
                   VecArrayType emitted) const
   {
-    if (!fin){
-      if (scattered){
+    if (!(fin & (1UL << 1))){
+      if ((fin & (1UL << 3))){ //scattered
 
         auto mt = matType.Get(hid[static_cast<vtkm::Id>(HI::M)]);
         if (mt == 2){
@@ -247,13 +244,12 @@ public:
           randState[3] = vtkm::random::xorshift::getRand32(idx*4) + 4; //arbitrary random state based off number of rays being shot through
           auto tt = texType.Get(hid[static_cast<vtkm::Id>(HI::T)]);
           vec3 em = emit(origin, direction, hrec, col.Get(tt));
-          scattered = scatter(origin, direction, hrec, srec, col.Get(tt), drand48());//vtkm::random::xorshift::getRandF(randState));
+          fin |= (scatter(origin, direction, hrec, srec, col.Get(tt), drand48()) << 3);//vtkm::random::xorshift::getRandF(randState));
           emitted.Set(canvasSize * depth + idx, em);
 
         }
       }
     }
-
   }
 
   const int depth, canvasSize;

@@ -134,7 +134,7 @@ public:
                   HitId &hid,
                   float &tmin,
                   float &tmax,
-                  vtkm::Int8 &scattered,
+                  vtkm::UInt8 &scattered,
                   PtArrayType pt1,
                   PtArrayType pt2,
                   IndexType matIdx,
@@ -144,7 +144,7 @@ public:
                   FlippedType flipped
                   ) const
   {
-    if (scattered){
+    if (scattered & (1UL << 3)){
       for (int i=0; i<matIdx.GetNumberOfValues(); i++){
         float x0 = pt1.Get(i)[0];
         float x1 = pt2.Get(i)[0];
@@ -255,7 +255,7 @@ public:
                   HitId &hid,
                   float &tmin,
                   float &tmax,
-                  vtkm::Int8 &scattered,
+                  vtkm::UInt8 &scattered,
                   PtArrayType pt1,
                   PtArrayType pt2,
                   IndexType matIdx,
@@ -265,7 +265,7 @@ public:
                   FlippedType flipped
                   ) const
   {
-    if (scattered){
+    if (scattered & (1UL << 3)){ //scattered
       for (int i=0; i<matIdx.GetNumberOfValues(); i++){
         float x0 = pt1.Get(i)[0];
         float x1 = pt2.Get(i)[0];
@@ -385,7 +385,7 @@ public:
                   HitId &hid,
                   float &tmin,
                   float &tmax,
-                  vtkm::Int8 &scattered,
+                  vtkm::UInt8 &scattered,
                   PtArrayType pt1,
                   PtArrayType pt2,
                   IndexType matIdx,
@@ -395,7 +395,7 @@ public:
                   FlippedType flipped
                   ) const
   {
-    if (scattered){
+    if (scattered & (1UL << 3)){
       for (int i=0; i<pt1.GetNumberOfValues(); i++){
         float y0 = pt1.Get(i)[1];
         float y1 = pt2.Get(i)[1];
@@ -479,14 +479,14 @@ public:
                   HitId &hid,
                   float &tmin,
                   float &tmax,
-                  vtkm::Int8 &scattered,
+                  vtkm::UInt8 &scattered,
                   PtArrayType pt1,
                   PtArrayType pt2,
                   IndexType matIdx,
                   IndexType texIdx
                   ) const
   {
-    if (scattered){
+    if (scattered & (1UL << 3)){ //scattered
       for (int i=0; i<pt1.GetNumberOfValues(); i++){
         HitRecord  temp_rec;
         HitId temp_hid;
@@ -531,17 +531,17 @@ public:
   VTKM_EXEC
   template<typename PtArrayType>
   void operator()(vtkm::Id idx,
-                  vtkm::Int8 &sctr,
+                  vtkm::UInt8 &sctr,
                   PtArrayType &emitted,
                   PtArrayType &attenuation
                   ) const
   {
-    if (!(sctr > 1)){
-      sctr = false;
+    if (!((sctr & (1UL << 3)) && (sctr & (1UL << 2)))){ //hitRay
+      sctr &= ~(1UL << 3);
       attenuation.Set(idx + canvasSize * depth, vec3(1.0));
       emitted.Set(idx + canvasSize * depth, vec3(0.0f));
     }
-
+    sctr &= ~(1UL << 2);
     //scattered.GetPortalControl().Set(i,sctr);
   }
 

@@ -55,8 +55,8 @@ public:
       return cosine / M_PI;
   }
 
-  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>);
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
+  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10);
   VTKM_EXEC
   template<typename VecArrayType, typename HitRecord>
   void operator()(vtkm::Id idx,
@@ -65,19 +65,18 @@ public:
                   HitRecord &hrec,
                   ScatterRecord &srec,
                   vtkm::UInt8 &fin,
-                  vtkm::Int8 &is_scattered,
                   float &sum_value,
                   vec3 &generated_dir,
                   vec3 &out_origin,
                   vec3 &out_direction,
                   VecArrayType attenuation) const
   {
-    if (!fin){
+    if (! (fin & (1UL << 1))){
       vec3 atten(1.0);
       out_origin = r_origin;
       out_direction = r_direction;
 
-      if (is_scattered){
+      if (fin & (1UL << 3)){
         if (srec.is_specular) {
           atten = srec.attenuation;
           out_origin = srec.o;
@@ -101,7 +100,7 @@ public:
       }
       attenuation.Set(canvasSize * depth + idx, atten);
     }
-    fin = !is_scattered;
+    fin |= (fin >> 3);
   }
 
   const int depth, canvasSize;

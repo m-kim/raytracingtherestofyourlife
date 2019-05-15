@@ -245,7 +245,7 @@ public:
                   PtArrayType pt2
                   ) const
   {
-    if (scattered){
+    if (scattered & (1UL << 3)){
       float weight = 1.0/list_size;
       int index = int(drand48() * list_size);
       for (int i = 0; i < pt1.GetNumberOfValues(); i++){
@@ -321,7 +321,7 @@ public:
                   PtArrayType pt2
                   ) const
   {
-    if (scattered){
+    if (scattered & (1UL << 3)){
       float weight = 1.0/list_size;
       int index = int(drand48() *list_size);
       for (int i = 0; i < pt1.GetNumberOfValues(); i++){
