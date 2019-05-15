@@ -7,3 +7,6 @@ channels:
 
 dependencies:
   - lodepng
+  - xeus-cling
+  - notebook
+  - xplot
