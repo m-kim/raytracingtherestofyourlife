@@ -531,7 +531,6 @@ void intersect(RayType &rays,
                HitId &hids,
                vtkm::cont::ArrayHandle<float> &tmin,
                vtkm::cont::ArrayHandle<vtkm::Int8> &scattered,
-               vtkm::cont::ArrayHandle<vtkm::Int8> &hitArray,
                ArrayType &emitted,
                ArrayType &attenuation,
                const int depth)
@@ -541,20 +540,19 @@ void intersect(RayType &rays,
 
   MyAlgos::Copy<float, float, StorageTag>(std::numeric_limits<float>::max(), rays.Distance);
   MyAlgos::Copy<float, float, StorageTag>(0.001, tmin);
-  MyAlgos::Copy<vtkm::Int8, vtkm::Int8, StorageTag>(0, hitArray);
 
   vtkm::Id canvasSize = rays.DirX.GetNumberOfValues();
   for (int i=0; i<cellTypeArray.size(); i++){
     if (cellTypeArray[i] == 0){
       YZRectWorklet yz(canvasSize, depth);
         vtkm::worklet::AutoDispatcherMapField<YZRectWorklet>(yz)
-            .Invoke(rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, scattered, hitArray, pts1[i], pts2[i],
+            .Invoke(rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, scattered, pts1[i], pts2[i],
                     matIdx[i], texIdx[i],translateOffset[i], angleArray[i],flipped[i]);
     }
     else if (cellTypeArray[i] == 1){
       XZRectWorklet xz(canvasSize, depth);
       vtkm::worklet::AutoDispatcherMapField<XZRectWorklet>(xz)
-          .Invoke(rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, scattered, hitArray, pts1[i], pts2[i],
+          .Invoke(rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, scattered, pts1[i], pts2[i],
                   matIdx[i], texIdx[i],translateOffset[i], angleArray[i],flipped[i]);
 
 
@@ -563,14 +561,14 @@ void intersect(RayType &rays,
       //xy
       XYRectWorklet xy(canvasSize, depth);
       vtkm::worklet::AutoDispatcherMapField<XYRectWorklet>(xy)
-          .Invoke(rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, scattered, hitArray, pts1[i], pts2[i],
+          .Invoke(rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, scattered, pts1[i], pts2[i],
                   matIdx[i], texIdx[i],translateOffset[i], angleArray[i],flipped[i]);
 
     }
     else if (cellTypeArray[i] == 3){
       SphereIntersecttWorklet sphereIntersect(canvasSize, depth);
       vtkm::worklet::AutoDispatcherMapField<SphereIntersecttWorklet>(sphereIntersect)
-          .Invoke(rays.Origin, rays.Dir, hrecs,hids, tmin, rays.Distance, scattered, hitArray, pts1[i], pts2[i],
+          .Invoke(rays.Origin, rays.Dir, hrecs,hids, tmin, rays.Distance, scattered, pts1[i], pts2[i],
                   matIdx[i], texIdx[i]);
 
     }
@@ -579,7 +577,7 @@ void intersect(RayType &rays,
 
   CollectIntersecttWorklet collectIntersect(canvasSize, depth);
   vtkm::worklet::AutoDispatcherMapField<CollectIntersecttWorklet>(collectIntersect)
-      .Invoke( scattered, hitArray, emitted, attenuation);
+      .Invoke( scattered, emitted, attenuation);
 
 //  for (int i=0; i<canvasSize; i++){
 //    auto sctr = scattered.GetPortalControl().Get(i);
@@ -738,7 +736,7 @@ int main() {
   vtkm::cont::ArrayHandle<vtkm::Float32> sum_values;
 
   vtkm::cont::ArrayHandle<ScatterRecord> srecs;
-  vtkm::cont::ArrayHandle<vtkm::Int8> scattered, hitArray;
+  vtkm::cont::ArrayHandle<vtkm::Int8> scattered;
 
   vtkm::cont::ArrayHandle<vtkm::Int32> matIdArray, texIdArray;
   matIdArray.Allocate(canvasSize);
@@ -773,7 +771,6 @@ int main() {
   attenuation.Allocate(canvasSize* depthcount);
   emitted.Allocate(canvasSize * depthcount);
   scattered.Allocate(canvasSize);
-  hitArray.Allocate(canvasSize);
   srecs.Allocate(canvasSize);
   ArrayType sumtotl;
   sumtotl.Allocate(canvasSize);
@@ -808,7 +805,7 @@ int main() {
       MyAlgos::Copy<float, float, StorageTag>(0, sum_values);
 
 
-      intersect(rays, hrecs,hids, tmin, scattered, hitArray, emitted, attenuation, depth);
+      intersect(rays, hrecs,hids, tmin, scattered, emitted, attenuation, depth);
       applyMaterials(rays, hrecs, hids, srecs, scattered, tex, matType, texType, emitted, canvasSize, depth);
       generateRays(whichPDF, hrecs, generated_dir, light_box_pts, light_sphere_pts);
       applyPDFs(rays, hrecs, srecs, scattered, sum_values, generated_dir, attenuation,light_box_pts, light_sphere_pts, lightables, canvasSize, depth);

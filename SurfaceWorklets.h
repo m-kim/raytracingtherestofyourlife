@@ -109,7 +109,6 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
-  FieldInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>,
@@ -119,7 +118,7 @@ public:
   WholeArrayInOut<>
 
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14);
 
   VTKM_EXEC
   template<typename PtArrayType,
@@ -136,7 +135,6 @@ public:
                   float &tmin,
                   float &tmax,
                   vtkm::Int8 &scattered,
-                  vtkm::Int8 &rayHit,
                   PtArrayType pt1,
                   PtArrayType pt2,
                   IndexType matIdx,
@@ -172,7 +170,7 @@ public:
           hid = temp_hid;
           tmax = temp_rec[static_cast<vtkm::Id>(HR::T)];
         }
-        rayHit |= h;
+        scattered |= (h << 2);
 
       }
     }
@@ -232,7 +230,6 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
-  FieldInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>,
@@ -242,7 +239,7 @@ public:
   WholeArrayInOut<>
 
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14);
 
   VTKM_EXEC
   template<typename PtArrayType,
@@ -259,7 +256,6 @@ public:
                   float &tmin,
                   float &tmax,
                   vtkm::Int8 &scattered,
-                  vtkm::Int8 &rayHit,
                   PtArrayType pt1,
                   PtArrayType pt2,
                   IndexType matIdx,
@@ -295,7 +291,7 @@ public:
           hrec= temp_rec;
           hid = temp_hid;
         }
-        rayHit |= h;
+        scattered |= (h << 2);
       }
     }
   }
@@ -364,7 +360,6 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
-  FieldInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>,
@@ -374,7 +369,7 @@ public:
   WholeArrayInOut<>
 
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14);
 
   VTKM_EXEC
   template<typename PtArrayType,
@@ -391,7 +386,6 @@ public:
                   float &tmin,
                   float &tmax,
                   vtkm::Int8 &scattered,
-                  vtkm::Int8 &rayHit,
                   PtArrayType pt1,
                   PtArrayType pt2,
                   IndexType matIdx,
@@ -429,7 +423,7 @@ public:
           hrec= temp_rec;
           hid = temp_id;
         }
-        rayHit |= h;
+        scattered |= (h << 2);
 
       }
     }
@@ -466,13 +460,12 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
-  FieldInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
 
   VTKM_EXEC
   template<typename PtArrayType,
@@ -487,7 +480,6 @@ public:
                   float &tmin,
                   float &tmax,
                   vtkm::Int8 &scattered,
-                  vtkm::Int8 &rayHit,
                   PtArrayType pt1,
                   PtArrayType pt2,
                   IndexType matIdx,
@@ -506,7 +498,7 @@ public:
           hrec = temp_rec;
           hid = temp_hid;
         }
-        rayHit |= h;
+        scattered |= (h << 2);
       }
     }
   }
@@ -531,22 +523,20 @@ public:
 
 
   using ControlSignature = void(FieldInOut<>,
-  FieldInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3);
 
   VTKM_EXEC
   template<typename PtArrayType>
   void operator()(vtkm::Id idx,
                   vtkm::Int8 &sctr,
-                  vtkm::Int8 &hit,
                   PtArrayType &emitted,
                   PtArrayType &attenuation
                   ) const
   {
-    if (!(sctr && hit)){
+    if (!(sctr > 1)){
       sctr = false;
       attenuation.Set(idx + canvasSize * depth, vec3(1.0));
       emitted.Set(idx + canvasSize * depth, vec3(0.0f));
