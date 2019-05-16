@@ -1,10 +1,8 @@
 #ifndef SCATTERWORKLET_H
 #define SCATTERWORKLET_H
-#include <vtkm/worklet/AutoDispatcherMapField.h>
 #include <vtkm/worklet/DispatcherMapField.h>
 #include <vtkm/worklet/WorkletMapField.h>
 #include <vtkm/cont/ArrayHandleCounting.h>
-#include <vtkm/rendering/xorShift.h>
 #include "Record.h"
 #include "onb.h"
 

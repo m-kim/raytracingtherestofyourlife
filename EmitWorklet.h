@@ -1,10 +1,9 @@
 #ifndef EMITWORKLET_H
 #define EMITWORKLET_H
-#include <vtkm/worklet/AutoDispatcherMapField.h>
+#include <vtkm/worklet/Invoker.h>
 #include <vtkm/worklet/DispatcherMapField.h>
 #include <vtkm/worklet/WorkletMapField.h>
 #include <vtkm/cont/ArrayHandleCounting.h>
-#include <vtkm/rendering/xorShift.h>
 #include "Record.h"
 #include "vec3.h"
 #include "wangXor.h"

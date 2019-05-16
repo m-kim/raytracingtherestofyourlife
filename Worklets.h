@@ -1,7 +1,7 @@
 #ifndef WORKLETS_H
 #define WORKLETS_H
 
-#include <vtkm/worklet/AutoDispatcherMapField.h>
+#include <vtkm/worklet/Invoker.h>
 #include <vtkm/worklet/DispatcherMapField.h>
 #include <vtkm/worklet/WorkletMapField.h>
 #include <vtkm/cont/ArrayHandleCounting.h>
