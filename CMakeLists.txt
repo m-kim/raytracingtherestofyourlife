@@ -33,7 +33,7 @@ if(VTKm_ENABLE_CUDA)
   target_include_directories(CornellBox_CUDA PUBLIC /home/mark/local/anaconda3/envs/cling/include/)
   target_include_directories(CornellBox_CUDA PUBLIC /home/mark/local/vtk-m-1.3.0/include/vtkm-1.3/)
   set_target_properties(CornellBox_CUDA PROPERTIES
-    CXX_STANDARD 14)
+    CUDA_STANDARD 14)
   target_link_libraries(CornellBox_CUDA PUBLIC
     "/home/mark/local/vtk-m-1.3.0/lib/libvtkm_rendering-1.3.so"
     "/home/mark/local/vtk-m-1.3.0/lib/libvtkm_cont-1.3.so"
