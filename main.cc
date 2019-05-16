@@ -459,7 +459,6 @@ void vtkCornellBox()
   p2 = vec3(165,330,165);
   vec3 offset(265,0,295);
   int ct = 2;
-  translateOffset[ct].Allocate(3);
   matIdx[ct].GetPortalControl().Set(1, 1);
   texIdx[ct].GetPortalControl().Set(1, 1);
   pts1[ct].GetPortalControl().Set(1, p1);
@@ -533,7 +532,7 @@ void intersect(RayType &rays,
                vtkm::cont::ArrayHandle<float> &tmin,
                ArrayType &emitted,
                ArrayType &attenuation,
-               const int depth)
+               const vtkm::Id depth)
 {
   using MyAlgos = MyAlgorithms<vtkm::cont::DeviceAdapterAlgorithm<VTKM_DEFAULT_DEVICE_ADAPTER_TAG>, VTKM_DEFAULT_DEVICE_ADAPTER_TAG>;
   using StorageTag = vtkm::cont::StorageTagBasic;
@@ -575,18 +574,6 @@ void intersect(RayType &rays,
   CollectIntersecttWorklet collectIntersect(canvasSize, depth);
   Invoke(collectIntersect, rays.Status, emitted, attenuation);
 
-//  for (int i=0; i<canvasSize; i++){
-//    auto sctr = scattered.GetPortalControl().Get(i);
-//    auto hit = hitArray.GetPortalControl().Get(i);
-//    if (!(sctr && hit)){
-//      sctr = false;
-//      attenuation.GetPortalControl().Set(i + canvasSize * depth, vec3(1.0));
-//      emitted.GetPortalControl().Set(i + canvasSize * depth, vec3(0.0f));
-//    }
-
-//    scattered.GetPortalControl().Set(i,sctr);
-//    //std::cout << sctr *255 <<  " " << sctr * 255 << " " << sctr * 255 << std::endl;
-//  }
 }
 
 template<typename HitRecord, typename HitId>

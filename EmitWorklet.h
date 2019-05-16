@@ -12,7 +12,7 @@ class LambertianWorklet : public vtkm::worklet::WorkletMapField
 {
 public:
   VTKM_CONT
-  LambertianWorklet(int cs, int d)
+  LambertianWorklet(vtkm::Id cs, vtkm::Id d)
       : canvasSize(cs)
       , depth(d)
   {
@@ -66,14 +66,14 @@ public:
 
   }
 
-  const int depth, canvasSize;
+  const vtkm::Id depth, canvasSize;
 };
 
 class DiffuseLightWorklet : public vtkm::worklet::WorkletMapField
 {
 public:
   VTKM_CONT
-  DiffuseLightWorklet(int cs, int d)
+  DiffuseLightWorklet(vtkm::Id cs, vtkm::Id d)
     : canvasSize(cs)
     , depth(d)
   {
@@ -128,14 +128,14 @@ public:
     }
   }
 
-  const int depth, canvasSize;
+  const vtkm::Id depth, canvasSize;
 
 };
 class DielectricWorklet : public vtkm::worklet::WorkletMapField
 {
 public:
   VTKM_CONT
-  DielectricWorklet(int cs, int d, float rid, vtkm::UInt32 rc)
+  DielectricWorklet(vtkm::Id cs, vtkm::Id d, float rid, vtkm::UInt32 rc)
       : canvasSize(cs)
       , depth(d)
       , ref_idx(rid)
@@ -254,7 +254,7 @@ public:
     }
   }
 
-  const int depth, canvasSize;
+  const vtkm::Id depth, canvasSize;
   const float ref_idx;
   const vtkm::UInt32 RayCount;
 

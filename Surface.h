@@ -6,8 +6,8 @@ class XZRect
 {
 public:
   VTKM_EXEC_CONT XZRect(){}
-  VTKM_EXEC
   template<typename HitRecord, typename HitId>
+  VTKM_EXEC
   bool hit(const vec3& origin,
            const vec3& dir,
                   HitRecord& rec,
@@ -58,8 +58,8 @@ public:
       v = (theta + M_PI/2) / M_PI;
   }
 
-  VTKM_EXEC
   template<typename HitRecord, typename HitId>
+  VTKM_EXEC
   bool hit(const vec3& origin, const vec3 &direction,
            HitRecord& rec, HitId &hid, float tmin, float tmax,
            vec3 center, float radius,

@@ -2,7 +2,7 @@
 #define SURFACEWORKLETS_H
 #include <vtkm/worklet/WorkletMapField.h>
 #include "Surface.h"
-
+VTKM_EXEC
 void rotateY(const vec3 &origin, const vec3 &direction, float angle,
              vec3 &o, vec3 &d){
   float radians = (M_PI / 180.) * angle;
@@ -16,7 +16,7 @@ void rotateY(const vec3 &origin, const vec3 &direction, float angle,
   d[2] = sin_theta*direction[0] + cos_theta*direction[2];
 }
 
-
+VTKM_EXEC
 void rotAndTrans(vec3 &origin, vec3 &direction, vec3 offset, float angle,
                  vec3 &o, vec3 &d)
 {
@@ -24,6 +24,7 @@ void rotAndTrans(vec3 &origin, vec3 &direction, vec3 offset, float angle,
 }
 
 template<typename HitRecord>
+VTKM_EXEC
 void applyRotAndTrans(HitRecord &temp_rec, vec3 offset, float angle)
 {
   vec3 op(temp_rec[static_cast<vtkm::Id>(HR::Px)], temp_rec[static_cast<vtkm::Id>(HR::Py)], temp_rec[static_cast<vtkm::Id>(HR::Pz)]);
@@ -52,8 +53,8 @@ class XYRectWorklet : public vtkm::worklet::WorkletMapField
 public:
   VTKM_CONT
   XYRectWorklet(
-           int cs,
-           int d
+           vtkm::Id cs,
+           vtkm::Id d
       )
     :canvasSize(cs)
     ,depth(d)
@@ -179,8 +180,8 @@ public:
       }
     }
   }
-  int canvasSize;
-  int depth;
+  const vtkm::Id canvasSize;
+  const vtkm::Id depth;
 };
 
 class XZRectWorklet : public vtkm::worklet::WorkletMapField
@@ -188,8 +189,8 @@ class XZRectWorklet : public vtkm::worklet::WorkletMapField
 public:
   VTKM_CONT
   XZRectWorklet(
-           int cs,
-           int d
+           vtkm::Id cs,
+           vtkm::Id d
       )
     :canvasSize(cs)
     ,depth(d)
@@ -198,7 +199,7 @@ public:
   template<typename HitRecord, typename HitId>
   VTKM_EXEC
   bool hit(const vec3 &origin,
-           const vec3 &direction,
+           const vec3 &dir,
                   HitRecord& rec,
            HitId &hid,
                   float tmin, float tmax,
@@ -207,24 +208,27 @@ public:
                   int matId,
                   int texId) const
   {
-//    float t = (k-r.origin()[1]) / r.direction()[1];
-//    if (t < tmin || t > tmax)
-//        return false;
-//    float x = r.origin()[0] + t*r.direction()[0];
-//    float z = r.origin()[2] + t*r.direction()[2];
-//    if (x < x0 || x > x1 || z < z0 || z > z1)
-//        return false;
-//    rec.u = (x-x0)/(x1-x0);
-//    rec.v = (z-z0)/(z1-z0);
-//    rec.t = t;
-//    rec.texId = texId;
-//    rec.matId = matId;
+    float t = (k-origin[1]) / dir[1];
+    if (t < tmin || t > tmax)
+        return false;
+    float x = origin[0] + t*dir[0];
+    float z = origin[2] + t*dir[2];
+    if (x < x0 || x > x1 || z < z0 || z > z1)
+        return false;
+    rec[static_cast<vtkm::Id>(HR::U)] = (x-x0)/(x1-x0);
+    rec[static_cast<vtkm::Id>(HR::V)] = (z-z0)/(z1-z0);
+    rec[static_cast<vtkm::Id>(HR::T)] = t;
+    hid[static_cast<vtkm::Id>(HI::T)] = texId;
+    hid[static_cast<vtkm::Id>(HI::M)] = matId;
+    auto p = origin + dir * t;
+    rec[static_cast<vtkm::Id>(HR::Px)] = p[0];
+    rec[static_cast<vtkm::Id>(HR::Py)] = p[1];
+    rec[static_cast<vtkm::Id>(HR::Pz)] = p[2];
 
-//    rec.p = r.point_at_parameter(t);
-//    rec.normal = vec3(0, 1, 0);
-//    return true;
-    return surf.hit(origin, direction,rec,hid,tmin,tmax,x0,x1,z0,z1,k,matId,texId);
-
+    rec[static_cast<vtkm::Id>(HR::Nx)] = 0;
+    rec[static_cast<vtkm::Id>(HR::Ny)] = 1;
+    rec[static_cast<vtkm::Id>(HR::Nz)] = 0;
+    return true;
 
   }
   using ControlSignature = void(FieldInOut<>,
@@ -303,17 +307,16 @@ public:
     }
   }
 
-  int canvasSize;
-  int depth;
-  XZRect surf;
+  vtkm::Id canvasSize;
+  vtkm::Id depth;
 };
 class YZRectWorklet : public vtkm::worklet::WorkletMapField
 {
 public:
   VTKM_CONT
   YZRectWorklet(
-           int cs,
-           int d
+           vtkm::Id cs,
+           vtkm::Id d
       )
     :canvasSize(cs)
     ,depth(d)
@@ -439,8 +442,8 @@ public:
     }
   }
 
-  int canvasSize;
-  int depth;
+  vtkm::Id canvasSize;
+  vtkm::Id depth;
 };
 
 class SphereIntersecttWorklet : public vtkm::worklet::WorkletMapField
@@ -448,18 +451,67 @@ class SphereIntersecttWorklet : public vtkm::worklet::WorkletMapField
 public:
   VTKM_CONT
   SphereIntersecttWorklet(
-           int cs,
-           int d)
+           vtkm::Id cs,
+           vtkm::Id d)
     :canvasSize(cs)
     ,depth(d)
   {
   }
+  VTKM_EXEC
+  void get_sphere_uv(const vec3& p, float& u, float& v) const {
+      float phi = atan2(p[2], p[0]);
+      float theta = asin(p[1]);
+      u = 1-(phi + M_PI) / (2*M_PI);
+      v = (theta + M_PI/2) / M_PI;
+  }
+
   template<typename HitRecord, typename HitId>
   VTKM_EXEC
   bool hit(const vec3 &origin, const vec3 &direction,  HitRecord& rec, HitId &hid, float &tmin, float &tmax,
            vec3 center, float radius,
            int matId, int texId) const {
-      return surf.hit(origin, direction,rec, hid, tmin, tmax, center, radius, matId, texId);
+    vec3 oc = origin - center;
+    float a = dot(direction, direction);
+    float b = dot(oc, direction);
+    float c = dot(oc, oc) - radius*radius;
+    float discriminant = b*b - a*c;
+    if (discriminant > 0) {
+        float temp = (-b - sqrt(b*b-a*c))/a;
+        if (temp < tmax && temp > tmin) {
+            rec[static_cast<vtkm::Id>(HR::T)] = temp;
+            auto p = origin + direction * rec[static_cast<vtkm::Id>(HR::T)];
+            rec[static_cast<vtkm::Id>(HR::Px)] = p[0];
+            rec[static_cast<vtkm::Id>(HR::Py)] = p[1];
+            rec[static_cast<vtkm::Id>(HR::Pz)] = p[2];
+            get_sphere_uv((p-center)/radius, rec[static_cast<vtkm::Id>(HR::U)], rec[static_cast<vtkm::Id>(HR::V)]);
+            auto n = (p - center) / radius;
+            rec[static_cast<vtkm::Id>(HR::Nx)] = n[0];
+            rec[static_cast<vtkm::Id>(HR::Ny)] = n[1];
+            rec[static_cast<vtkm::Id>(HR::Nz)] = n[2];
+            hid[static_cast<vtkm::Id>(HI::M)] = matId;
+            hid[static_cast<vtkm::Id>(HI::T)] = texId;
+
+            return true;
+        }
+        temp = (-b + sqrt(b*b-a*c))/a;
+        if (temp < tmax && temp > tmin) {
+            rec[static_cast<vtkm::Id>(HR::T)] = temp;
+            auto p = origin + direction * (rec[static_cast<vtkm::Id>(HR::T)]);
+            rec[static_cast<vtkm::Id>(HR::Px)] = p[0];
+            rec[static_cast<vtkm::Id>(HR::Py)] = p[1];
+            rec[static_cast<vtkm::Id>(HR::Pz)] = p[2];
+            get_sphere_uv((p-center)/radius, rec[static_cast<vtkm::Id>(HR::U)], rec[static_cast<vtkm::Id>(HR::V)]);
+            auto n = (p - center) / radius;
+            rec[static_cast<vtkm::Id>(HR::Nx)] = n[0];
+            rec[static_cast<vtkm::Id>(HR::Ny)] = n[1];
+            rec[static_cast<vtkm::Id>(HR::Nz)] = n[2];
+            hid[static_cast<vtkm::Id>(HI::M)] = matId;
+            hid[static_cast<vtkm::Id>(HI::T)] = texId;
+
+            return true;
+        }
+    }
+    return false;
   }
 
 
@@ -516,8 +568,8 @@ public:
   }
 
   Sphere surf;
-  int canvasSize;
-  int depth;
+  vtkm::Id canvasSize;
+  vtkm::Id depth;
 };
 
 
@@ -526,7 +578,7 @@ class CollectIntersecttWorklet : public vtkm::worklet::WorkletMapField
 public:
   VTKM_CONT
   CollectIntersecttWorklet(
-           int cs,
+           vtkm::Id cs,
            int d)
     :canvasSize(cs)
     ,depth(d)
@@ -559,6 +611,7 @@ public:
     //scattered.GetPortalControl().Set(i,sctr);
   }
 
-  int depth, canvasSize;
+  int depth;
+  vtkm::Id canvasSize;
 };
 #endif
