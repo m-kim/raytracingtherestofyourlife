@@ -8,6 +8,7 @@
 
 class cosine_pdf {
     public:
+  VTKM_EXEC_CONT
   inline vec3 random_cosine_direction(float r1, float r2) const {
       float z = sqrt(1-r2);
       float phi = 2*M_PI*r1;
@@ -15,7 +16,9 @@ class cosine_pdf {
       float y = sin(phi)*2*sqrt(r2);
       return vec3(x, y, z);
   }
+  VTKM_EXEC_CONT
   void SetW(const vec3& w) { uvw.build_from_w(w); }
+  VTKM_EXEC_CONT
   float value(const vec3& direction) const {
       float cosine = dot(unit_vector(direction), uvw.w());
       if (cosine > 0)
@@ -23,6 +26,7 @@ class cosine_pdf {
       else
           return 0;
   }
+  VTKM_EXEC_CONT
   vec3 generate(float r1, float r2, float r3) const  {
       return uvw.local(random_cosine_direction(r1,r2));
   }
@@ -43,8 +47,8 @@ public:
 
 
 
-  VTKM_EXEC
   template<typename HitRecord>
+  VTKM_EXEC
   float scattering_pdf(const vec3 &origin, const vec3 &direction, const HitRecord& rec, const vec3& scattered_origin, const vec3 &scattered_direction) const {
     vec3 n(rec[static_cast<vtkm::Id>(HR::Nx)], rec[static_cast<vtkm::Id>(HR::Ny)], rec[static_cast<vtkm::Id>(HR::Nz)]);
       float cosine = dot(n, unit_vector(scattered_direction));
@@ -55,11 +59,10 @@ public:
 
   using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>);
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10);
-  VTKM_EXEC
   template<typename VecArrayType, typename HitRecord,
   int FinBitIdx = 1,
   int ScatterBitIdx= 3>
-
+  VTKM_EXEC
   void operator()(vtkm::Id idx,
                   vec3 &r_origin,
                   vec3 &r_direction,

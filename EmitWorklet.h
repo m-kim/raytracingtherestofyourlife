@@ -18,20 +18,19 @@ public:
   {
   }
 
-  VTKM_EXEC
   template<typename HitRecord>
+  VTKM_EXEC
   bool scatter(const vec3 &origin, const vec3 &direction, const HitRecord& hrec, ScatterRecord& srec, vec3 albedo) const {
       srec.is_specular = false;
       srec.attenuation = albedo;
       return true;
   }
-  VTKM_EXEC
   template<typename HitRecord>
+  VTKM_EXEC
   vec3 emit(const vec3 &origin, const vec3 &direction, const HitRecord& rec, vec3 emit) const { return vec3(0,0,0); }
 
   using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>,FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>,WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8,_9, _10);
-  VTKM_EXEC
   template<typename VecArrayType,
           typename ColorArrayType,
           typename MatTypeArray,
@@ -39,6 +38,7 @@ public:
           typename HitRecord, typename HitId,
           int FinishedBitIdx = 1,
           int ScatterBitIdx = 3>
+  VTKM_EXEC
   void operator()(vtkm::Id idx,
                   vec3 &origin,
                   vec3 &direction,
@@ -79,12 +79,12 @@ public:
   {
   }
 
-  VTKM_EXEC
   template<typename HitRecord>
+  VTKM_EXEC
   bool scatter(const vec3 &origin, const vec3 &direction, const HitRecord& hrec, ScatterRecord& srec, vec3) const {
         return false;}
-  VTKM_EXEC
   template<typename HitRecord>
+  VTKM_EXEC
   vec3 emit(const vec3 &origin, const vec3 &direction, const HitRecord& rec, vec3 emit) const {
     vec3 n(rec[static_cast<vtkm::Id>(HR::Nx)], rec[static_cast<vtkm::Id>(HR::Ny)],rec[static_cast<vtkm::Id>(HR::Nz)]);
       if (dot(n, direction) < 0.0)
@@ -95,7 +95,6 @@ public:
 
   using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10);
-  VTKM_EXEC
   template<typename VecArrayType,
           typename ColorArrayType,
           typename MatTypeArray,
@@ -103,7 +102,7 @@ public:
   typename HitRecord, typename HitId,
   int FinBitIdx = 1,
   int ScatterBitIdx= 3>
-
+  VTKM_EXEC
   void operator()(vtkm::Id idx,
                   vec3 &origin,
                   vec3 &direction,
@@ -169,8 +168,8 @@ public:
        return v - 2*dot(v,n)*n;
   }
 
-  VTKM_EXEC
   template<typename HitRecord>
+  VTKM_EXEC
   bool scatter(const vec3 &origin, const vec3 &direction, const HitRecord& hrec, ScatterRecord& srec, vec3 albedo, double _rand) const {
       srec.is_specular = true;
       srec.attenuation = vec3(1.0, 1.0, 1.0);
@@ -212,13 +211,12 @@ public:
        }
        return true;
   }
-  VTKM_EXEC
   template<typename HitRecord>
+  VTKM_EXEC
   vec3 emit(const vec3 &origin, const vec3 &direction, const HitRecord& rec, vec3 emit) const { return vec3(0,0,0); }
 
   using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
-  VTKM_EXEC
   template<typename VecArrayType,
           typename ColorArrayType,
           typename MatTypeArray,
@@ -227,6 +225,7 @@ public:
           typename HitId,
   int FinishedBitIdx = 1,
   int ScatterBitIdx = 3  >
+  VTKM_EXEC
   void operator()(vtkm::Id idx,
                   unsigned int &seed,
                   vec3 &origin,
@@ -256,7 +255,7 @@ public:
   }
 
   const int depth, canvasSize;
-  float ref_idx;
+  const float ref_idx;
   const vtkm::UInt32 RayCount;
 
 };

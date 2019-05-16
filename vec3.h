@@ -21,11 +21,13 @@
 
 using vec3 = vtkm::Vec<vtkm::Float32, 3>;
 
+VTKM_EXEC_CONT
 inline float dot(const vec3 &v1, const vec3 &v2) {
     //return v1.e[0] *v2.e[0] + v1.e[1] *v2.e[1]  + v1.e[2] *v2.e[2];
   return vtkm::Dot(v1,v2);
 }
 
+VTKM_EXEC_CONT
 inline vec3 cross(const vec3 &v1, const vec3 &v2) {
 //    return vec3( (v1.e[1]*v2.e[2] - v1.e[2]*v2.e[1]),
 //                (-(v1.e[0]*v2.e[2] - v1.e[2]*v2.e[0])),
@@ -33,7 +35,7 @@ inline vec3 cross(const vec3 &v1, const vec3 &v2) {
   return vtkm::Cross(v1,v2);
 }
 
-
+VTKM_EXEC_CONT
 inline vec3 unit_vector(vec3 v) {
     //return v / v.length();
   return v * vtkm::RMagnitude(v);

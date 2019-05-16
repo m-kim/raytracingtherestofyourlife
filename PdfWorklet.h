@@ -1,5 +1,6 @@
 #ifndef PDFWORKLET_H
 #define PDFWORKLET_H
+#include <float.h>
 #include "Surface.h"
 #include "Record.h"
 #include "wangXor.h"
@@ -58,8 +59,8 @@ public:
   );
   using ExecutionSignature = void(_1, _2, _3, _4, _5, _6);
 
-  VTKM_EXEC
   template<typename PtArrayType, typename HitRecord>
+  VTKM_EXEC
   void operator()(
       int which,
        HitRecord &hrec,
@@ -104,8 +105,8 @@ public:
   );
   using ExecutionSignature = void(_1, _2, _3, _4, _5, _6);
 
-  VTKM_EXEC
   template<typename PtArrayType, typename HitRecord>
+  VTKM_EXEC
   void operator()(int which,
            HitRecord &hrec,
            vec3 &generated,
@@ -174,8 +175,8 @@ public:
   );
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6);
 
-  VTKM_EXEC
   template<typename PtArrayType, typename HitRecord>
+  VTKM_EXEC
   void operator()(vtkm::Id idx,
           int &which,
            HitRecord &hrec,
@@ -212,7 +213,7 @@ public:
     vtkm::Vec<vtkm::Float32, 9> rec;
     vtkm::Vec<vtkm::Int8,2> hid;
     int matId,texId;
-    if (surf.hit(o,v, rec, hid, 0.001, std::numeric_limits<float>::max(),x0,x1,z0,z1,k, matId, texId)) {
+    if (surf.hit(o,v, rec, hid, 0.001, FLT_MAX,x0,x1,z0,z1,k, matId, texId)) {
         float area = (x1-x0)*(z1-z0);
         auto rect = rec[static_cast<vtkm::Id>(HR::T)];
         float distance_squared = rect * rect * vtkm::MagnitudeSquared(v);
@@ -238,12 +239,11 @@ public:
   );
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9);
 
-  VTKM_EXEC
   template<typename PtArrayType,
           typename FlippedType,
   typename HitRecord,
   int ScatterBitIndex = 3>
-
+  VTKM_EXEC
   void operator()(vtkm::Id idx,
                   vec3 &origin,
                   vec3 &direction,
@@ -294,7 +294,7 @@ public:
     vtkm::Vec<vtkm::Float32, 9> rec;
     vtkm::Vec<vtkm::Id,2> hid;
     int matId,texId;
-    if (surf.hit(o, v, rec, hid, 0.001, std::numeric_limits<float>::max(), center, radius, matId, texId )) {
+    if (surf.hit(o, v, rec, hid, 0.001, FLT_MAX, center, radius, matId, texId )) {
         float cos_theta_max = sqrt(1 - radius*radius/vtkm::MagnitudeSquared(center-o));
         float solid_angle = 2*M_PI*(1-cos_theta_max);
         return  1 / solid_angle;
@@ -318,11 +318,11 @@ public:
   );
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9);
 
-  VTKM_EXEC
   template<typename PtArrayType,
           typename FlippedType,
   typename HitRecord,
   int ScatterBitIndex = 3>
+  VTKM_EXEC
   void operator()(vtkm::Id idx,
                   vec3 &origin,
                   vec3 &direction,

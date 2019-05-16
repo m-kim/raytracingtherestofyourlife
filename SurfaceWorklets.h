@@ -3,24 +3,24 @@
 #include <vtkm/worklet/WorkletMapField.h>
 #include "Surface.h"
 
-auto rotateY(const vec3 &origin, const vec3 &direction, float angle){
+void rotateY(const vec3 &origin, const vec3 &direction, float angle,
+             vec3 &o, vec3 &d){
   float radians = (M_PI / 180.) * angle;
   float sin_theta = sin(radians);
   float cos_theta = cos(radians);
-  vec3 o, d;
   o = origin;
   d = direction;
   o[0] = cos_theta*origin[0] - sin_theta*origin[2];
   o[2] =  sin_theta*origin[0] + cos_theta*origin[2];
   d[0] = cos_theta*direction[0] - sin_theta*direction[2];
   d[2] = sin_theta*direction[0] + cos_theta*direction[2];
-  return std::make_tuple(o, d);
 }
 
 
-auto rotAndTrans(vec3 &origin, vec3 &direction, vec3 offset, float angle)
+void rotAndTrans(vec3 &origin, vec3 &direction, vec3 offset, float angle,
+                 vec3 &o, vec3 &d)
 {
-  return rotateY(origin - offset, direction, angle);
+  return rotateY(origin - offset, direction, angle, o, d);
 }
 
 template<typename HitRecord>
@@ -62,8 +62,8 @@ public:
 
 
 
-  VTKM_EXEC
   template<typename HitRecord, typename HitId>
+  VTKM_EXEC
   bool hit(
           const vec3 &origin,
           const vec3 &direction,
@@ -120,7 +120,6 @@ public:
   );
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14);
 
-  VTKM_EXEC
   template<typename PtArrayType,
           typename IndexType,
           typename FlippedType,
@@ -129,6 +128,7 @@ public:
           typename HitId,
   int HitBitIdx = 2,
   int ScatterBitIdx = 3>
+  VTKM_EXEC
   void operator()(vtkm::Id idx,
                   vec3 &origin,
                   vec3 &direction,
@@ -157,9 +157,11 @@ public:
         HitId temp_hid;
         auto offset = offsetArray.Get(i);
         auto angle = angleArray.Get(i);
-        auto moved_r = rotAndTrans(origin, direction, offset, angle);
 
-        auto h =  hit(std::get<0>(moved_r), std::get<1>(moved_r), temp_rec, temp_hid, tmin, tmax,
+        vec3 o,d;
+        rotAndTrans(origin, direction, offset, angle, o,d);
+
+        auto h =  hit(o, d, temp_rec, temp_hid, tmin, tmax,
                       x0,x1,y0,y1,k,matIdx.Get(i),texIdx.Get(i));
         if (h){
           if (flipped.Get(i)){
@@ -193,8 +195,8 @@ public:
     ,depth(d)
   {
   }
-  VTKM_EXEC
   template<typename HitRecord, typename HitId>
+  VTKM_EXEC
   bool hit(const vec3 &origin,
            const vec3 &direction,
                   HitRecord& rec,
@@ -243,7 +245,6 @@ public:
   );
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14);
 
-  VTKM_EXEC
   template<typename PtArrayType,
           typename IndexType,
           typename FlippedType,
@@ -252,7 +253,7 @@ public:
           typename HitId,
           int HitBitIdx = 2,
           int ScatterBitIdx= 3>
-
+  VTKM_EXEC
   void operator()(vtkm::Id idx,
                   vec3 &origin,
                   vec3 &direction,
@@ -281,9 +282,10 @@ public:
         HitId temp_hid;
         auto offset = offsetArray.Get(i);
         auto angle = angleArray.Get(i);
-        auto moved_r = rotAndTrans(origin, direction, offset, angle);
+        vec3 o,d;
+        rotAndTrans(origin, direction, offset, angle, o,d);
 
-        auto h =  hit(std::get<0>(moved_r), std::get<1>(moved_r), temp_rec, temp_hid, tmin, tmax,
+        auto h =  hit(o,d, temp_rec, temp_hid, tmin, tmax,
                       x0,x1,z0,z1,k,matIdx.Get(i),texIdx.Get(i));
         if (h){
           tmax = temp_rec[static_cast<vtkm::Id>(HR::T)];
@@ -319,8 +321,8 @@ public:
   }
 
 
-  VTKM_EXEC
   template<typename HitRecord, typename HitId>
+  VTKM_EXEC
   bool hit(const vec3 &origin,
            const vec3 &direction,
             HitRecord& rec,
@@ -376,7 +378,6 @@ public:
   );
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14);
 
-  VTKM_EXEC
   template<typename PtArrayType,
           typename IndexType,
           typename FlippedType,
@@ -385,7 +386,7 @@ public:
           typename HitId,
           int HitBitIdx = 2,
           int ScatterBitIdx= 3>
-
+  VTKM_EXEC
   void operator()(vtkm::Id idx,
                   vec3 &origin,
                   vec3 &direction,
@@ -415,8 +416,9 @@ public:
         HitId temp_id;
         auto offset = offsetArray.Get(i);
         auto angle = angleArray.Get(i);
-        auto moved_r = rotAndTrans(origin, direction, offset, angle);
-        auto h =  hit(std::get<0>(moved_r), std::get<1>(moved_r), temp_rec, temp_id,  tmin, tmax,
+        vec3 o,d;
+        rotAndTrans(origin, direction, offset, angle, o,d);
+        auto h =  hit(o,d, temp_rec, temp_id,  tmin, tmax,
                       y0,y1,z0,z1,k,matIdx.Get(i),texIdx.Get(i));
         if (h){
           if (flipped.Get(i)){
@@ -452,8 +454,8 @@ public:
     ,depth(d)
   {
   }
-  VTKM_EXEC
   template<typename HitRecord, typename HitId>
+  VTKM_EXEC
   bool hit(const vec3 &origin, const vec3 &direction,  HitRecord& rec, HitId &hid, float &tmin, float &tmax,
            vec3 center, float radius,
            int matId, int texId) const {
@@ -475,13 +477,13 @@ public:
   );
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
 
-  VTKM_EXEC
   template<typename PtArrayType,
             typename IndexType,
   typename HitRecord,
   typename HitId,
   int HitBitIdx = 2,
   int ScatterBitIdx= 3>
+  VTKM_EXEC
   void operator()(vtkm::Id idx,
                   vec3 &origin,
                   vec3 &direction,
@@ -538,10 +540,10 @@ public:
   );
   using ExecutionSignature = void(WorkIndex, _1, _2, _3);
 
-  VTKM_EXEC
   template<typename PtArrayType,
   int HitBitIdx = 2,
   int ScatterBitIndex = 3>
+  VTKM_EXEC
   void operator()(vtkm::Id idx,
                   vtkm::UInt8 &sctr,
                   PtArrayType &emitted,

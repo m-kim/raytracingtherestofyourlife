@@ -16,18 +16,27 @@
 class onb
 {
     public:
+        VTKM_EXEC_CONT
         onb() {}
+        VTKM_EXEC_CONT
         inline vec3 operator[](int i) const { return axis[i]; }
+        VTKM_EXEC_CONT
         vec3 u() const       { return axis[0]; }
+        VTKM_EXEC_CONT
         vec3 v() const       { return axis[1]; }
+        VTKM_EXEC_CONT
         vec3 w() const       { return axis[2]; }
+        VTKM_EXEC_CONT
         vec3 local(float a, float b, float c) const { return a*u() + b*v() + c*w(); }
+        VTKM_EXEC_CONT
         vec3 local(const vec3& a) const { return a[0]*u() + a[1]*v() + a[2]*w(); }
+        VTKM_EXEC_CONT
         void build_from_w(const vec3&);
+
         vec3 axis[3];
 };
 
-
+VTKM_EXEC_CONT
 void onb::build_from_w(const vec3& n) {
     axis[2] = unit_vector(n);
     vec3 a;
