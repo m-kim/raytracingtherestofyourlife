@@ -454,10 +454,10 @@ public:
   }
   VTKM_EXEC
   template<typename HitRecord, typename HitId>
-  bool hit(const vec3 &origin, const vec3 &direction,  HitRecord& rec, HitId &hid, float tmin, float tmax,
+  bool hit(const vec3 &origin, const vec3 &direction,  HitRecord& rec, HitId &hid, float &tmin, float &tmax,
            vec3 center, float radius,
            int matId, int texId) const {
-      surf.hit(origin, direction,rec, hid, tmin, tmax, center, radius, matId, texId);
+      return surf.hit(origin, direction,rec, hid, tmin, tmax, center, radius, matId, texId);
   }
 
 
