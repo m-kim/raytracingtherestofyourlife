@@ -601,6 +601,7 @@ void applyMaterials(RayType &rays,
                     vtkm::cont::ArrayHandle<int> matType,
                     vtkm::cont::ArrayHandle<int> texType,
                     ArrayType &emitted,
+                    vtkm::cont::ArrayHandle<unsigned int> &seeds,
                     vtkm::Id canvasSize,
                     vtkm::Id depth)
 {
@@ -617,7 +618,7 @@ void applyMaterials(RayType &rays,
               tex, matType, texType, emitted);
 
   vtkm::worklet::AutoDispatcherMapField<DielectricWorklet>(deWorklet)
-        .Invoke(rays.Origin, rays.Dir, hrecs, hids, srecs, rays.Status,
+        .Invoke(seeds, rays.Origin, rays.Dir, hrecs, hids, srecs, rays.Status,
                 tex, matType, texType, emitted);
 
 }
@@ -627,7 +628,7 @@ void generateRays(
     vtkm::cont::ArrayHandle<int> &whichPDF,
     HitRecord &hrecs,
     ArrayType &generated_dir,
-
+    vtkm::cont::ArrayHandle<unsigned int> &seeds,
     std::vector<ArrayType> &light_box_pts,
     std::vector<ArrayType> &light_sphere_pts
     )
@@ -637,13 +638,13 @@ void generateRays(
        SphereGenerateDir sphereGenDir(3);
 
        vtkm::worklet::AutoDispatcherMapField<GenerateDir>(genDir)
-           .Invoke(whichPDF);
+           .Invoke(seeds, whichPDF);
        vtkm::worklet::AutoDispatcherMapField<CosineGenerateDir>(cosGenDir)
-           .Invoke(whichPDF, hrecs, generated_dir, light_sphere_pts[0], light_sphere_pts[1]);
+           .Invoke(whichPDF, hrecs, generated_dir, seeds,  light_sphere_pts[0], light_sphere_pts[1]);
        vtkm::worklet::AutoDispatcherMapField<XZRectGenerateDir>(xzRectGenDir)
-           .Invoke(whichPDF, hrecs, generated_dir, light_box_pts[0], light_box_pts[1]);
+           .Invoke(whichPDF, hrecs, generated_dir, seeds, light_box_pts[0], light_box_pts[1]);
        vtkm::worklet::AutoDispatcherMapField<SphereGenerateDir>(sphereGenDir)
-           .Invoke(whichPDF, hrecs, generated_dir, light_sphere_pts[0], light_sphere_pts[1]);
+           .Invoke(whichPDF, hrecs, generated_dir, seeds, light_sphere_pts[0], light_sphere_pts[1]);
 }
 
 template<typename HitRecord>
@@ -654,6 +655,7 @@ void applyPDFs(
     vtkm::cont::ArrayHandle<vtkm::Float32> &sum_values,
     ArrayType generated_dir,
     ArrayType &attenuation,
+    vtkm::cont::ArrayHandle<unsigned int> &seeds,
     std::vector<ArrayType> light_box_pts,
     std::vector<ArrayType> light_sphere_pts,
     int lightables,
@@ -665,9 +667,9 @@ void applyPDFs(
   SpherePDFWorklet spherePDFWorklet(lightables);
   PDFCosineWorklet pdfWorklet(canvasSize, depth, canvasSize, lightables);
   vtkm::worklet::AutoDispatcherMapField<XZRectPDFWorklet>(xzPDFWorklet)
-      .Invoke(rays.Origin, rays.Dir,hrecs, rays.Status, sum_values, generated_dir, light_box_pts[0], light_box_pts[1]);
+      .Invoke(rays.Origin, rays.Dir,hrecs, rays.Status, sum_values, generated_dir, seeds, light_box_pts[0], light_box_pts[1]);
   vtkm::worklet::AutoDispatcherMapField<SpherePDFWorklet>(spherePDFWorklet)
-      .Invoke(rays.Origin, rays.Dir,hrecs, rays.Status, sum_values, generated_dir, light_sphere_pts[0], light_sphere_pts[1]);
+      .Invoke(rays.Origin, rays.Dir,hrecs, rays.Status, sum_values, generated_dir, seeds, light_sphere_pts[0], light_sphere_pts[1]);
 
   vtkm::worklet::AutoDispatcherMapField<PDFCosineWorklet>(pdfWorklet)
         .Invoke(rays.Origin, rays.Dir, hrecs, srecs, rays.Status, sum_values, generated_dir,  rays.Origin, rays.Dir, attenuation);
@@ -694,9 +696,9 @@ int main() {
 
   constexpr int nx = 128;
   constexpr int ny = 128;
-  constexpr int ns = 5;
+  constexpr int ns = 100;
 
-  constexpr int depthcount = 5;
+  constexpr int depthcount = 10;
   auto canvasSize = nx*ny;
 
   constexpr int lightables = 2;
@@ -718,6 +720,8 @@ int main() {
 
   vtkm::cont::ArrayHandle<vtkm::Id> rays_index;
 
+  vtkm::cont::ArrayHandle<unsigned int> seeds;
+  seeds.Allocate(canvasSize);
   vtkm::rendering::raytracing::Ray<float> rays;
   rays.EnableIntersectionData();
   vtkm::rendering::raytracing::RayOperations::Resize(rays, canvasSize, Device());
@@ -773,6 +777,19 @@ int main() {
   sum_values.Allocate(nx*ny);
   generated_dir.Allocate(nx*ny);
   whichPDF.Allocate(nx*ny);
+
+  for (unsigned int i=0; i<canvasSize; i++){
+
+    unsigned int idx = i;
+    auto val = xorshiftWang::getWang32(idx);
+    idx++;
+    val = xorshiftWang::getWang32(val);
+    idx++;
+    val = xorshiftWang::getWang32(val);
+    idx++;
+    val = xorshiftWang::getWang32(val);
+    seeds.GetPortalControl().Set(i, val);
+  }
   for (int s =0; s<ns; s++){
     UVGen uvgen(nx, ny, s);
     vtkm::worklet::AutoDispatcherMapField<UVGen>(
@@ -800,9 +817,9 @@ int main() {
 
 
       intersect(rays, hrecs,hids, tmin, emitted, attenuation, depth);
-      applyMaterials(rays, hrecs, hids, srecs, tex, matType, texType, emitted, canvasSize, depth);
-      generateRays(whichPDF, hrecs, generated_dir, light_box_pts, light_sphere_pts);
-      applyPDFs(rays, hrecs, srecs, sum_values, generated_dir, attenuation,light_box_pts, light_sphere_pts, lightables, canvasSize, depth);
+      applyMaterials(rays, hrecs, hids, srecs, tex, matType, texType, emitted, seeds, canvasSize, depth);
+      generateRays(whichPDF, hrecs, generated_dir, seeds, light_box_pts, light_sphere_pts);
+      applyPDFs(rays, hrecs, srecs, sum_values, generated_dir, attenuation, seeds, light_box_pts, light_sphere_pts, lightables, canvasSize, depth);
 
       vtkm::cont::ArrayHandleCast<vtkm::Int32, vtkm::cont::ArrayHandle<vtkm::UInt8>> castedStatus(rays.Status);
 

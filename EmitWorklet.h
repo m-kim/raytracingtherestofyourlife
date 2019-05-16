@@ -7,6 +7,7 @@
 #include <vtkm/rendering/xorShift.h>
 #include "Record.h"
 #include "vec3.h"
+#include "wangXor.h"
 
 class LambertianWorklet : public vtkm::worklet::WorkletMapField
 {
@@ -216,8 +217,8 @@ public:
   template<typename HitRecord>
   vec3 emit(const vec3 &origin, const vec3 &direction, const HitRecord& rec, vec3 emit) const { return vec3(0,0,0); }
 
-  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10);
+  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
   VTKM_EXEC
   template<typename VecArrayType,
           typename ColorArrayType,
@@ -228,6 +229,7 @@ public:
   int FinishedBitIdx = 1,
   int ScatterBitIdx = 3  >
   void operator()(vtkm::Id idx,
+                  unsigned int &seed,
                   vec3 &origin,
                   vec3 &direction,
                   HitRecord &hrec,
@@ -244,14 +246,9 @@ public:
 
         auto mt = matType.Get(hid[static_cast<vtkm::Id>(HI::M)]);
         if (mt == 2){
-          vtkm::Vec<vtkm::UInt32, 4> randState;
-          randState[0] = vtkm::random::xorshift::getRand32(idx*1) + 1;
-          randState[1] = vtkm::random::xorshift::getRand32(idx*2) + 2;
-          randState[2] = vtkm::random::xorshift::getRand32(idx*3) + 3;
-          randState[3] = vtkm::random::xorshift::getRand32(idx*4) + 4; //arbitrary random state based off number of rays being shot through
           auto tt = texType.Get(hid[static_cast<vtkm::Id>(HI::T)]);
           vec3 em = emit(origin, direction, hrec, col.Get(tt));
-          fin &= (scatter(origin, direction, hrec, srec, col.Get(tt), drand48()) << ScatterBitIdx);//vtkm::random::xorshift::getRandF(randState));
+          fin &= (scatter(origin, direction, hrec, srec, col.Get(tt), xorshiftWang::getRandF(seed)) << ScatterBitIdx);//vtkm::random::xorshift::getRandF(randState));
           emitted.Set(canvasSize * depth + idx, em);
 
         }

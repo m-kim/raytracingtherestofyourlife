@@ -5,7 +5,7 @@
 #include <vtkm/worklet/DispatcherMapField.h>
 #include <vtkm/worklet/WorkletMapField.h>
 #include <vtkm/cont/ArrayHandleCounting.h>
-#include <vtkm/rendering/xorShift.h>
+#include "wangXor.h"
 
 using vec3 = vtkm::Vec<vtkm::Float32, 3>;
 
@@ -31,21 +31,17 @@ public:
   VTKM_EXEC void operator()(vtkm::Id &idx,
                             Precision& uv) const
   {
-    vtkm::Vec<vtkm::UInt32, 4> randState;
-    randState[0] = vtkm::random::xorshift::getRand32(RayCount*1) + 1;
-    randState[1] = vtkm::random::xorshift::getRand32(RayCount*2) + 2;
-    randState[2] = vtkm::random::xorshift::getRand32(RayCount*3) + 3;
-    randState[3] = vtkm::random::xorshift::getRand32(RayCount*4) + 4; //arbitrary random state based off number of rays being shot through
 
-    vtkm::random::xorshift::getRandF(randState);
-    vtkm::random::xorshift::getRandF(randState);
-    vtkm::random::xorshift::getRandF(randState);
-    vtkm::random::xorshift::getRandF(randState);
+    unsigned int seed = idx;
+    xorshiftWang::getRandF(seed);
+    xorshiftWang::getRandF(seed);
+    xorshiftWang::getRandF(seed);
+    xorshiftWang::getRandF(seed);
 
     vtkm::Id i = idx % numx;
     vtkm::Id j = idx / numx;
-    uv[0] = vtkm::Float32(i + vtkm::random::xorshift::getRandF(randState)) / numx;
-    uv[1] = vtkm::Float32(j + vtkm::random::xorshift::getRandF(randState)) / numy;
+    uv[0] = vtkm::Float32(i + xorshiftWang::getRandF(seed)) / numx;
+    uv[1] = vtkm::Float32(j + xorshiftWang::getRandF(seed)) / numy;
 
   }
 
@@ -119,16 +115,6 @@ public:
                             Precision& rayDirZ,
                             vtkm::Id& pixelIndex) const
   {
-    vtkm::Vec<vtkm::UInt32, 4> randState;
-    randState[0] = vtkm::random::xorshift::getRand32(RayCount*1) + 1;
-    randState[1] = vtkm::random::xorshift::getRand32(RayCount*2) + 2;
-    randState[2] = vtkm::random::xorshift::getRand32(RayCount*3) + 3;
-    randState[3] = vtkm::random::xorshift::getRand32(RayCount*4) + 4;
-
-    vtkm::random::xorshift::getRandF(randState);
-    vtkm::random::xorshift::getRandF(randState);
-    vtkm::random::xorshift::getRandF(randState);
-    vtkm::random::xorshift::getRandF(randState);
 
     vtkm::Vec<Precision, 3> ray_dir(rayDirX, rayDirY, rayDirZ);
     int i = vtkm::Int32(idx) % SubsetWidth;
@@ -140,8 +126,9 @@ public:
     // ray_dir = nlook + delta_x * ((2.f * Precision(i) - Precision(w)) / 2.0f) +
       // delta_y * ((2.f * Precision(j) - Precision(h)) / 2.0f);
 
-    Precision _randU = drand48();//vtkm::random::xorshift::getRandF(randState);
-    Precision _randV = drand48();//vtkm::random::xorshift::getRandF(randState);
+    unsigned int seed = idx;
+    Precision _randU = xorshiftWang::getRandF(seed);
+    Precision _randV = xorshiftWang::getRandF(seed);
 
     if (RayCount < 2) {_randU = 0.5f; _randV = 0.5f;}
 

@@ -2,18 +2,19 @@
 #define PDFWORKLET_H
 #include "Surface.h"
 #include "Record.h"
+#include "wangXor.h"
 class GenerateDir : public vtkm::worklet::WorkletMapField
 {
 public:
   VTKM_EXEC_CONT
   GenerateDir(int ts) : type_size(ts){}
 
-  using ControlSignature = void(FieldInOut<>);
-  using ExecutionSignature = void( _1);
+  using ControlSignature = void(FieldInOut<>, FieldInOut<>);
+  using ExecutionSignature = void( _1, _2);
 
   VTKM_EXEC
-  void operator()(int &which) const {
-    which = vtkm::Min(type_size,int(drand48() * type_size+1));
+  void operator()(unsigned int &seed, int &which) const {
+    which = vtkm::Min(type_size,int(xorshiftWang::getRandF(seed) * type_size+1));
   }
   const int type_size;
 };
@@ -50,11 +51,12 @@ public:
   using ControlSignature = void(FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
+  FieldInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>
 
   );
-  using ExecutionSignature = void(_1, _2, _3, _4, _5);
+  using ExecutionSignature = void(_1, _2, _3, _4, _5, _6);
 
   VTKM_EXEC
   template<typename PtArrayType, typename HitRecord>
@@ -62,13 +64,14 @@ public:
       int which,
        HitRecord &hrec,
        vec3 &generated,
+      unsigned int &seed,
        PtArrayType pt1,
        PtArrayType pt2
     ) const
   {
     if (which <= current ){
-      float r1 =drand48();
-      float r2 =drand48();
+      float r1 =xorshiftWang::getRandF(seed);
+      float r2 =xorshiftWang::getRandF(seed);
       onb uvw;
 
       vec3 hrecn(hrec[static_cast<vtkm::Id>(HR::Nx)], hrec[static_cast<vtkm::Id>(HR::Ny)], hrec[static_cast<vtkm::Id>(HR::Nz)]);
@@ -94,17 +97,19 @@ public:
   using ControlSignature = void(FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
+  FieldInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>
 
   );
-  using ExecutionSignature = void(_1, _2, _3, _4, _5);
+  using ExecutionSignature = void(_1, _2, _3, _4, _5, _6);
 
   VTKM_EXEC
   template<typename PtArrayType, typename HitRecord>
   void operator()(int which,
            HitRecord &hrec,
            vec3 &generated,
+           unsigned int &seed,
            PtArrayType pt1,
            PtArrayType pt2
            ) const
@@ -117,7 +122,7 @@ public:
         float z1 = pt2.Get(i)[2];
         float k = pt1.Get(i)[1];
         vec3 p(hrec[static_cast<vtkm::Id>(HR::Px)], hrec[static_cast<vtkm::Id>(HR::Py)], hrec[static_cast<vtkm::Id>(HR::Pz)]);
-        generated = random(p, drand48(), drand48(),
+        generated = random(p, xorshiftWang::getRandF(seed), xorshiftWang::getRandF(seed),
                            x0,x1,z0,z1,k);
       }
     }
@@ -162,11 +167,12 @@ public:
   using ControlSignature = void(FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
+  FieldInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>
 
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6);
 
   VTKM_EXEC
   template<typename PtArrayType, typename HitRecord>
@@ -174,6 +180,7 @@ public:
           int &which,
            HitRecord &hrec,
            vec3 &generated,
+                  unsigned int &seed,
            PtArrayType pt1,
            PtArrayType pt2
            ) const
@@ -182,7 +189,7 @@ public:
       for (int i = 0; i < pt1.GetNumberOfValues(); i++){
         float radius = pt2.Get(i)[0];
         vec3 p(hrec[static_cast<vtkm::Id>(HR::Px)], hrec[static_cast<vtkm::Id>(HR::Py)], hrec[static_cast<vtkm::Id>(HR::Pz)]);
-        generated = random(p, drand48(), drand48(), pt1.Get(i), radius);
+        generated = random(p, xorshiftWang::getRandF(seed), xorshiftWang::getRandF(seed), pt1.Get(i), radius);
       }
     }
   }
@@ -224,11 +231,12 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
+  FieldInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>
 
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9);
 
   VTKM_EXEC
   template<typename PtArrayType,
@@ -243,13 +251,14 @@ public:
                   FlippedType &scattered,
                   float &sum_value,
                   vec3 &generated,
+                  unsigned int &seed,
                   PtArrayType pt1,
                   PtArrayType pt2
                   ) const
   {
     if (scattered & (1UL << ScatterBitIndex)){
       float weight = 1.0/list_size;
-      int index = int(drand48() * list_size);
+      int index = int(xorshiftWang::getRandF(seed) * list_size);
       for (int i = 0; i < pt1.GetNumberOfValues(); i++){
         float x0 = pt1.Get(i)[0];
         float x1 = pt2.Get(i)[0];
@@ -302,11 +311,12 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
+  FieldInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>
 
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9);
 
   VTKM_EXEC
   template<typename PtArrayType,
@@ -320,13 +330,14 @@ public:
                   FlippedType &scattered,
                   float &sum_value,
                   vec3 &generated,
+                  unsigned int &seed,
                   PtArrayType pt1,
                   PtArrayType pt2
                   ) const
   {
     if (scattered & (1UL << ScatterBitIndex)){
       float weight = 1.0/list_size;
-      int index = int(drand48() *list_size);
+      int index = int(xorshiftWang::getRandF(seed) *list_size);
       for (int i = 0; i < pt1.GetNumberOfValues(); i++){
         float radius = pt2.Get(i)[0];
         vec3 p(hrec[static_cast<vtkm::Id>(HR::Px)], hrec[static_cast<vtkm::Id>(HR::Py)], hrec[static_cast<vtkm::Id>(HR::Pz)]);
