@@ -126,7 +126,9 @@ public:
           typename FlippedType,
           typename AngleArray,
           typename HitRecord,
-          typename HitId>
+          typename HitId,
+  int HitBitIdx = 2,
+  int ScatterBitIdx = 3>
   void operator()(vtkm::Id idx,
                   vec3 &origin,
                   vec3 &direction,
@@ -144,7 +146,7 @@ public:
                   FlippedType flipped
                   ) const
   {
-    if (scattered & (1UL << 3)){
+    if (scattered & (1UL << ScatterBitIdx)){
       for (int i=0; i<matIdx.GetNumberOfValues(); i++){
         float x0 = pt1.Get(i)[0];
         float x1 = pt2.Get(i)[0];
@@ -170,7 +172,7 @@ public:
           hid = temp_hid;
           tmax = temp_rec[static_cast<vtkm::Id>(HR::T)];
         }
-        scattered |= (h << 2);
+        scattered |= (h << HitBitIdx);
 
       }
     }
@@ -247,7 +249,10 @@ public:
           typename FlippedType,
           typename AngleArray,
           typename HitRecord,
-          typename HitId>
+          typename HitId,
+          int HitBitIdx = 2,
+          int ScatterBitIdx= 3>
+
   void operator()(vtkm::Id idx,
                   vec3 &origin,
                   vec3 &direction,
@@ -265,7 +270,7 @@ public:
                   FlippedType flipped
                   ) const
   {
-    if (scattered & (1UL << 3)){ //scattered
+    if (scattered & (1UL << ScatterBitIdx)){ //scattered
       for (int i=0; i<matIdx.GetNumberOfValues(); i++){
         float x0 = pt1.Get(i)[0];
         float x1 = pt2.Get(i)[0];
@@ -291,7 +296,7 @@ public:
           hrec= temp_rec;
           hid = temp_hid;
         }
-        scattered |= (h << 2);
+        scattered |= (h << HitBitIdx);
       }
     }
   }
@@ -377,7 +382,10 @@ public:
           typename FlippedType,
           typename AngleArray,
           typename HitRecord,
-          typename HitId>
+          typename HitId,
+          int HitBitIdx = 2,
+          int ScatterBitIdx= 3>
+
   void operator()(vtkm::Id idx,
                   vec3 &origin,
                   vec3 &direction,
@@ -395,7 +403,7 @@ public:
                   FlippedType flipped
                   ) const
   {
-    if (scattered & (1UL << 3)){
+    if (scattered & (1UL << ScatterBitIdx)){
       for (int i=0; i<pt1.GetNumberOfValues(); i++){
         float y0 = pt1.Get(i)[1];
         float y1 = pt2.Get(i)[1];
@@ -423,7 +431,7 @@ public:
           hrec= temp_rec;
           hid = temp_id;
         }
-        scattered |= (h << 2);
+        scattered |= (h << HitBitIdx);
 
       }
     }
@@ -471,7 +479,9 @@ public:
   template<typename PtArrayType,
             typename IndexType,
   typename HitRecord,
-  typename HitId>
+  typename HitId,
+  int HitBitIdx = 2,
+  int ScatterBitIdx= 3>
   void operator()(vtkm::Id idx,
                   vec3 &origin,
                   vec3 &direction,
@@ -486,7 +496,7 @@ public:
                   IndexType texIdx
                   ) const
   {
-    if (scattered & (1UL << 3)){ //scattered
+    if (scattered & (1UL << ScatterBitIdx)){ //scattered
       for (int i=0; i<pt1.GetNumberOfValues(); i++){
         HitRecord  temp_rec;
         HitId temp_hid;
@@ -498,7 +508,7 @@ public:
           hrec = temp_rec;
           hid = temp_hid;
         }
-        scattered |= (h << 2);
+        scattered |= (h << HitBitIdx);
       }
     }
   }
@@ -529,19 +539,21 @@ public:
   using ExecutionSignature = void(WorkIndex, _1, _2, _3);
 
   VTKM_EXEC
-  template<typename PtArrayType>
+  template<typename PtArrayType,
+  int HitBitIdx = 2,
+  int ScatterBitIndex = 3>
   void operator()(vtkm::Id idx,
                   vtkm::UInt8 &sctr,
                   PtArrayType &emitted,
                   PtArrayType &attenuation
                   ) const
   {
-    if (!((sctr & (1UL << 3)) && (sctr & (1UL << 2)))){ //hitRay
-      sctr &= ~(1UL << 3);
+    if (!((sctr & (1UL << ScatterBitIndex)) && (sctr & (1UL << HitBitIdx)))){ //hitRay
+      sctr &= ~(1UL << ScatterBitIndex);
       attenuation.Set(idx + canvasSize * depth, vec3(1.0));
       emitted.Set(idx + canvasSize * depth, vec3(0.0f));
     }
-    sctr &= ~(1UL << 2);
+    sctr &= ~(1UL << HitBitIdx);
     //scattered.GetPortalControl().Set(i,sctr);
   }
 

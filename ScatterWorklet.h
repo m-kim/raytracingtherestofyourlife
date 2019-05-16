@@ -58,7 +58,10 @@ public:
   using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>);
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10);
   VTKM_EXEC
-  template<typename VecArrayType, typename HitRecord>
+  template<typename VecArrayType, typename HitRecord,
+  int FinBitIdx = 1,
+  int ScatterBitIdx= 3>
+
   void operator()(vtkm::Id idx,
                   vec3 &r_origin,
                   vec3 &r_direction,
@@ -71,12 +74,12 @@ public:
                   vec3 &out_direction,
                   VecArrayType attenuation) const
   {
-    if (! (fin & (1UL << 1))){
+    if (! (fin & (1UL << FinBitIdx))){
       vec3 atten(1.0);
       out_origin = r_origin;
       out_direction = r_direction;
 
-      if (fin & (1UL << 3)){
+      if (fin & (1UL << ScatterBitIdx)){
         if (srec.is_specular) {
           atten = srec.attenuation;
           out_origin = srec.o;
@@ -100,7 +103,7 @@ public:
       }
       attenuation.Set(canvasSize * depth + idx, atten);
     }
-    fin |= (fin >> 3);
+    fin |= (fin >> ScatterBitIdx);
   }
 
   const int depth, canvasSize;

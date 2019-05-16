@@ -694,7 +694,7 @@ int main() {
 
   constexpr int nx = 128;
   constexpr int ny = 128;
-  constexpr int ns = 100;
+  constexpr int ns = 5;
 
   constexpr int depthcount = 5;
   auto canvasSize = nx*ny;

@@ -233,7 +233,9 @@ public:
   VTKM_EXEC
   template<typename PtArrayType,
           typename FlippedType,
-  typename HitRecord>
+  typename HitRecord,
+  int ScatterBitIndex = 3>
+
   void operator()(vtkm::Id idx,
                   vec3 &origin,
                   vec3 &direction,
@@ -245,7 +247,7 @@ public:
                   PtArrayType pt2
                   ) const
   {
-    if (scattered & (1UL << 3)){
+    if (scattered & (1UL << ScatterBitIndex)){
       float weight = 1.0/list_size;
       int index = int(drand48() * list_size);
       for (int i = 0; i < pt1.GetNumberOfValues(); i++){
@@ -309,7 +311,8 @@ public:
   VTKM_EXEC
   template<typename PtArrayType,
           typename FlippedType,
-  typename HitRecord>
+  typename HitRecord,
+  int ScatterBitIndex = 3>
   void operator()(vtkm::Id idx,
                   vec3 &origin,
                   vec3 &direction,
@@ -321,7 +324,7 @@ public:
                   PtArrayType pt2
                   ) const
   {
-    if (scattered & (1UL << 3)){
+    if (scattered & (1UL << ScatterBitIndex)){
       float weight = 1.0/list_size;
       int index = int(drand48() *list_size);
       for (int i = 0; i < pt1.GetNumberOfValues(); i++){

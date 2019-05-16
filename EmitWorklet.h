@@ -36,7 +36,9 @@ public:
           typename ColorArrayType,
           typename MatTypeArray,
           typename TexTypeArray,
-  typename HitRecord, typename HitId>
+          typename HitRecord, typename HitId,
+          int FinishedBitIdx = 1,
+          int ScatterBitIdx = 3>
   void operator()(vtkm::Id idx,
                   vec3 &origin,
                   vec3 &direction,
@@ -49,13 +51,13 @@ public:
                   TexTypeArray texType,
                   VecArrayType emitted) const
   {
-    if (!(fin & (1UL << 1))){ //fin
-      if (fin & (1UL << 3)){ //scattered
+    if (!(fin & (1UL << FinishedBitIdx))){ //fin
+      if (fin & (1UL << ScatterBitIdx)){ //scattered
         auto mt = matType.Get(hid[static_cast<vtkm::Id>(HI::M)]);
         if (mt == 0){
           auto tt = texType.Get(hid[static_cast<vtkm::Id>(HI::T)]);
           vec3 em = emit(origin, direction, hrec, col.Get(tt));
-          fin |= (scatter(origin, direction, hrec, srec, col.Get(tt)) << 3); //scattered
+          fin &= (scatter(origin, direction, hrec, srec, col.Get(tt)) << ScatterBitIdx); //scattered
           emitted.Set(canvasSize * depth + idx, em);
 
         }
@@ -98,7 +100,10 @@ public:
           typename ColorArrayType,
           typename MatTypeArray,
           typename TexTypeArray,
-  typename HitRecord, typename HitId>
+  typename HitRecord, typename HitId,
+  int FinBitIdx = 1,
+  int ScatterBitIdx= 3>
+
   void operator()(vtkm::Id idx,
                   vec3 &origin,
                   vec3 &direction,
@@ -111,13 +116,13 @@ public:
                   TexTypeArray texType,
                   VecArrayType emitted) const
   {
-    if(!(fin & (1UL << 1))){
-      if ( (fin & (1UL << 3))){ //scattered
+    if(!(fin & (1UL << FinBitIdx))){
+      if ( (fin & (1UL << ScatterBitIdx))){ //scattered
         auto mt = matType.Get(hid[static_cast<vtkm::Id>(HI::M)]);
         if (mt == 1){
           auto tt = texType.Get(hid[static_cast<vtkm::Id>(HI::T)]);
           vec3 em = emit(origin, direction, hrec, col.Get(tt));
-          fin |= (scatter(origin, direction, hrec, srec, col.Get(tt)) << 3); //scattered
+          fin &= (scatter(origin, direction, hrec, srec, col.Get(tt)) << ScatterBitIdx); //scattered
           emitted.Set(canvasSize * depth + idx, em);
         }
       }
@@ -219,7 +224,9 @@ public:
           typename MatTypeArray,
           typename TexTypeArray,
           typename HitRecord,
-          typename HitId>
+          typename HitId,
+  int FinishedBitIdx = 1,
+  int ScatterBitIdx = 3  >
   void operator()(vtkm::Id idx,
                   vec3 &origin,
                   vec3 &direction,
@@ -232,8 +239,8 @@ public:
                   TexTypeArray texType,
                   VecArrayType emitted) const
   {
-    if (!(fin & (1UL << 1))){
-      if ((fin & (1UL << 3))){ //scattered
+    if (!(fin & (1UL << FinishedBitIdx))){
+      if ((fin & (1UL << ScatterBitIdx))){ //scattered
 
         auto mt = matType.Get(hid[static_cast<vtkm::Id>(HI::M)]);
         if (mt == 2){
@@ -244,7 +251,7 @@ public:
           randState[3] = vtkm::random::xorshift::getRand32(idx*4) + 4; //arbitrary random state based off number of rays being shot through
           auto tt = texType.Get(hid[static_cast<vtkm::Id>(HI::T)]);
           vec3 em = emit(origin, direction, hrec, col.Get(tt));
-          fin |= (scatter(origin, direction, hrec, srec, col.Get(tt), drand48()) << 3);//vtkm::random::xorshift::getRandF(randState));
+          fin &= (scatter(origin, direction, hrec, srec, col.Get(tt), drand48()) << ScatterBitIdx);//vtkm::random::xorshift::getRandF(randState));
           emitted.Set(canvasSize * depth + idx, em);
 
         }
