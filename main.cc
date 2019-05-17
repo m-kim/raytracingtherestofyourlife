@@ -32,7 +32,10 @@
 #include "EmitWorklet.h"
 #include "ScatterWorklet.h"
 #include "PdfWorklet.h"
+
+#include "CornellBox.h"
 using ArrayType = vtkm::cont::ArrayHandle<vec3>;
+CornellBox cb;
 
 
 template <class IndexPortalType, class InputPortalType, class OutputPortalType>
@@ -318,209 +321,9 @@ struct Append
   }
 };
 
-vtkm::cont::ArrayHandle<vec3> tex;
-vtkm::cont::ArrayHandle<vtkm::Id> matIdx[5];
-vtkm::cont::ArrayHandle<vtkm::Id> texIdx[5];
-vtkm::cont::ArrayHandle<int> matType, texType, flipped[5];
-vtkm::cont::ArrayHandle<vec3> pts1[5], pts2[5], translateOffset[5];
-vtkm::cont::ArrayHandle<float> angleArray[5];
-vtkm::cont::ArrayHandle<vec3> norms;
 
 std::vector<vtkm::cont::ArrayHandle<vec3>> ptsArray;
-std::vector<int> cellTypeArray;
-void vtkCornellBox()
-{
-  tex.Allocate(4);
-  tex.GetPortalControl().Set(0, vec3(0.65, 0.05, 0.05));
-  tex.GetPortalControl().Set(1, vec3(0.73, 0.73, 0.73));
-  tex.GetPortalControl().Set(2, vec3(0.12, 0.45, 0.15));
-  tex.GetPortalControl().Set(3, vec3(15, 15, 15));
 
-  matType.Allocate(5);
-  matType.GetPortalControl().Set(0, 0); //lambertian
-  matType.GetPortalControl().Set(1, 0); //lambertian
-  matType.GetPortalControl().Set(2, 0); //lambertian
-  matType.GetPortalControl().Set(3, 1); //light
-  matType.GetPortalControl().Set(4, 2); //dielectric
-
-  texType.Allocate(5);
-  texType.GetPortalControl().Set(0, 0); //red
-  texType.GetPortalControl().Set(1, 1); //white
-  texType.GetPortalControl().Set(2, 2); //green
-  texType.GetPortalControl().Set(3, 3); //super bright
-  texType.GetPortalControl().Set(4, 0); //dielectric
-
-
-  cellTypeArray.resize(5);
-  norms.Allocate(16);
-
-  //yz_rect
-  translateOffset[0].Allocate(4);
-  angleArray[0].Allocate(4);
-    flipped[0].Allocate(4);
-    matIdx[0].Allocate(4);
-    texIdx[0].Allocate(4);
-    pts1[0].Allocate(4);
-    pts2[0].Allocate(4);
-    cellTypeArray[0] = 0;
-    matIdx[0].GetPortalControl().Set(0, 2);
-    texIdx[0].GetPortalControl().Set(0, 2);
-    pts1[0].GetPortalControl().Set(0, vec3(555,0,0));
-    pts2[0].GetPortalControl().Set(0, vec3(555,555,555));
-    flipped[0].GetPortalControl().Set(0, 1);
-    translateOffset[0].GetPortalControl().Set(0, vec3(0.0f));
-    angleArray[0].GetPortalControl().Set(0, 0);
-
-
-    matIdx[0].GetPortalControl().Set(1, 0);
-    texIdx[0].GetPortalControl().Set(1, 0);
-    pts1[0].GetPortalControl().Set(1, vec3(0,0,0));
-    pts2[0].GetPortalControl().Set(1, vec3(0,555,555));
-    flipped[0].GetPortalControl().Set(1, 0);
-    translateOffset[0].GetPortalControl().Set(1, vec3(0.0f));
-    angleArray[0].GetPortalControl().Set(1, 0);
-
-    //xz_rect
-    translateOffset[1].Allocate(5);
-    angleArray[1].Allocate(5);
-    flipped[1].Allocate(5);
-    matIdx[1].Allocate(5);
-    texIdx[1].Allocate(5);
-    pts1[1].Allocate(5);
-    pts2[1].Allocate(5);
-    cellTypeArray[1] =  1;
-    matIdx[1].GetPortalControl().Set(0, 3);
-    texIdx[1].GetPortalControl().Set(0, 3);
-    pts1[1].GetPortalControl().Set(0, vec3(213,554,227));
-    pts2[1].GetPortalControl().Set(0, vec3(343,554,332));
-    flipped[1].GetPortalControl().Set(0, 1);
-
-    matIdx[1].GetPortalControl().Set(1, 1);
-    texIdx[1].GetPortalControl().Set(1, 1);
-    pts1[1].GetPortalControl().Set(1, vec3(0,555,0));
-    pts2[1].GetPortalControl().Set(1, vec3(555,555,555));
-    flipped[1].GetPortalControl().Set(1, 1);
-
-    matIdx[1].GetPortalControl().Set(2, 1);
-    texIdx[1].GetPortalControl().Set(2, 1);
-    pts1[1].GetPortalControl().Set(2, vec3(0,0,0));
-    pts2[1].GetPortalControl().Set(2, vec3(555,0,555));
-    flipped[1].GetPortalControl().Set(2, 0);
-
-    //xy_rect
-    translateOffset[2].Allocate(3);
-    angleArray[2].Allocate(3);
-    flipped[2].Allocate(3);
-    matIdx[2].Allocate(3);
-    texIdx[2].Allocate(3);
-    pts1[2].Allocate(3);
-    pts2[2].Allocate(3);
-    cellTypeArray[2] =  2;
-    matIdx[2].GetPortalControl().Set(0, 1);
-    texIdx[2].GetPortalControl().Set(0, 1);
-    pts1[2].GetPortalControl().Set(0, vec3(0,0,555));
-    pts2[2].GetPortalControl().Set(0, vec3(555,555,555));
-    translateOffset[2].GetPortalControl().Set(0, vec3(0,0,0));
-    angleArray[2].GetPortalControl().Set(0,0);
-    flipped[2].GetPortalControl().Set(0, 1);
-
-    //sphere
-    flipped[3].Allocate(1);
-    matIdx[3].Allocate(1);
-    texIdx[3].Allocate(1);
-    pts1[3].Allocate(1);
-    pts2[3].Allocate(1);
-    cellTypeArray[3] =  3;
-    matIdx[3].GetPortalControl().Set(0, 4);
-    texIdx[3].GetPortalControl().Set(0, 0);
-    pts1[3].GetPortalControl().Set(0, vec3(190,90,190));
-    pts2[3].GetPortalControl().Set(0, vec3(90,0,0));
-    flipped[3].GetPortalControl().Set(0, 0);
-
-    flipped[4].Allocate(1);
-    matIdx[4].Allocate(1);
-    texIdx[4].Allocate(1);
-    pts1[4].Allocate(1);
-    pts2[4].Allocate(1);
-    cellTypeArray[4] =  4;
-    matIdx[4].GetPortalControl().Set(0, 1);
-    texIdx[4].GetPortalControl().Set(0, 1);
-    flipped[4].GetPortalControl().Set(0, 0);
-
-  //small box
-  const vec3 constp1(0,0,0);
-  const vec3 constp2(165,330, 165);
-
-  vec3 p1 = constp1;
-  vec3 p2 = constp2;
-
-  //xy
-  p1 = vec3(0,0,165);
-  p2 = vec3(165,330,165);
-  vec3 offset(265,0,295);
-  int ct = 2;
-  matIdx[ct].GetPortalControl().Set(1, 1);
-  texIdx[ct].GetPortalControl().Set(1, 1);
-  pts1[ct].GetPortalControl().Set(1, p1);
-  pts2[ct].GetPortalControl().Set(1, p2);
-  translateOffset[ct].GetPortalControl().Set(1, offset);
-  angleArray[ct].GetPortalControl().Set(1, 15);
-  flipped[ct].GetPortalControl().Set(1, 0);
-
-
-  matIdx[ct].GetPortalControl().Set(2, 1);
-  texIdx[ct].GetPortalControl().Set(2, 1);
-  pts1[ct].GetPortalControl().Set(2, vec3(0,0,0));
-  pts2[ct].GetPortalControl().Set(2,  vec3(165,330,165));
-  translateOffset[ct].GetPortalControl().Set(2, offset);
-  angleArray[ct].GetPortalControl().Set(2, 15);
-  flipped[ct].GetPortalControl().Set(2, 1);
-
-  //yz
-  ct = 0;
-  p1 = vec3(165,0,0);
-  p2 = vec3(165,330,165);
-  matIdx[ct].GetPortalControl().Set(2, 1);
-  texIdx[ct].GetPortalControl().Set(2, 1);
-  pts1[ct].GetPortalControl().Set(2, p1);
-  pts2[ct].GetPortalControl().Set(2, p2);
-  translateOffset[ct].GetPortalControl().Set(2, offset);
-  angleArray[ct].GetPortalControl().Set(2, 15);
-  flipped[ct].GetPortalControl().Set(2, 0);
-
-  p1 = vec3(0,0,0);
-  p2 = vec3(165,330,165);
-  matIdx[ct].GetPortalControl().Set(3, 1);
-  texIdx[ct].GetPortalControl().Set(3, 1);
-  pts1[ct].GetPortalControl().Set(3, p1);
-  pts2[ct].GetPortalControl().Set(3, p2);
-  translateOffset[ct].GetPortalControl().Set(3, offset);
-  angleArray[ct].GetPortalControl().Set(3, 15);
-  flipped[ct].GetPortalControl().Set(3, 1);
-
-  //xz_rect
-  ct = 1;
-  p1 = vec3(0,330,0);
-  p2 = vec3(165,330,165);
-  matIdx[ct].GetPortalControl().Set(3, 1);
-  texIdx[ct].GetPortalControl().Set(3, 1);
-  pts1[ct].GetPortalControl().Set(3, p1);
-  pts2[ct].GetPortalControl().Set(3, p2);
-  translateOffset[ct].GetPortalControl().Set(3, offset);
-  angleArray[ct].GetPortalControl().Set(3, 15);
-  flipped[ct].GetPortalControl().Set(3, 0);
-
-  p1 = vec3(0,0,0);
-  p2 = vec3(165,330,165);
-  matIdx[ct].GetPortalControl().Set(4, 1);
-  texIdx[ct].GetPortalControl().Set(4, 1);
-  pts1[ct].GetPortalControl().Set(4, p1);
-  pts2[ct].GetPortalControl().Set(4, p2);
-  translateOffset[ct].GetPortalControl().Set(4, offset);
-  angleArray[ct].GetPortalControl().Set(4, 15);
-  flipped[ct].GetPortalControl().Set(4, 1);
-
-}
 
 using RayType = vtkm::rendering::raytracing::Ray<float>;
 
@@ -542,30 +345,52 @@ void intersect(RayType &rays,
   vtkm::worklet::Invoker Invoke;
 
   vtkm::Id canvasSize = rays.DirX.GetNumberOfValues();
-  for (int i=0; i<cellTypeArray.size(); i++){
-    if (cellTypeArray[i] == 0){
+  for (int i=0; i<cb.cellTypeArray.size(); i++){
+    if (cb.cellTypeArray[i] == 0){
       YZRectWorklet yz(canvasSize, depth);
-        Invoke(yz, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, pts1[i], pts2[i],
-                    matIdx[i], texIdx[i],translateOffset[i], angleArray[i],flipped[i]);
+
+      Invoke(yz, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, cb.pts1[i], cb.pts2[i],
+                    cb.matIdx[i], cb.texIdx[i],cb.translateOffset[i], cb.angleArray[i],cb.flipped[i]);
     }
-    else if (cellTypeArray[i] == 1){
+    else if (cb.cellTypeArray[i] == 1){
+      XZRectExecWrapper surf;
       XZRectWorklet xz(canvasSize, depth);
-      Invoke(xz, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, pts1[i], pts2[i],
-                  matIdx[i], texIdx[i],translateOffset[i], angleArray[i],flipped[i]);
+      Invoke(xz, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, surf, cb.pts1[i], cb.pts2[i],
+                  cb.matIdx[i], cb.texIdx[i],cb.translateOffset[i], cb.angleArray[i],cb.flipped[i]);
 
 
     }
-    else if (cellTypeArray[i] == 2){
+    else if (cb.cellTypeArray[i] == 2){
       //xy
-      XYRectWorklet xy(canvasSize, depth);
-      Invoke(xy, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, pts1[i], pts2[i],
-                  matIdx[i], texIdx[i],translateOffset[i], angleArray[i],flipped[i]);
+//      XYRectWorklet xy(canvasSize, depth);
+//      Invoke(xy, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, cb.pts1[i], cb.pts2[i],
+//                  cb.matIdx[i], cb.texIdx[i],cb.translateOffset[i], cb.angleArray[i],cb.flipped[i]);
+      QuadIntersect quad;
+
+      vtkm::cont::ArrayHandle<vtkm::Int32> nodes;
+      nodes.Allocate(rays.Dir.GetNumberOfValues());
+      for (int i=0; i<nodes.GetNumberOfValues(); i++){
+        nodes.GetPortalControl().Set(i, 0);
+      }
+
+       vtkm::cont::ArrayHandle<vtkm::Id> leafs;
+      leafs.Allocate(2);
+      leafs.GetPortalControl().Set(0, 1);
+      leafs.GetPortalControl().Set(1, 0);
+
+      vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> QuadIds;
+      QuadIds.Allocate(1);
+      QuadIds.GetPortalControl().Set(0, vtkm::Vec<vtkm::Id, 5>(0,0,1,2,3));
+
+      Invoke(quad, nodes, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, cb.pts1[i], leafs,
+             cb.matIdx[i], cb.texIdx[i], QuadIds);
 
     }
-    else if (cellTypeArray[i] == 3){
+    else if (cb.cellTypeArray[i] == 3){
+      SphereExecWrapper surf;
       SphereIntersecttWorklet sphereIntersect(canvasSize, depth);
-      Invoke(sphereIntersect, rays.Origin, rays.Dir, hrecs,hids, tmin, rays.Distance, rays.Status, pts1[i], pts2[i],
-                  matIdx[i], texIdx[i]);
+      Invoke(sphereIntersect, rays.Origin, rays.Dir, hrecs,hids, tmin, rays.Distance, rays.Status, surf, cb.pts1[i], cb.pts2[i],
+                  cb.matIdx[i], cb.texIdx[i]);
 
     }
   }
@@ -647,8 +472,11 @@ void applyPDFs(
   XZRectPDFWorklet xzPDFWorklet(lightables);
   SpherePDFWorklet spherePDFWorklet(lightables);
   PDFCosineWorklet pdfWorklet(canvasSize, depth, canvasSize, lightables);
-  Invoke(xzPDFWorklet, rays.Origin, rays.Dir,hrecs, rays.Status, sum_values, generated_dir, seeds, light_box_pts[0], light_box_pts[1]);
-  Invoke(spherePDFWorklet, rays.Origin, rays.Dir,hrecs, rays.Status, sum_values, generated_dir, seeds, light_sphere_pts[0], light_sphere_pts[1]);
+  XZRectExecWrapper xzsurf;
+  Invoke(xzPDFWorklet, rays.Origin, rays.Dir,hrecs, rays.Status, sum_values, generated_dir, seeds,xzsurf, light_box_pts[0], light_box_pts[1]);
+  SphereExecWrapper surf;
+
+  Invoke(spherePDFWorklet, rays.Origin, rays.Dir,hrecs, rays.Status, sum_values, generated_dir, seeds, surf, light_sphere_pts[0], light_sphere_pts[1]);
 
   Invoke(pdfWorklet, rays.Origin, rays.Dir, hrecs, srecs, rays.Status, sum_values, generated_dir,  rays.Origin, rays.Dir, attenuation);
 
@@ -667,16 +495,57 @@ void resizeRays(vtkm::rendering::raytracing::Ray<float> &rays, int canvasSize)
 {
   rays.Resize(canvasSize);
 }
-int main() {
+
+const auto
+parse(int argc, char **argv){
+  bool do_print = false;
+  int x = 128;
+  int y = 128;
+  int s = 10;
+  int depth = 5;
+
+  for (int i=1; i<argc; i++){
+    if (!strcmp(argv[i], "-x")){
+      if (i+1 < argc){
+        x = atoi(argv[i+1]);
+        i += 1;
+      }
+
+    }
+    else if (!strcmp(argv[i], "-y")){
+      if (i+1 < argc){
+        y = atoi(argv[i+1]);
+        i += 1;
+      }
+    }
+    else if (!strcmp(argv[i], "-samplecount")){
+      if (i+1 < argc){
+        s = atoi(argv[i+1]);
+        i += 1;
+      }
+    }
+    else if (!strcmp(argv[i], "-raydepth")){
+      if (i+1 < argc){
+        depth = atoi(argv[i+1]);
+        i += 1;
+      }
+    }
+  }
+
+  return std::make_tuple(x,y, s, depth);
+}
+
+int main(int argc, char *argv[]) {
   using MyAlgos = MyAlgorithms<vtkm::cont::DeviceAdapterAlgorithm<VTKM_DEFAULT_DEVICE_ADAPTER_TAG>, VTKM_DEFAULT_DEVICE_ADAPTER_TAG>;
   using StorageTag = vtkm::cont::StorageTagBasic;
   using Device = VTKM_DEFAULT_DEVICE_ADAPTER_TAG;
 
-  constexpr int nx = 128;
-  constexpr int ny = 128;
-  constexpr int ns = 100;
+  const auto tup = parse(argc, argv);
+  const int nx = std::get<0>(tup);
+  const int ny = std::get<1>(tup);
+  const int ns = std::get<2>(tup);
+  const int depthcount = std::get<3>(tup);
 
-  constexpr int depthcount = 10;
   auto canvasSize = nx*ny;
 
   constexpr int lightables = 2;
@@ -691,7 +560,7 @@ int main() {
   light_sphere_pts[1].Allocate(1);
   light_sphere_pts[1].GetPortalControl().Set(0, vec3(90,0,0));
 
-  vtkCornellBox();
+  cb.build();
 
   vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32, 2>> uvs;
   uvs.Allocate(nx*ny);
@@ -773,12 +642,12 @@ int main() {
   for (int s =0; s<ns; s++){
     UVGen uvgen(nx, ny, s);
 
-    Invoke(uvgen, uvs);
+    Invoke(uvgen, seeds, uvs);
     RayGen raygen(nx,ny, 40,40,
                   vtkm::Vec<vtkm::Float32,3>(0,0,1),
                   vtkm::Vec<vtkm::Float32,3>(0,1,0),
                   0, nx, 0, 0, ns);
-    Invoke(raygen, rays.DirX, rays.DirY, rays.DirZ, rays.PixelIdx);
+    Invoke(raygen, rays.DirX, rays.DirY, rays.DirZ, seeds, rays.PixelIdx);
 
     vec3 lookfrom(278, 278, -800);
 
@@ -795,7 +664,8 @@ int main() {
 
 
       intersect(rays, hrecs,hids, tmin, emitted, attenuation, depth);
-      applyMaterials(rays, hrecs, hids, srecs, tex, matType, texType, emitted, seeds, canvasSize, depth);
+
+      applyMaterials(rays, hrecs, hids, srecs, cb.tex, cb.matType, cb.texType, emitted, seeds, canvasSize, depth);
       generateRays(whichPDF, hrecs, generated_dir, seeds, light_box_pts, light_sphere_pts);
       applyPDFs(rays, hrecs, srecs, sum_values, generated_dir, attenuation, seeds, light_box_pts, light_sphere_pts, lightables, canvasSize, depth);
 

@@ -24,19 +24,15 @@ public:
   {
   }
 
-  using ControlSignature = void(FieldOut<>);
+  using ControlSignature = void(FieldInOut<>, FieldOut<>);
 
-  using ExecutionSignature = void(WorkIndex, _1);
+  using ExecutionSignature = void(WorkIndex, _1, _2);
   template <typename Precision>
   VTKM_EXEC void operator()(vtkm::Id &idx,
+                            unsigned int &seed,
                             Precision& uv) const
   {
 
-    unsigned int seed = idx;
-    xorshiftWang::getRandF(seed);
-    xorshiftWang::getRandF(seed);
-    xorshiftWang::getRandF(seed);
-    xorshiftWang::getRandF(seed);
 
     vtkm::Id i = idx % numx;
     vtkm::Id j = idx / numx;
@@ -104,15 +100,16 @@ public:
     vtkm::Normalize(nlook);
   }
 
-  using ControlSignature = void(FieldOut<>, FieldOut<>, FieldOut<>, FieldOut<>);
+  using ControlSignature = void(FieldOut<>, FieldOut<>, FieldOut<>, FieldInOut<>, FieldOut<>);
 
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5);
 
   template <typename Precision>
   VTKM_EXEC void operator()(vtkm::Id idx,
                             Precision& rayDirX,
                             Precision& rayDirY,
                             Precision& rayDirZ,
+                            unsigned int &seed,
                             vtkm::Id& pixelIndex) const
   {
 
@@ -126,7 +123,6 @@ public:
     // ray_dir = nlook + delta_x * ((2.f * Precision(i) - Precision(w)) / 2.0f) +
       // delta_y * ((2.f * Precision(j) - Precision(h)) / 2.0f);
 
-    unsigned int seed = idx;
     Precision _randU = xorshiftWang::getRandF(seed);
     Precision _randV = xorshiftWang::getRandF(seed);
 

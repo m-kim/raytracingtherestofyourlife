@@ -48,7 +48,7 @@ public:
 class Sphere
 {
 public:
-  VTKM_EXEC_CONT Sphere(){}
+  Sphere(){}
 
   VTKM_EXEC
   void get_sphere_uv(const vec3& p, float& u, float& v) const {
@@ -106,6 +106,37 @@ public:
           }
       }
       return false;
+  }
+};
+
+
+class SphereExecWrapper : public vtkm::cont::ExecutionObjectBase
+{
+
+public:
+  SphereExecWrapper()
+  {
+  }
+
+  template <typename Device>
+  VTKM_CONT Sphere PrepareForExecution(Device) const
+  {
+    return Sphere();
+  }
+};
+
+class XZRectExecWrapper : public vtkm::cont::ExecutionObjectBase
+{
+
+public:
+  XZRectExecWrapper()
+  {
+  }
+
+  template <typename Device>
+  VTKM_CONT XZRect PrepareForExecution(Device) const
+  {
+    return XZRect();
   }
 };
 #endif
