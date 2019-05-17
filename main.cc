@@ -353,8 +353,9 @@ void intersect(RayType &rays,
                     cb.matIdx[i], cb.texIdx[i],cb.translateOffset[i], cb.angleArray[i],cb.flipped[i]);
     }
     else if (cb.cellTypeArray[i] == 1){
+      XZRectExecWrapper surf;
       XZRectWorklet xz(canvasSize, depth);
-      Invoke(xz, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, cb.pts1[i], cb.pts2[i],
+      Invoke(xz, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, surf, cb.pts1[i], cb.pts2[i],
                   cb.matIdx[i], cb.texIdx[i],cb.translateOffset[i], cb.angleArray[i],cb.flipped[i]);
 
 
@@ -367,8 +368,9 @@ void intersect(RayType &rays,
 
     }
     else if (cb.cellTypeArray[i] == 3){
+      SphereExecWrapper surf;
       SphereIntersecttWorklet sphereIntersect(canvasSize, depth);
-      Invoke(sphereIntersect, rays.Origin, rays.Dir, hrecs,hids, tmin, rays.Distance, rays.Status, cb.pts1[i], cb.pts2[i],
+      Invoke(sphereIntersect, rays.Origin, rays.Dir, hrecs,hids, tmin, rays.Distance, rays.Status, surf, cb.pts1[i], cb.pts2[i],
                   cb.matIdx[i], cb.texIdx[i]);
 
     }
@@ -451,8 +453,11 @@ void applyPDFs(
   XZRectPDFWorklet xzPDFWorklet(lightables);
   SpherePDFWorklet spherePDFWorklet(lightables);
   PDFCosineWorklet pdfWorklet(canvasSize, depth, canvasSize, lightables);
-  Invoke(xzPDFWorklet, rays.Origin, rays.Dir,hrecs, rays.Status, sum_values, generated_dir, seeds, light_box_pts[0], light_box_pts[1]);
-  Invoke(spherePDFWorklet, rays.Origin, rays.Dir,hrecs, rays.Status, sum_values, generated_dir, seeds, light_sphere_pts[0], light_sphere_pts[1]);
+  XZRectExecWrapper xzsurf;
+  Invoke(xzPDFWorklet, rays.Origin, rays.Dir,hrecs, rays.Status, sum_values, generated_dir, seeds,xzsurf, light_box_pts[0], light_box_pts[1]);
+  SphereExecWrapper surf;
+
+  Invoke(spherePDFWorklet, rays.Origin, rays.Dir,hrecs, rays.Status, sum_values, generated_dir, seeds, surf, light_sphere_pts[0], light_sphere_pts[1]);
 
   Invoke(pdfWorklet, rays.Origin, rays.Dir, hrecs, srecs, rays.Status, sum_values, generated_dir,  rays.Origin, rays.Dir, attenuation);
 
