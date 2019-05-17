@@ -13,8 +13,6 @@
 #include <limits>
 #include <vector>
 #include <tuple>
-#include <JSONPNGConvert.h>
-#include <lodepng.h>
 #include <vtkm/cont/ArrayHandleConstant.h>
 #include <vtkm/rendering/CanvasRayTracer.h>
 #include <vtkm/rendering/raytracing/Camera.h>
@@ -347,10 +345,27 @@ void intersect(RayType &rays,
   vtkm::Id canvasSize = rays.DirX.GetNumberOfValues();
   for (int i=0; i<cb.cellTypeArray.size(); i++){
     if (cb.cellTypeArray[i] == 0){
-      YZRectWorklet yz(canvasSize, depth);
+      QuadIntersect quad;
 
-      Invoke(yz, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, cb.pts1[i], cb.pts2[i],
-                    cb.matIdx[i], cb.texIdx[i],cb.translateOffset[i], cb.angleArray[i],cb.flipped[i]);
+      vtkm::cont::ArrayHandle<vtkm::Int32> nodes;
+      nodes.Allocate(rays.Dir.GetNumberOfValues());
+      for (int i=0; i<nodes.GetNumberOfValues(); i++){
+        nodes.GetPortalControl().Set(i, 0);
+      }
+
+       vtkm::cont::ArrayHandle<vtkm::Id> leafs;
+      leafs.Allocate(3);
+      leafs.GetPortalControl().Set(0, 2);
+      leafs.GetPortalControl().Set(1, 0);
+      leafs.GetPortalControl().Set(2, 1);
+
+      vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> QuadIds;
+      QuadIds.Allocate(2);
+      QuadIds.GetPortalControl().Set(0, vtkm::Vec<vtkm::Id, 5>(0,0,1,2,3));
+      QuadIds.GetPortalControl().Set(1, vtkm::Vec<vtkm::Id, 5>(0,4,5,6,7));
+      Invoke(quad, nodes, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, cb.pts1[i], leafs,
+             cb.matIdx[i], cb.texIdx[i], QuadIds);
+
     }
     else if (cb.cellTypeArray[i] == 1){
       XZRectExecWrapper surf;
@@ -362,9 +377,6 @@ void intersect(RayType &rays,
     }
     else if (cb.cellTypeArray[i] == 2){
       //xy
-//      XYRectWorklet xy(canvasSize, depth);
-//      Invoke(xy, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, cb.pts1[i], cb.pts2[i],
-//                  cb.matIdx[i], cb.texIdx[i],cb.translateOffset[i], cb.angleArray[i],cb.flipped[i]);
       QuadIntersect quad;
 
       vtkm::cont::ArrayHandle<vtkm::Int32> nodes;
@@ -714,9 +726,10 @@ int main(int argc, char *argv[]) {
 
   }
 
-  std::vector<std::uint8_t> ImageBuffer;
-  ImageBuffer.reserve(nx*ny*4);
 
+  std::fstream fs;
+  fs.open("output.pnm", std::fstream::out);
+  fs << "P3\n" << nx << " " << ny << " 255" << std::endl;
   for (int i=0; i<cols.GetNumberOfValues(); i++){
     auto col = cols.GetPortalConstControl().Get(i);
     col = de_nan(col);
@@ -725,14 +738,11 @@ int main(int argc, char *argv[]) {
     int ir = int(255.99*col[0]);
     int ig = int(255.99*col[1]);
     int ib = int(255.99*col[2]);
-    ImageBuffer.push_back(ir);
-    ImageBuffer.push_back(ig);
-    ImageBuffer.push_back(ib);
-    ImageBuffer.push_back(255);
+    fs << ir << " " << ig << " " << ib << std::endl;
   }
-
+  fs.close();
 //  std::vector<std::uint8_t> PngBuffer;
 //  lodepng::encode(PngBuffer, ImageBuffer, nx, ny);
-  lodepng::encode("output.png", ImageBuffer, nx,ny);
+//  lodepng::encode("output.png", ImageBuffer, nx,ny);
 }
 
