@@ -773,12 +773,12 @@ int main() {
   for (int s =0; s<ns; s++){
     UVGen uvgen(nx, ny, s);
 
-    Invoke(uvgen, uvs);
+    Invoke(uvgen, seeds, uvs);
     RayGen raygen(nx,ny, 40,40,
                   vtkm::Vec<vtkm::Float32,3>(0,0,1),
                   vtkm::Vec<vtkm::Float32,3>(0,1,0),
                   0, nx, 0, 0, ns);
-    Invoke(raygen, rays.DirX, rays.DirY, rays.DirZ, rays.PixelIdx);
+    Invoke(raygen, rays.DirX, rays.DirY, rays.DirZ, seeds, rays.PixelIdx);
 
     vec3 lookfrom(278, 278, -800);
 
