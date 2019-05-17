@@ -849,6 +849,7 @@ int main() {
 
   for (int i=0; i<cols.GetNumberOfValues(); i++){
     auto col = cols.GetPortalConstControl().Get(i);
+    col = de_nan(col);
     col = col / float(ns);
     col = vec3( sqrt(col[0]), sqrt(col[1]), sqrt(col[2]) );
     int ir = int(255.99*col[0]);
