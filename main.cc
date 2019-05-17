@@ -362,9 +362,28 @@ void intersect(RayType &rays,
     }
     else if (cb.cellTypeArray[i] == 2){
       //xy
-      XYRectWorklet xy(canvasSize, depth);
-      Invoke(xy, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, cb.pts1[i], cb.pts2[i],
-                  cb.matIdx[i], cb.texIdx[i],cb.translateOffset[i], cb.angleArray[i],cb.flipped[i]);
+//      XYRectWorklet xy(canvasSize, depth);
+//      Invoke(xy, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, cb.pts1[i], cb.pts2[i],
+//                  cb.matIdx[i], cb.texIdx[i],cb.translateOffset[i], cb.angleArray[i],cb.flipped[i]);
+      QuadIntersect quad;
+
+      vtkm::cont::ArrayHandle<vtkm::Int32> nodes;
+      nodes.Allocate(rays.Dir.GetNumberOfValues());
+      for (int i=0; i<nodes.GetNumberOfValues(); i++){
+        nodes.GetPortalControl().Set(i, 0);
+      }
+
+       vtkm::cont::ArrayHandle<vtkm::Id> leafs;
+      leafs.Allocate(2);
+      leafs.GetPortalControl().Set(0, 1);
+      leafs.GetPortalControl().Set(1, 0);
+
+      vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> QuadIds;
+      QuadIds.Allocate(1);
+      QuadIds.GetPortalControl().Set(0, vtkm::Vec<vtkm::Id, 5>(0,0,1,2,3));
+
+      Invoke(quad, nodes, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, cb.pts1[i], leafs,
+             cb.matIdx[i], cb.texIdx[i], QuadIds);
 
     }
     else if (cb.cellTypeArray[i] == 3){
@@ -480,10 +499,10 @@ void resizeRays(vtkm::rendering::raytracing::Ray<float> &rays, int canvasSize)
 const auto
 parse(int argc, char **argv){
   bool do_print = false;
-  int x = 512;
-  int y = 512;
-  int s = 16;
-  int depth = 50;
+  int x = 128;
+  int y = 128;
+  int s = 10;
+  int depth = 5;
 
   for (int i=1; i<argc; i++){
     if (!strcmp(argv[i], "-x")){
