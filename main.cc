@@ -368,10 +368,34 @@ void intersect(RayType &rays,
 
     }
     else if (cb.cellTypeArray[i] == 1){
-      XZRectExecWrapper surf;
-      XZRectWorklet xz(canvasSize, depth);
-      Invoke(xz, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, surf, cb.pts1[i], cb.pts2[i],
-                  cb.matIdx[i], cb.texIdx[i],cb.translateOffset[i], cb.angleArray[i],cb.flipped[i]);
+      //xz
+      QuadIntersect quad;
+
+      vtkm::cont::ArrayHandle<vtkm::Int32> nodes;
+      nodes.Allocate(rays.Dir.GetNumberOfValues());
+      for (int i=0; i<nodes.GetNumberOfValues(); i++){
+        nodes.GetPortalControl().Set(i, 0);
+      }
+
+       vtkm::cont::ArrayHandle<vtkm::Id> leafs;
+      leafs.Allocate(4);
+      leafs.GetPortalControl().Set(0, 3);
+      leafs.GetPortalControl().Set(1, 0);
+      leafs.GetPortalControl().Set(2, 1);
+      leafs.GetPortalControl().Set(3, 2);
+
+      vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> QuadIds;
+      QuadIds.Allocate(3);
+      QuadIds.GetPortalControl().Set(0, vtkm::Vec<vtkm::Id, 5>(0,0,1,2,3));
+      QuadIds.GetPortalControl().Set(1, vtkm::Vec<vtkm::Id, 5>(0,4,5,6,7));
+      QuadIds.GetPortalControl().Set(2, vtkm::Vec<vtkm::Id, 5>(0,8,9,10,11));
+      Invoke(quad, nodes, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, cb.pts1[i], leafs,
+             cb.matIdx[i], cb.texIdx[i], QuadIds);
+
+//      XZRectExecWrapper surf;
+//      XZRectWorklet xz(canvasSize, depth);
+//      Invoke(xz, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, surf, cb.pts1[i], cb.pts2[i],
+//                  cb.matIdx[i], cb.texIdx[i],cb.translateOffset[i], cb.angleArray[i],cb.flipped[i]);
 
 
     }
