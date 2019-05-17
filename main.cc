@@ -667,16 +667,57 @@ void resizeRays(vtkm::rendering::raytracing::Ray<float> &rays, int canvasSize)
 {
   rays.Resize(canvasSize);
 }
-int main() {
+
+const auto
+parse(int argc, char **argv){
+  bool do_print = false;
+  int x = 512;
+  int y = 512;
+  int s = 16;
+  int depth = 50;
+
+  for (int i=1; i<argc; i++){
+    if (!strcmp(argv[i], "-x")){
+      if (i+1 < argc){
+        x = atoi(argv[i+1]);
+        i += 1;
+      }
+
+    }
+    else if (!strcmp(argv[i], "-y")){
+      if (i+1 < argc){
+        y = atoi(argv[i+1]);
+        i += 1;
+      }
+    }
+    else if (!strcmp(argv[i], "-samplecount")){
+      if (i+1 < argc){
+        s = atoi(argv[i+1]);
+        i += 1;
+      }
+    }
+    else if (!strcmp(argv[i], "-raydepth")){
+      if (i+1 < argc){
+        depth = atoi(argv[i+1]);
+        i += 1;
+      }
+    }
+  }
+
+  return std::make_tuple(x,y, s, depth);
+}
+
+int main(int argc, char *argv[]) {
   using MyAlgos = MyAlgorithms<vtkm::cont::DeviceAdapterAlgorithm<VTKM_DEFAULT_DEVICE_ADAPTER_TAG>, VTKM_DEFAULT_DEVICE_ADAPTER_TAG>;
   using StorageTag = vtkm::cont::StorageTagBasic;
   using Device = VTKM_DEFAULT_DEVICE_ADAPTER_TAG;
 
-  constexpr int nx = 128;
-  constexpr int ny = 128;
-  constexpr int ns = 100;
+  const auto tup = parse(argc, argv);
+  const int nx = std::get<0>(tup);
+  const int ny = std::get<1>(tup);
+  const int ns = std::get<2>(tup);
+  const int depthcount = std::get<3>(tup);
 
-  constexpr int depthcount = 10;
   auto canvasSize = nx*ny;
 
   constexpr int lightables = 2;
