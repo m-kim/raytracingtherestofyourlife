@@ -52,27 +52,17 @@ void CornellBox::build()
 
 
   cellTypeArray.resize(5);
-  norms.Allocate(16);
 
   //yz_rect
-  translateOffset[0].Allocate(4);
-  angleArray[0].Allocate(4);
-    flipped[0].Allocate(4);
     matIdx[0].Allocate(4);
     texIdx[0].Allocate(4);
     pts1[0].Allocate(16);
-    pts2[0].Allocate(4);
-    cellTypeArray[0] = 0;
     matIdx[0].GetPortalControl().Set(0, 2);
     texIdx[0].GetPortalControl().Set(0, 2);
     pts1[0].GetPortalControl().Set(0, vec3(555,0,0));
     pts1[0].GetPortalControl().Set(1, vec3(555,555,0));
     pts1[0].GetPortalControl().Set(2, vec3(555,555,555));
     pts1[0].GetPortalControl().Set(3, vec3(555,0,555));
-    pts2[0].GetPortalControl().Set(0, vec3(555,555,555));
-    flipped[0].GetPortalControl().Set(0, 1);
-    translateOffset[0].GetPortalControl().Set(0, vec3(0.0f));
-    angleArray[0].GetPortalControl().Set(0, 0);
 
 
     matIdx[0].GetPortalControl().Set(1, 0);
@@ -81,19 +71,11 @@ void CornellBox::build()
     pts1[0].GetPortalControl().Set(5, vec3(0,555,0));
     pts1[0].GetPortalControl().Set(6, vec3(0,555,555));
     pts1[0].GetPortalControl().Set(7, vec3(0,0,555));
-    pts2[0].GetPortalControl().Set(1, vec3(0,555,555));
-    flipped[0].GetPortalControl().Set(1, 0);
-    translateOffset[0].GetPortalControl().Set(1, vec3(0.0f));
-    angleArray[0].GetPortalControl().Set(1, 0);
 
     //xz_rect
-    translateOffset[1].Allocate(5);
-    angleArray[1].Allocate(5);
-    flipped[1].Allocate(5);
     matIdx[1].Allocate(5);
     texIdx[1].Allocate(5);
     pts1[1].Allocate(20);
-    pts2[1].Allocate(5);
     cellTypeArray[1] =  1;
     matIdx[1].GetPortalControl().Set(0, 3);
     texIdx[1].GetPortalControl().Set(0, 3);
@@ -101,8 +83,6 @@ void CornellBox::build()
     pts1[1].GetPortalControl().Set(1, vec3(343,554,227));
     pts1[1].GetPortalControl().Set(2, vec3(343,554,332));
     pts1[1].GetPortalControl().Set(3, vec3(213,554,332));
-    pts2[1].GetPortalControl().Set(0, vec3(343,554,332));
-    flipped[1].GetPortalControl().Set(0, 1);
 
     matIdx[1].GetPortalControl().Set(1, 1);
     texIdx[1].GetPortalControl().Set(1, 1);
@@ -110,8 +90,6 @@ void CornellBox::build()
     pts1[1].GetPortalControl().Set(5, vec3(555,555,0));
     pts1[1].GetPortalControl().Set(6, vec3(555,555,555));
     pts1[1].GetPortalControl().Set(7, vec3(0,555,555));
-    pts2[1].GetPortalControl().Set(1, vec3(555,555,555));
-    flipped[1].GetPortalControl().Set(1, 1);
 
     matIdx[1].GetPortalControl().Set(2, 1);
     texIdx[1].GetPortalControl().Set(2, 1);
@@ -119,17 +97,11 @@ void CornellBox::build()
     pts1[1].GetPortalControl().Set(9, vec3(555,0,0));
     pts1[1].GetPortalControl().Set(10, vec3(555,0,555));
     pts1[1].GetPortalControl().Set(11, vec3(0,0,555));
-    pts2[1].GetPortalControl().Set(2, vec3(555,0,555));
-    flipped[1].GetPortalControl().Set(2, 0);
 
     //xy_rect
-    translateOffset[2].Allocate(3);
-    angleArray[2].Allocate(3);
-    flipped[2].Allocate(3);
     matIdx[2].Allocate(3);
     texIdx[2].Allocate(3);
     pts1[2].Allocate(12);
-    pts2[2].Allocate(4);
     cellTypeArray[2] =  2;
     matIdx[2].GetPortalControl().Set(0, 1);
     texIdx[2].GetPortalControl().Set(0, 1);
@@ -137,9 +109,6 @@ void CornellBox::build()
     pts1[2].GetPortalControl().Set(1, vec3(555,0,555));
     pts1[2].GetPortalControl().Set(2, vec3(555,555,555));
     pts1[2].GetPortalControl().Set(3, vec3(0,555,555));
-    translateOffset[2].GetPortalControl().Set(0, vec3(0,0,0));
-    angleArray[2].GetPortalControl().Set(0,0);
-    flipped[2].GetPortalControl().Set(0, 1);
 
 //    //sphere
 //    flipped[3].Allocate(1);

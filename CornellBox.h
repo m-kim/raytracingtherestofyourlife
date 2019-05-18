@@ -10,10 +10,8 @@ public:
   vtkm::cont::ArrayHandle<vec3> tex;
   vtkm::cont::ArrayHandle<vtkm::Id> matIdx[5];
   vtkm::cont::ArrayHandle<vtkm::Id> texIdx[5];
-  vtkm::cont::ArrayHandle<int> matType, texType, flipped[5];
-  vtkm::cont::ArrayHandle<vec3> pts1[5], pts2[5], translateOffset[5];
-  vtkm::cont::ArrayHandle<float> angleArray[5];
-  vtkm::cont::ArrayHandle<vec3> norms;
+  vtkm::cont::ArrayHandle<int> matType, texType;
+  vtkm::cont::ArrayHandle<vec3> pts1[5];
 
   void invert(vtkm::Vec<vec3,4> &pts);
   void build();
