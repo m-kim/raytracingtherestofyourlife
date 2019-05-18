@@ -51,192 +51,169 @@ void CornellBox::build()
   texType.GetPortalControl().Set(4, 0); //dielectric
 
 
-  cellTypeArray.resize(5);
+  SphereIds.Allocate(1);
+  QuadIds.Allocate(12);
+  pts1.Allocate(12 * 4 + 2);
 
+  matIdx.Allocate(13);
+  texIdx.Allocate(13);
+  int cell_cnt = 0;
+  int pt_idx = 0;
+  auto close = [&](){  pt_idx += 4;    cell_cnt++; };
   //yz_rect
-    matIdx[0].Allocate(4);
-    texIdx[0].Allocate(4);
-    pts1[0].Allocate(16);
-    matIdx[0].GetPortalControl().Set(0, 2);
-    texIdx[0].GetPortalControl().Set(0, 2);
-    pts1[0].GetPortalControl().Set(0, vec3(555,0,0));
-    pts1[0].GetPortalControl().Set(1, vec3(555,555,0));
-    pts1[0].GetPortalControl().Set(2, vec3(555,555,555));
-    pts1[0].GetPortalControl().Set(3, vec3(555,0,555));
+  QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
+  matIdx.GetPortalControl().Set(cell_cnt, 2);
+  texIdx.GetPortalControl().Set(cell_cnt, 2);
+  pts1.GetPortalControl().Set(pt_idx, vec3(555,0,0));
+  pts1.GetPortalControl().Set(pt_idx+1, vec3(555,555,0));
+  pts1.GetPortalControl().Set(pt_idx+2, vec3(555,555,555));
+  pts1.GetPortalControl().Set(pt_idx+3, vec3(555,0,555));
+  close();
 
+  QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
+  matIdx.GetPortalControl().Set(cell_cnt, 0);
+  texIdx.GetPortalControl().Set(cell_cnt, 0);
+  pts1.GetPortalControl().Set(pt_idx, vec3(0,0,0));
+  pts1.GetPortalControl().Set(pt_idx+1, vec3(0,555,0));
+  pts1.GetPortalControl().Set(pt_idx+2, vec3(0,555,555));
+  pts1.GetPortalControl().Set(pt_idx+3, vec3(0,0,555));
+  close();
 
-    matIdx[0].GetPortalControl().Set(1, 0);
-    texIdx[0].GetPortalControl().Set(1, 0);
-    pts1[0].GetPortalControl().Set(4, vec3(0,0,0));
-    pts1[0].GetPortalControl().Set(5, vec3(0,555,0));
-    pts1[0].GetPortalControl().Set(6, vec3(0,555,555));
-    pts1[0].GetPortalControl().Set(7, vec3(0,0,555));
+  //xz_rect
+  QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
+  matIdx.GetPortalControl().Set(cell_cnt, 3);
+  texIdx.GetPortalControl().Set(cell_cnt, 3);
+  pts1.GetPortalControl().Set(pt_idx, vec3(213,554,227));
+  pts1.GetPortalControl().Set(pt_idx+1, vec3(343,554,227));
+  pts1.GetPortalControl().Set(pt_idx+2, vec3(343,554,332));
+  pts1.GetPortalControl().Set(pt_idx+3, vec3(213,554,332));
+  close();
 
-    //xz_rect
-    matIdx[1].Allocate(5);
-    texIdx[1].Allocate(5);
-    pts1[1].Allocate(20);
-    cellTypeArray[1] =  1;
-    matIdx[1].GetPortalControl().Set(0, 3);
-    texIdx[1].GetPortalControl().Set(0, 3);
-    pts1[1].GetPortalControl().Set(0, vec3(213,554,227));
-    pts1[1].GetPortalControl().Set(1, vec3(343,554,227));
-    pts1[1].GetPortalControl().Set(2, vec3(343,554,332));
-    pts1[1].GetPortalControl().Set(3, vec3(213,554,332));
+  QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
+  matIdx.GetPortalControl().Set(cell_cnt, 1);
+  texIdx.GetPortalControl().Set(cell_cnt, 1);
+  pts1.GetPortalControl().Set(pt_idx, vec3(0,555,0));
+  pts1.GetPortalControl().Set(pt_idx+1, vec3(555,555,0));
+  pts1.GetPortalControl().Set(pt_idx+2, vec3(555,555,555));
+  pts1.GetPortalControl().Set(pt_idx+3, vec3(0,555,555));
+  close();
 
-    matIdx[1].GetPortalControl().Set(1, 1);
-    texIdx[1].GetPortalControl().Set(1, 1);
-    pts1[1].GetPortalControl().Set(4, vec3(0,555,0));
-    pts1[1].GetPortalControl().Set(5, vec3(555,555,0));
-    pts1[1].GetPortalControl().Set(6, vec3(555,555,555));
-    pts1[1].GetPortalControl().Set(7, vec3(0,555,555));
+  QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
+  matIdx.GetPortalControl().Set(cell_cnt, 1);
+  texIdx.GetPortalControl().Set(cell_cnt, 1);
+  pts1.GetPortalControl().Set(pt_idx, vec3(0,0,0));
+  pts1.GetPortalControl().Set(pt_idx+1, vec3(555,0,0));
+  pts1.GetPortalControl().Set(pt_idx+2, vec3(555,0,555));
+  pts1.GetPortalControl().Set(pt_idx+3, vec3(0,0,555));
+  close();
 
-    matIdx[1].GetPortalControl().Set(2, 1);
-    texIdx[1].GetPortalControl().Set(2, 1);
-    pts1[1].GetPortalControl().Set(8, vec3(0,0,0));
-    pts1[1].GetPortalControl().Set(9, vec3(555,0,0));
-    pts1[1].GetPortalControl().Set(10, vec3(555,0,555));
-    pts1[1].GetPortalControl().Set(11, vec3(0,0,555));
-
-    //xy_rect
-    matIdx[2].Allocate(3);
-    texIdx[2].Allocate(3);
-    pts1[2].Allocate(12);
-    cellTypeArray[2] =  2;
-    matIdx[2].GetPortalControl().Set(0, 1);
-    texIdx[2].GetPortalControl().Set(0, 1);
-    pts1[2].GetPortalControl().Set(0, vec3(0,0,555));
-    pts1[2].GetPortalControl().Set(1, vec3(555,0,555));
-    pts1[2].GetPortalControl().Set(2, vec3(555,555,555));
-    pts1[2].GetPortalControl().Set(3, vec3(0,555,555));
+  //xy_rect
+  QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
+  matIdx.GetPortalControl().Set(cell_cnt, 1);
+  texIdx.GetPortalControl().Set(cell_cnt, 1);
+  pts1.GetPortalControl().Set(pt_idx, vec3(0,0,555));
+  pts1.GetPortalControl().Set(pt_idx+1, vec3(555,0,555));
+  pts1.GetPortalControl().Set(pt_idx+2, vec3(555,555,555));
+  pts1.GetPortalControl().Set(pt_idx+3, vec3(0,555,555));
+  close();
 
 //    //sphere
-//    flipped[3].Allocate(1);
-    matIdx[3].Allocate(1);
-    texIdx[3].Allocate(1);
-    pts1[3].Allocate(2);
-//    pts2[3].Allocate(1);
-    cellTypeArray[3] =  3;
-    matIdx[3].GetPortalControl().Set(0, 4);
-    texIdx[3].GetPortalControl().Set(0, 0);
-    pts1[3].GetPortalControl().Set(0, vec3(190,90,190));
-    pts1[3].GetPortalControl().Set(1, vec3(90,0,0));
-//    flipped[3].GetPortalControl().Set(0, 0);
+  SphereIds.GetPortalControl().Set(0, vtkm::Vec<vtkm::Id, 3>(0,pt_idx,pt_idx+1));
 
-//    flipped[4].Allocate(1);
-//    matIdx[4].Allocate(1);
-//    texIdx[4].Allocate(1);
-//    pts1[4].Allocate(1);
-//    pts2[4].Allocate(1);
-    cellTypeArray[4] =  4;
-//    matIdx[4].GetPortalControl().Set(0, 1);
-//    texIdx[4].GetPortalControl().Set(0, 1);
-//    flipped[4].GetPortalControl().Set(0, 0);
+  matIdx.GetPortalControl().Set(cell_cnt, 4);
+  texIdx.GetPortalControl().Set(cell_cnt, 0);
+  pts1.GetPortalControl().Set(pt_idx, vec3(190,90,190));
+  pts1.GetPortalControl().Set(pt_idx+1, vec3(90,0,0));
+  pt_idx += 2;
+  cell_cnt;
 
 //  //small box
-//  const vec3 constp1(0,0,0);
-//  const vec3 constp2(165,330, 165);
-
-//  vec3 p1 = constp1;
-//  vec3 p2 = constp2;
-
   //xy
-
+  QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
   vtkm::Vec<vec3,4> pts;
   pts[0] = vec3(0,0,165);
   pts[1] = vec3(165,0,165);
   pts[2] = vec3(165,330,165);
   pts[3] = vec3(0,330,165);
-
   invert(pts);
+  matIdx.GetPortalControl().Set(cell_cnt, 1);
+  texIdx.GetPortalControl().Set(cell_cnt, 1);
+  pts1.GetPortalControl().Set(pt_idx, pts[0]);
+  pts1.GetPortalControl().Set(pt_idx+1, pts[1]);
+  pts1.GetPortalControl().Set(pt_idx+2, pts[2]);
+  pts1.GetPortalControl().Set(pt_idx+3, pts[3]);
+  close();
 
-  int ct = 2;
-  matIdx[ct].GetPortalControl().Set(1, 1);
-  texIdx[ct].GetPortalControl().Set(1, 1);
-  pts1[ct].GetPortalControl().Set(4, pts[0]);
-  pts1[ct].GetPortalControl().Set(5, pts[1]);
-  pts1[ct].GetPortalControl().Set(6, pts[2]);
-  pts1[ct].GetPortalControl().Set(7, pts[3]);
-
-  //pts2[ct].GetPortalControl().Set(1, p2);
-//  translateOffset[ct].GetPortalControl().Set(1, offset);
-//  angleArray[ct].GetPortalControl().Set(1, 15);
-//  flipped[ct].GetPortalControl().Set(1, 0);
-
+  QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
   pts[0] = vec3(0,0,0);
   pts[1] = vec3(165,0,0);
   pts[2] = vec3(165,330,0);
   pts[3] = vec3(0,330,0);
-
   invert(pts);
+  matIdx.GetPortalControl().Set(cell_cnt, 1);
+  texIdx.GetPortalControl().Set(cell_cnt, 1);
+  pts1.GetPortalControl().Set(pt_idx, pts[0]);
+  pts1.GetPortalControl().Set(pt_idx+1, pts[1]);
+  pts1.GetPortalControl().Set(pt_idx+2, pts[2]);
+  pts1.GetPortalControl().Set(pt_idx+3, pts[3]);
+  close();
 
-
-  matIdx[ct].GetPortalControl().Set(2, 1);
-  texIdx[ct].GetPortalControl().Set(2, 1);
-  pts1[ct].GetPortalControl().Set(8, pts[0]);
-  pts1[ct].GetPortalControl().Set(9, pts[1]);
-  pts1[ct].GetPortalControl().Set(10, pts[2]);
-  pts1[ct].GetPortalControl().Set(11, pts[3]);
-
+  //yz
+  QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
   pts[0] = vec3(165,0,0);
   pts[1] = vec3(165,330,0);
   pts[2] = vec3(165,330,165);
   pts[3] = vec3(165, 0, 165);
-
   invert(pts);
-  //yz
-  ct = 0;
-  matIdx[ct].GetPortalControl().Set(2, 1);
-  texIdx[ct].GetPortalControl().Set(2, 1);
-  pts1[ct].GetPortalControl().Set(8, pts[0]);
-  pts1[ct].GetPortalControl().Set(9, pts[1]);
-  pts1[ct].GetPortalControl().Set(10, pts[2]);
-  pts1[ct].GetPortalControl().Set(11, pts[3]);
+  matIdx.GetPortalControl().Set(cell_cnt, 1);
+  texIdx.GetPortalControl().Set(cell_cnt, 1);
+  pts1.GetPortalControl().Set(pt_idx, pts[0]);
+  pts1.GetPortalControl().Set(pt_idx+1, pts[1]);
+  pts1.GetPortalControl().Set(pt_idx+2, pts[2]);
+  pts1.GetPortalControl().Set(pt_idx+3, pts[3]);
+  close();
 
+  QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
   pts[0] = vec3(0,0,0);
   pts[1] = vec3(0,330,0);
   pts[2] = vec3(0,330,165);
   pts[3] = vec3(0, 0, 165);
-
   invert(pts);
-//  p1 = vec3(0,0,0);
-//  p2 = vec3(165,330,165);
-  matIdx[ct].GetPortalControl().Set(3, 1);
-  texIdx[ct].GetPortalControl().Set(3, 1);
-  pts1[ct].GetPortalControl().Set(12, pts[0]);
-  pts1[ct].GetPortalControl().Set(13, pts[1]);
-  pts1[ct].GetPortalControl().Set(14, pts[2]);
-  pts1[ct].GetPortalControl().Set(15, pts[3]);
+  matIdx.GetPortalControl().Set(cell_cnt, 1);
+  texIdx.GetPortalControl().Set(cell_cnt, 1);
+  pts1.GetPortalControl().Set(pt_idx, pts[0]);
+  pts1.GetPortalControl().Set(pt_idx+1, pts[1]);
+  pts1.GetPortalControl().Set(pt_idx+2, pts[2]);
+  pts1.GetPortalControl().Set(pt_idx+3, pts[3]);
+  close();
 
 
+  //xz_rect
+  QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
   pts[0] = vec3(0,333,0);
   pts[1] = vec3(165,330,0);
   pts[2] = vec3(165,330,165);
   pts[3] = vec3(0, 330, 165);
-
   invert(pts);
+  matIdx.GetPortalControl().Set(cell_cnt, 1);
+  texIdx.GetPortalControl().Set(cell_cnt, 1);
+  pts1.GetPortalControl().Set(pt_idx, pts[0]);
+  pts1.GetPortalControl().Set(pt_idx+1, pts[1]);
+  pts1.GetPortalControl().Set(pt_idx+2, pts[2]);
+  pts1.GetPortalControl().Set(pt_idx+3, pts[3]);
+  close();
 
-  //xz_rect
-  ct = 1;
-  matIdx[ct].GetPortalControl().Set(3, 1);
-  texIdx[ct].GetPortalControl().Set(3, 1);
-  pts1[ct].GetPortalControl().Set(12, pts[0]);
-  pts1[ct].GetPortalControl().Set(13, pts[1]);
-  pts1[ct].GetPortalControl().Set(14, pts[2]);
-  pts1[ct].GetPortalControl().Set(15, pts[3]);
-
+  QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
   pts[0] = vec3(0,0,0);
   pts[1] = vec3(165,0,0);
   pts[2] = vec3(165,0,165);
   pts[3] = vec3(0, 0, 165);
-
   invert(pts);
-
-  matIdx[ct].GetPortalControl().Set(4, 1);
-  texIdx[ct].GetPortalControl().Set(4, 1);
-  pts1[ct].GetPortalControl().Set(16, pts[0]);
-  pts1[ct].GetPortalControl().Set(17, pts[1]);
-  pts1[ct].GetPortalControl().Set(18, pts[2]);
-  pts1[ct].GetPortalControl().Set(19, pts[3]);
-
+  matIdx.GetPortalControl().Set(cell_cnt, 1);
+  texIdx.GetPortalControl().Set(cell_cnt, 1);
+  pts1.GetPortalControl().Set(pt_idx, pts[0]);
+  pts1.GetPortalControl().Set(pt_idx+1, pts[1]);
+  pts1.GetPortalControl().Set(pt_idx+2, pts[2]);
+  pts1.GetPortalControl().Set(pt_idx+3, pts[3]);
+  close();
 }
