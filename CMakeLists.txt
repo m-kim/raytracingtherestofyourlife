@@ -7,7 +7,8 @@ find_package(VTKm REQUIRED
 
 set (PathTracingSrc main.cc CornellBox.cpp)
 set (PathTracingHdr Worklets.h
-  EmitWorklet.h ScatterWorklet.h SurfaceWorklets.h Surface.h PdfWorklet.h Record.h onb.h ray.h)
+  EmitWorklet.h ScatterWorklet.h SurfaceWorklets.h Surface.h PdfWorklet.h Record.h onb.h
+  CornellBox.h vec3.h wangXor.h)
 
 add_executable(CornellBox ${PathTracingSrc} ${PathTracingHdr})
 
@@ -15,7 +16,7 @@ target_include_directories(CornellBox PUBLIC /home/mark/local/anaconda3/envs/cli
 target_include_directories(CornellBox PUBLIC /home/mark/local/vtk-m-1.3.0/include/vtkm-1.3/)
 
 set_target_properties(CornellBox PROPERTIES
-  CXX_STANDARD 14)
+  CXX_STANDARD 17)
 
 
 target_link_libraries(CornellBox PUBLIC
@@ -32,8 +33,8 @@ if(VTKm_ENABLE_CUDA)
 
   target_include_directories(CornellBox_CUDA PUBLIC /home/mark/local/anaconda3/envs/cling/include/)
   target_include_directories(CornellBox_CUDA PUBLIC /home/mark/local/vtk-m-1.3.0/include/vtkm-1.3/)
-  set_target_properties(CornellBox_CUDA PROPERTIES
-    CUDA_STANDARD 14)
+  #set_target_properties(CornellBox_CUDA PROPERTIES
+  #  CUDA_STANDARD 14)
   target_link_libraries(CornellBox_CUDA PUBLIC
     "/home/mark/local/vtk-m-1.3.0/lib/libvtkm_rendering-1.3.so"
     "/home/mark/local/vtk-m-1.3.0/lib/libvtkm_cont-1.3.so"
