@@ -14,6 +14,8 @@ public:
   vtkm::cont::ArrayHandle<vec3> pts1[5], pts2[5], translateOffset[5];
   vtkm::cont::ArrayHandle<float> angleArray[5];
   vtkm::cont::ArrayHandle<vec3> norms;
+
+  void invert(vtkm::Vec<vec3,4> &pts);
   void build();
 };
 

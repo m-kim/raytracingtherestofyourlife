@@ -378,25 +378,23 @@ void intersect(RayType &rays,
       }
 
        vtkm::cont::ArrayHandle<vtkm::Id> leafs;
-      leafs.Allocate(4);
-      leafs.GetPortalControl().Set(0, 3);
+      leafs.Allocate(6);
+      leafs.GetPortalControl().Set(0, 5);
       leafs.GetPortalControl().Set(1, 0);
       leafs.GetPortalControl().Set(2, 1);
       leafs.GetPortalControl().Set(3, 2);
+      leafs.GetPortalControl().Set(4, 3);
+      leafs.GetPortalControl().Set(5, 4);
 
       vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> QuadIds;
-      QuadIds.Allocate(3);
+      QuadIds.Allocate(5);
       QuadIds.GetPortalControl().Set(0, vtkm::Vec<vtkm::Id, 5>(0,0,1,2,3));
       QuadIds.GetPortalControl().Set(1, vtkm::Vec<vtkm::Id, 5>(0,4,5,6,7));
       QuadIds.GetPortalControl().Set(2, vtkm::Vec<vtkm::Id, 5>(0,8,9,10,11));
+      QuadIds.GetPortalControl().Set(3, vtkm::Vec<vtkm::Id, 5>(0,12,13,14,15));
+      QuadIds.GetPortalControl().Set(4, vtkm::Vec<vtkm::Id, 5>(0,16,17,18,19));
       Invoke(quad, nodes, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, cb.pts1[i], leafs,
              cb.matIdx[i], cb.texIdx[i], QuadIds);
-
-//      XZRectExecWrapper surf;
-//      XZRectWorklet xz(canvasSize, depth);
-//      Invoke(xz, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, surf, cb.pts1[i], cb.pts2[i],
-//                  cb.matIdx[i], cb.texIdx[i],cb.translateOffset[i], cb.angleArray[i],cb.flipped[i]);
-
 
     }
     else if (cb.cellTypeArray[i] == 2){
@@ -410,13 +408,17 @@ void intersect(RayType &rays,
       }
 
        vtkm::cont::ArrayHandle<vtkm::Id> leafs;
-      leafs.Allocate(2);
-      leafs.GetPortalControl().Set(0, 1);
+      leafs.Allocate(4);
+      leafs.GetPortalControl().Set(0, 3);
       leafs.GetPortalControl().Set(1, 0);
+      leafs.GetPortalControl().Set(2, 1);
+      leafs.GetPortalControl().Set(3, 2);
 
       vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> QuadIds;
-      QuadIds.Allocate(1);
+      QuadIds.Allocate(3);
       QuadIds.GetPortalControl().Set(0, vtkm::Vec<vtkm::Id, 5>(0,0,1,2,3));
+      QuadIds.GetPortalControl().Set(1, vtkm::Vec<vtkm::Id, 5>(0,4,5,6,7));
+      QuadIds.GetPortalControl().Set(2, vtkm::Vec<vtkm::Id, 5>(0,8,9,10,11));
 
       Invoke(quad, nodes, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, cb.pts1[i], leafs,
              cb.matIdx[i], cb.texIdx[i], QuadIds);

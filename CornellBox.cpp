@@ -1,4 +1,33 @@
 #include "CornellBox.h"
+
+#include <vtkm/Transform3D.h>
+
+void CornellBox::invert(vtkm::Vec<vec3,4> &pts)
+{
+  using vec4 = vtkm::Vec<vtkm::Float32, 4>;
+  auto vec3ToVec4 = [&](vec3 in) mutable ->vec4{vec4 ret; ret[0] = in[0]; ret[1] = in[1]; ret[2] = in[2]; ret[3] = 1.f; return ret;};
+  auto vec4ToVec3 = [&](vec4 in) mutable ->vec3{vec3 ret; ret[0] = in[0]; ret[1] = in[1]; ret[2] = in[2]; return ret;};
+
+  vec3 offset(265,0,295);
+  vtkm::Float32 angle = -15;
+  auto translationMatrix = vtkm::Transform3DTranslate(offset[0], offset[1], offset[2]);
+  auto rotationMatrix = vtkm::Transform3DRotate(angle, 0.f,1.f,0.f);
+  rotationMatrix = vtkm::MatrixTranspose(rotationMatrix);
+  auto mat = MatrixMultiply(translationMatrix,rotationMatrix);
+
+
+  auto pt = vec3ToVec4(pts[0]);
+  pts[0] = vec4ToVec3(MatrixMultiply(mat, pt));
+
+  pt = vec3ToVec4(pts[1]);
+  pts[1] = vec4ToVec3(MatrixMultiply(mat, pt));
+
+  pt = vec3ToVec4(pts[2]);
+  pts[2] = vec4ToVec3(MatrixMultiply(mat, pt));
+
+  pt = vec3ToVec4(pts[3]);
+  pts[3] = vec4ToVec3(MatrixMultiply(mat, pt));
+}
 void CornellBox::build()
 {
   tex.Allocate(4);
@@ -31,7 +60,7 @@ void CornellBox::build()
     flipped[0].Allocate(4);
     matIdx[0].Allocate(4);
     texIdx[0].Allocate(4);
-    pts1[0].Allocate(8);
+    pts1[0].Allocate(16);
     pts2[0].Allocate(4);
     cellTypeArray[0] = 0;
     matIdx[0].GetPortalControl().Set(0, 2);
@@ -63,7 +92,7 @@ void CornellBox::build()
     flipped[1].Allocate(5);
     matIdx[1].Allocate(5);
     texIdx[1].Allocate(5);
-    pts1[1].Allocate(12);
+    pts1[1].Allocate(20);
     pts2[1].Allocate(5);
     cellTypeArray[1] =  1;
     matIdx[1].GetPortalControl().Set(0, 3);
@@ -99,7 +128,7 @@ void CornellBox::build()
     flipped[2].Allocate(3);
     matIdx[2].Allocate(3);
     texIdx[2].Allocate(3);
-    pts1[2].Allocate(4);
+    pts1[2].Allocate(12);
     pts2[2].Allocate(4);
     cellTypeArray[2] =  2;
     matIdx[2].GetPortalControl().Set(0, 1);
@@ -142,70 +171,103 @@ void CornellBox::build()
 //  vec3 p1 = constp1;
 //  vec3 p2 = constp2;
 
-//  //xy
-//  p1 = vec3(0,0,165);
-//  p2 = vec3(165,330,165);
-//  vec3 offset(265,0,295);
-//  int ct = 2;
-//  matIdx[ct].GetPortalControl().Set(1, 1);
-//  texIdx[ct].GetPortalControl().Set(1, 1);
-//  pts1[ct].GetPortalControl().Set(1, p1);
-//  pts2[ct].GetPortalControl().Set(1, p2);
+  //xy
+
+  vtkm::Vec<vec3,4> pts;
+  pts[0] = vec3(0,0,165);
+  pts[1] = vec3(165,0,165);
+  pts[2] = vec3(165,330,165);
+  pts[3] = vec3(0,330,165);
+
+  invert(pts);
+
+  int ct = 2;
+  matIdx[ct].GetPortalControl().Set(1, 1);
+  texIdx[ct].GetPortalControl().Set(1, 1);
+  pts1[ct].GetPortalControl().Set(4, pts[0]);
+  pts1[ct].GetPortalControl().Set(5, pts[1]);
+  pts1[ct].GetPortalControl().Set(6, pts[2]);
+  pts1[ct].GetPortalControl().Set(7, pts[3]);
+
+  //pts2[ct].GetPortalControl().Set(1, p2);
 //  translateOffset[ct].GetPortalControl().Set(1, offset);
 //  angleArray[ct].GetPortalControl().Set(1, 15);
 //  flipped[ct].GetPortalControl().Set(1, 0);
 
+  pts[0] = vec3(0,0,0);
+  pts[1] = vec3(165,0,0);
+  pts[2] = vec3(165,330,0);
+  pts[3] = vec3(0,330,0);
 
-//  matIdx[ct].GetPortalControl().Set(2, 1);
-//  texIdx[ct].GetPortalControl().Set(2, 1);
-//  pts1[ct].GetPortalControl().Set(2, vec3(0,0,0));
-//  pts2[ct].GetPortalControl().Set(2,  vec3(165,330,165));
-//  translateOffset[ct].GetPortalControl().Set(2, offset);
-//  angleArray[ct].GetPortalControl().Set(2, 15);
-//  flipped[ct].GetPortalControl().Set(2, 1);
+  invert(pts);
 
-//  //yz
-//  ct = 0;
-//  p1 = vec3(165,0,0);
-//  p2 = vec3(165,330,165);
-//  matIdx[ct].GetPortalControl().Set(2, 1);
-//  texIdx[ct].GetPortalControl().Set(2, 1);
-//  pts1[ct].GetPortalControl().Set(2, p1);
-//  pts2[ct].GetPortalControl().Set(2, p2);
-//  translateOffset[ct].GetPortalControl().Set(2, offset);
-//  angleArray[ct].GetPortalControl().Set(2, 15);
-//  flipped[ct].GetPortalControl().Set(2, 0);
 
+  matIdx[ct].GetPortalControl().Set(2, 1);
+  texIdx[ct].GetPortalControl().Set(2, 1);
+  pts1[ct].GetPortalControl().Set(8, pts[0]);
+  pts1[ct].GetPortalControl().Set(9, pts[1]);
+  pts1[ct].GetPortalControl().Set(10, pts[2]);
+  pts1[ct].GetPortalControl().Set(11, pts[3]);
+
+  pts[0] = vec3(165,0,0);
+  pts[1] = vec3(165,330,0);
+  pts[2] = vec3(165,330,165);
+  pts[3] = vec3(165, 0, 165);
+
+  invert(pts);
+  //yz
+  ct = 0;
+  matIdx[ct].GetPortalControl().Set(2, 1);
+  texIdx[ct].GetPortalControl().Set(2, 1);
+  pts1[ct].GetPortalControl().Set(8, pts[0]);
+  pts1[ct].GetPortalControl().Set(9, pts[1]);
+  pts1[ct].GetPortalControl().Set(10, pts[2]);
+  pts1[ct].GetPortalControl().Set(11, pts[3]);
+
+  pts[0] = vec3(0,0,0);
+  pts[1] = vec3(0,330,0);
+  pts[2] = vec3(0,330,165);
+  pts[3] = vec3(0, 0, 165);
+
+  invert(pts);
 //  p1 = vec3(0,0,0);
 //  p2 = vec3(165,330,165);
-//  matIdx[ct].GetPortalControl().Set(3, 1);
-//  texIdx[ct].GetPortalControl().Set(3, 1);
-//  pts1[ct].GetPortalControl().Set(3, p1);
-//  pts2[ct].GetPortalControl().Set(3, p2);
-//  translateOffset[ct].GetPortalControl().Set(3, offset);
-//  angleArray[ct].GetPortalControl().Set(3, 15);
-//  flipped[ct].GetPortalControl().Set(3, 1);
+  matIdx[ct].GetPortalControl().Set(3, 1);
+  texIdx[ct].GetPortalControl().Set(3, 1);
+  pts1[ct].GetPortalControl().Set(12, pts[0]);
+  pts1[ct].GetPortalControl().Set(13, pts[1]);
+  pts1[ct].GetPortalControl().Set(14, pts[2]);
+  pts1[ct].GetPortalControl().Set(15, pts[3]);
 
-//  //xz_rect
-//  ct = 1;
-//  p1 = vec3(0,330,0);
-//  p2 = vec3(165,330,165);
-//  matIdx[ct].GetPortalControl().Set(3, 1);
-//  texIdx[ct].GetPortalControl().Set(3, 1);
-//  pts1[ct].GetPortalControl().Set(3, p1);
-//  pts2[ct].GetPortalControl().Set(3, p2);
-//  translateOffset[ct].GetPortalControl().Set(3, offset);
-//  angleArray[ct].GetPortalControl().Set(3, 15);
-//  flipped[ct].GetPortalControl().Set(3, 0);
 
-//  p1 = vec3(0,0,0);
-//  p2 = vec3(165,330,165);
-//  matIdx[ct].GetPortalControl().Set(4, 1);
-//  texIdx[ct].GetPortalControl().Set(4, 1);
-//  pts1[ct].GetPortalControl().Set(4, p1);
-//  pts2[ct].GetPortalControl().Set(4, p2);
-//  translateOffset[ct].GetPortalControl().Set(4, offset);
-//  angleArray[ct].GetPortalControl().Set(4, 15);
-//  flipped[ct].GetPortalControl().Set(4, 1);
+  pts[0] = vec3(0,333,0);
+  pts[1] = vec3(165,330,0);
+  pts[2] = vec3(165,330,165);
+  pts[3] = vec3(0, 330, 165);
+
+  invert(pts);
+
+  //xz_rect
+  ct = 1;
+  matIdx[ct].GetPortalControl().Set(3, 1);
+  texIdx[ct].GetPortalControl().Set(3, 1);
+  pts1[ct].GetPortalControl().Set(12, pts[0]);
+  pts1[ct].GetPortalControl().Set(13, pts[1]);
+  pts1[ct].GetPortalControl().Set(14, pts[2]);
+  pts1[ct].GetPortalControl().Set(15, pts[3]);
+
+  pts[0] = vec3(0,0,0);
+  pts[1] = vec3(165,0,0);
+  pts[2] = vec3(165,0,165);
+  pts[3] = vec3(0, 0, 165);
+
+  invert(pts);
+
+  matIdx[ct].GetPortalControl().Set(4, 1);
+  texIdx[ct].GetPortalControl().Set(4, 1);
+  pts1[ct].GetPortalControl().Set(16, pts[0]);
+  pts1[ct].GetPortalControl().Set(17, pts[1]);
+  pts1[ct].GetPortalControl().Set(18, pts[2]);
+  pts1[ct].GetPortalControl().Set(19, pts[3]);
 
 }
