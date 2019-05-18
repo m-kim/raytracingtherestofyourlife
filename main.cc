@@ -536,7 +536,6 @@ void resizeRays(vtkm::rendering::raytracing::Ray<float> &rays, int canvasSize)
 
 const auto
 parse(int argc, char **argv){
-  bool do_print = false;
   int x = 128;
   int y = 128;
   int s = 10;
@@ -709,7 +708,6 @@ int main(int argc, char *argv[]) {
 
       vtkm::cont::ArrayHandleCast<vtkm::Int32, vtkm::cont::ArrayHandle<vtkm::UInt8>> castedStatus(rays.Status);
 
-      std::cout << "fin: " << depth << " " << static_cast<int>(vtkm::cont::Algorithm::Reduce(castedStatus, vtkm::Int32(0))) << std::endl;
     }
 
     using CountType = vtkm::cont::ArrayHandleCounting<vtkm::Id>;
@@ -752,10 +750,9 @@ int main(int argc, char *argv[]) {
 
   }
 
-
   std::fstream fs;
   fs.open("output.pnm", std::fstream::out);
-  fs << "P3\n" << nx << " " << ny << " 255" << std::endl;
+  fs << "P3\n" << nx << " "  << ny << " 255" << std::endl;
   for (int i=0; i<cols.GetNumberOfValues(); i++){
     auto col = cols.GetPortalConstControl().Get(i);
     col = de_nan(col);
@@ -768,7 +765,5 @@ int main(int argc, char *argv[]) {
   }
   fs.close();
 //  std::vector<std::uint8_t> PngBuffer;
-//  lodepng::encode(PngBuffer, ImageBuffer, nx, ny);
-//  lodepng::encode("output.png", ImageBuffer, nx,ny);
 }
 
