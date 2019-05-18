@@ -143,15 +143,15 @@ void CornellBox::build()
 
 //    //sphere
 //    flipped[3].Allocate(1);
-//    matIdx[3].Allocate(1);
-//    texIdx[3].Allocate(1);
-//    pts1[3].Allocate(1);
+    matIdx[3].Allocate(1);
+    texIdx[3].Allocate(1);
+    pts1[3].Allocate(2);
 //    pts2[3].Allocate(1);
     cellTypeArray[3] =  3;
-//    matIdx[3].GetPortalControl().Set(0, 4);
-//    texIdx[3].GetPortalControl().Set(0, 0);
-//    pts1[3].GetPortalControl().Set(0, vec3(190,90,190));
-//    pts2[3].GetPortalControl().Set(0, vec3(90,0,0));
+    matIdx[3].GetPortalControl().Set(0, 4);
+    texIdx[3].GetPortalControl().Set(0, 0);
+    pts1[3].GetPortalControl().Set(0, vec3(190,90,190));
+    pts1[3].GetPortalControl().Set(1, vec3(90,0,0));
 //    flipped[3].GetPortalControl().Set(0, 0);
 
 //    flipped[4].Allocate(1);

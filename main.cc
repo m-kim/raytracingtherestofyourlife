@@ -349,8 +349,8 @@ void intersect(RayType &rays,
 
       vtkm::cont::ArrayHandle<vtkm::Int32> nodes;
       nodes.Allocate(rays.Dir.GetNumberOfValues());
-      for (int i=0; i<nodes.GetNumberOfValues(); i++){
-        nodes.GetPortalControl().Set(i, 0);
+      for (int j=0; j<nodes.GetNumberOfValues(); j++){
+        nodes.GetPortalControl().Set(j, 0);
       }
 
        vtkm::cont::ArrayHandle<vtkm::Id> leafs;
@@ -373,8 +373,8 @@ void intersect(RayType &rays,
 
       vtkm::cont::ArrayHandle<vtkm::Int32> nodes;
       nodes.Allocate(rays.Dir.GetNumberOfValues());
-      for (int i=0; i<nodes.GetNumberOfValues(); i++){
-        nodes.GetPortalControl().Set(i, 0);
+      for (int j=0; j<nodes.GetNumberOfValues(); j++){
+        nodes.GetPortalControl().Set(j, 0);
       }
 
        vtkm::cont::ArrayHandle<vtkm::Id> leafs;
@@ -403,8 +403,8 @@ void intersect(RayType &rays,
 
       vtkm::cont::ArrayHandle<vtkm::Int32> nodes;
       nodes.Allocate(rays.Dir.GetNumberOfValues());
-      for (int i=0; i<nodes.GetNumberOfValues(); i++){
-        nodes.GetPortalControl().Set(i, 0);
+      for (int j=0; j<nodes.GetNumberOfValues(); j++){
+        nodes.GetPortalControl().Set(j, 0);
       }
 
        vtkm::cont::ArrayHandle<vtkm::Id> leafs;
@@ -425,10 +425,26 @@ void intersect(RayType &rays,
 
     }
     else if (cb.cellTypeArray[i] == 3){
+
+      vtkm::cont::ArrayHandle<vtkm::Int32> nodes;
+      nodes.Allocate(rays.Dir.GetNumberOfValues());
+      for (int j=0; j<nodes.GetNumberOfValues(); j++){
+        nodes.GetPortalControl().Set(j, 0);
+      }
+
+      vtkm::cont::ArrayHandle<vtkm::Id> leafs;
+      leafs.Allocate(2);
+      leafs.GetPortalControl().Set(0, 1);
+      leafs.GetPortalControl().Set(1, 0);
+
+      vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,3>> SphereIds;
+      SphereIds.Allocate(1);
+      SphereIds.GetPortalControl().Set(0, vtkm::Vec<vtkm::Id, 3>(0,0,1));
+
       SphereExecWrapper surf;
       SphereIntersecttWorklet sphereIntersect(canvasSize, depth);
-      Invoke(sphereIntersect, rays.Origin, rays.Dir, hrecs,hids, tmin, rays.Distance, rays.Status, surf, cb.pts1[i], cb.pts2[i],
-                  cb.matIdx[i], cb.texIdx[i]);
+      Invoke(sphereIntersect, nodes, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, surf, cb.pts1[i], leafs,
+             cb.matIdx[i], cb.texIdx[i], SphereIds);
 
     }
   }

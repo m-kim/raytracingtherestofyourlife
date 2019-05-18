@@ -25,23 +25,28 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
+  FieldInOut<>,
   ExecObject surf,
+  WholeArrayInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>,
   WholeArrayInOut<>
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14);
 
   template<typename PtArrayType,
             typename IndexType,
-  typename HitRecord,
-  typename HitId,
-           typename SphereExec,
-  int HitBitIdx = 2,
-  int ScatterBitIdx= 3>
+            typename HitRecord,
+            typename HitId,
+            typename SphereExec,
+            typename LeafPortalType,
+            typename IdArrayPortal,
+            int HitBitIdx = 2,
+            int ScatterBitIdx= 3>
   VTKM_EXEC
   void operator()(vtkm::Id idx,
+                  const vtkm::Int32 &currentNode,
                   vec3 &origin,
                   vec3 &direction,
                   HitRecord &hrec,
@@ -50,25 +55,35 @@ public:
                   float &tmax,
                   vtkm::UInt8 &scattered,
                   SphereExec surf,
-                  PtArrayType pt1,
-                  PtArrayType pt2,
+                  PtArrayType pts,
+                  LeafPortalType leafs,
                   IndexType matIdx,
-                  IndexType texIdx
+                  IndexType texIdx,
+                  IdArrayPortal SphereIds
                   ) const
   {
-    if (scattered & (1UL << ScatterBitIdx)){ //scattered
-      for (int i=0; i<pt1.GetNumberOfValues(); i++){
-        HitRecord  temp_rec;
-        HitId temp_hid;
-        auto h =   surf.hit(origin, direction, temp_rec, temp_hid, tmin, tmax,
-                       pt1.Get(i), pt2.Get(i)[0],matIdx.Get(i),texIdx.Get(i));
-        if (h){
+    if (scattered & (1UL << ScatterBitIdx)){
+      const vtkm::Id sphereCount = leafs.Get(currentNode);
+      for (vtkm::Id i = 1; i <= sphereCount; ++i)
+      {
+        const vtkm::Id sphereIndex = leafs.Get(currentNode + i);
+        if (sphereIndex < SphereIds.GetNumberOfValues())
+        {
+          auto pointIndex = SphereIds.Get(sphereIndex);
+          vec3 pt = pts.Get(pointIndex[1]);
+          vec3 rpt = pts.Get(pointIndex[2]);
 
-          tmax = temp_rec[static_cast<vtkm::Id>(HR::T)];
-          hrec = temp_rec;
-          hid = temp_hid;
+          HitRecord  temp_rec;
+          HitId temp_hid;
+          auto h =   surf.hit(origin, direction, temp_rec, temp_hid, tmin, tmax,
+                         pt, rpt[0],matIdx.Get(i-1),texIdx.Get(i-1));
+          if (h){
+            tmax = temp_rec[static_cast<vtkm::Id>(HR::T)];
+            hrec = temp_rec;
+            hid = temp_hid;
+          }
+          scattered |= (h << HitBitIdx);
         }
-        scattered |= (h << HitBitIdx);
       }
     }
   }
