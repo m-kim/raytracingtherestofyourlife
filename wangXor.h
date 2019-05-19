@@ -36,22 +36,22 @@ VTKM_EXEC_CONT inline vtkm::UInt32 getWang32(vtkm::UInt32 &seed)
   seed = seed ^ (seed >> 15);
   return seed;
 }
-  
 
-/* The state array must be initialized to not be all zero in the first four words */
-uint32_t xorwow(vtkm::Vec<vtkm::UInt32, 5> state)
-{
-  /* Algorithm "xorwow" from p. 5 of Marsaglia, "Xorshift RNGs" */
-  vtkm::UInt32 s, t = state[3];
-  state[3] = state[2];
-  state[2] = state[1];
-  state[1] = s = state[0];
-  t ^= t >> 2;
-  t ^= t << 1;
-  state[0] = t ^= s ^ (s << 4);
-  return t + (state[4] += 362437);
 
-}
+///* The state array must be initialized to not be all zero in the first four words */
+//uint32_t xorwow(vtkm::Vec<vtkm::UInt32, 5> state)
+//{
+//  /* Algorithm "xorwow" from p. 5 of Marsaglia, "Xorshift RNGs" */
+//  vtkm::UInt32 s, t = state[3];
+//  state[3] = state[2];
+//  state[2] = state[1];
+//  state[1] = s = state[0];
+//  t ^= t >> 2;
+//  t ^= t << 1;
+//  state[0] = t ^= s ^ (s << 4);
+//  return t + (state[4] += 362437);
+
+//}
 VTKM_EXEC_CONT inline vtkm::Float32 getRandF(vtkm::UInt32 &seed)
 { //xorShift128. modifies randState!
   vtkm::UInt32 t = getWang32(seed);

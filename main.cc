@@ -15,7 +15,7 @@
 #include <tuple>
 #include <vtkm/cont/ArrayHandleConstant.h>
 #include <vtkm/rendering/CanvasRayTracer.h>
-#include <vtkm/rendering/raytracing/Camera.h>
+#include "Camera.h"
 #include <vtkm/cont/internal/DeviceAdapterAlgorithmGeneral.h>
 #include <vtkm/cont/ArrayHandle.h>
 #include <vtkm/cont/ArrayHandleCompositeVector.h>
@@ -550,8 +550,6 @@ int main(int argc, char *argv[]) {
 
   vtkm::cont::ArrayHandle<vtkm::Id> rays_index;
 
-  vtkm::cont::ArrayHandle<unsigned int> seeds;
-  seeds.Allocate(canvasSize);
   vtkm::rendering::raytracing::Ray<float> rays;
   rays.EnableIntersectionData();
   vtkm::rendering::raytracing::RayOperations::Resize(rays, canvasSize, Device());
@@ -647,6 +645,14 @@ int main(int argc, char *argv[]) {
 
   sum_values = rays.GetBuffer("sum_values").Buffer;
   whichPDF.Allocate(nx*ny);
+  vtkm::rendering::pathtracer::Camera cam;
+  cam.SetPosition(vec3(278,278,-800));
+  cam.SetWidth(nx);
+  cam.SetHeight(ny);
+  cam.SetFieldOfView(40);
+  cam.SetUp(vec3(0,1,0));
+  cam.SetLookAt(vec3(278,278,-799));
+  vtkm::cont::ArrayHandle<unsigned int> seeds = cam.seeds;
 
   for (unsigned int i=0; i<canvasSize; i++){
 
@@ -664,27 +670,16 @@ int main(int argc, char *argv[]) {
   vtkm::worklet::Invoker Invoke;
   for (int s =0; s<ns; s++){
     UVGen uvgen(nx, ny, s);
-
     Invoke(uvgen, seeds, uvs);
-    RayGen raygen(nx,ny, 40,40,
-                  vtkm::Vec<vtkm::Float32,3>(0,0,1),
-                  vtkm::Vec<vtkm::Float32,3>(0,1,0),
-                  0, nx, 0, 0, ns);
-    Invoke(raygen, rays.DirX, rays.DirY, rays.DirZ, seeds, rays.PixelIdx);
 
-    vec3 lookfrom(278, 278, -800);
-
-    MyAlgos::Copy<float, float, StorageTag>(lookfrom[0], rays.OriginX);
-    MyAlgos::Copy<float, float, StorageTag>(lookfrom[1], rays.OriginY);
-    MyAlgos::Copy<float, float, StorageTag>(lookfrom[2], rays.OriginZ);
-
+    vtkm::Bounds bounds(vtkm::Range(0,555), vtkm::Range(0,555), vtkm::Range(-800,555));
+    cam.CreateRays(rays, bounds);
 
     MyAlgos::Copy<vtkm::UInt8, vtkm::UInt8, StorageTag>((1UL << 3), rays.Status);
 
 
     for (int depth=0; depth<depthcount; depth++){
       MyAlgos::Copy<float, float, StorageTag>(0, sum_values);
-
 
       intersect(rays, hrecs,hids, tmin, emitted, attenuation, depth);
 
