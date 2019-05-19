@@ -412,41 +412,37 @@ void intersect(RayType &rays,
 //        nodes.GetPortalControl().Set(j, 0);
 //      }
 
-//      vtkm::cont::ArrayHandle<vtkm::Id> leafs;
-//      leafs.Allocate(2);
-//      leafs.GetPortalControl().Set(0, 1);
-//      leafs.GetPortalControl().Set(1, 0);
-
-//      vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,3>> SphereIds;
-//      SphereIds.Allocate(1);
-//      SphereIds.GetPortalControl().Set(0, vtkm::Vec<vtkm::Id, 3>(0,0,1));
-
-//      SphereExecWrapper surf;
-//      SphereIntersecttWorklet sphereIntersect(canvasSize, depth);
-//      Invoke(sphereIntersect, nodes, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, surf, cb.pts1[i], leafs,
-//             cb.matIdx[i], cb.texIdx[i], SphereIds);
-
-//    }
 //  }
 
-    QuadIntersect quad;
+  QuadIntersect quad;
 
-    vtkm::cont::ArrayHandle<vtkm::Int32> nodes;
-    nodes.Allocate(rays.Dir.GetNumberOfValues());
-    for (int j=0; j<nodes.GetNumberOfValues(); j++){
-      nodes.GetPortalControl().Set(j, 0);
-    }
+  vtkm::cont::ArrayHandle<vtkm::Int32> nodes;
+  nodes.Allocate(rays.Dir.GetNumberOfValues());
+  for (int j=0; j<nodes.GetNumberOfValues(); j++){
+    nodes.GetPortalControl().Set(j, 0);
+  }
 
-     vtkm::cont::ArrayHandle<vtkm::Id> leafs;
-    leafs.Allocate(13);
-    leafs.GetPortalControl().Set(0, 12);
-    for (int i=0; i<12; i++){
+   vtkm::cont::ArrayHandle<vtkm::Id> leafs;
+  leafs.Allocate(13);
+  leafs.GetPortalControl().Set(0, 12);
+  for (int i=0; i<12; i++){
 
-      leafs.GetPortalControl().Set(i+1, i);
-    }
+    leafs.GetPortalControl().Set(i+1, i);
+  }
 
-    Invoke(quad, nodes, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, cb.pts1, leafs,
-           cb.matIdx, cb.texIdx, cb.QuadIds);
+  Invoke(quad, nodes, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, cb.pts1, leafs,
+         cb.matIdx[0], cb.texIdx[0], cb.QuadIds);
+
+  vtkm::cont::ArrayHandle<vtkm::Id> sphereleafs;
+  sphereleafs.Allocate(2);
+  sphereleafs.GetPortalControl().Set(0, 1);
+  sphereleafs.GetPortalControl().Set(1, 0);
+
+  SphereExecWrapper surf;
+  SphereIntersecttWorklet sphereIntersect(canvasSize, depth);
+  Invoke(sphereIntersect, nodes, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, surf, cb.pts1, sphereleafs,
+         cb.matIdx[1], cb.texIdx[1], cb.SphereIds);
+
 
   CollectIntersecttWorklet collectIntersect(canvasSize, depth);
   Invoke(collectIntersect, rays.Status, emitted, attenuation);

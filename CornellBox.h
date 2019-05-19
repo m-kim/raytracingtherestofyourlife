@@ -7,8 +7,8 @@ class CornellBox
 {
 public:
   vtkm::cont::ArrayHandle<vec3> tex;
-  vtkm::cont::ArrayHandle<vtkm::Id> matIdx;
-  vtkm::cont::ArrayHandle<vtkm::Id> texIdx;
+  vtkm::cont::ArrayHandle<vtkm::Id> matIdx[2];
+  vtkm::cont::ArrayHandle<vtkm::Id> texIdx[2];
   vtkm::cont::ArrayHandle<int> matType, texType;
   vtkm::cont::ArrayHandle<vec3> pts1;
 

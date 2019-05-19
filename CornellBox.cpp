@@ -55,15 +55,17 @@ void CornellBox::build()
   QuadIds.Allocate(12);
   pts1.Allocate(12 * 4 + 2);
 
-  matIdx.Allocate(13);
-  texIdx.Allocate(13);
+  matIdx[0].Allocate(12);
+  texIdx[0].Allocate(12);
+  matIdx[1].Allocate(1);
+  texIdx[1].Allocate(1);
   int cell_cnt = 0;
   int pt_idx = 0;
   auto close = [&](){  pt_idx += 4;    cell_cnt++; };
   //yz_rect
   QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
-  matIdx.GetPortalControl().Set(cell_cnt, 2);
-  texIdx.GetPortalControl().Set(cell_cnt, 2);
+  matIdx[0].GetPortalControl().Set(cell_cnt, 2);
+  texIdx[0].GetPortalControl().Set(cell_cnt, 2);
   pts1.GetPortalControl().Set(pt_idx, vec3(555,0,0));
   pts1.GetPortalControl().Set(pt_idx+1, vec3(555,555,0));
   pts1.GetPortalControl().Set(pt_idx+2, vec3(555,555,555));
@@ -71,8 +73,8 @@ void CornellBox::build()
   close();
 
   QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
-  matIdx.GetPortalControl().Set(cell_cnt, 0);
-  texIdx.GetPortalControl().Set(cell_cnt, 0);
+  matIdx[0].GetPortalControl().Set(cell_cnt, 0);
+  texIdx[0].GetPortalControl().Set(cell_cnt, 0);
   pts1.GetPortalControl().Set(pt_idx, vec3(0,0,0));
   pts1.GetPortalControl().Set(pt_idx+1, vec3(0,555,0));
   pts1.GetPortalControl().Set(pt_idx+2, vec3(0,555,555));
@@ -81,8 +83,8 @@ void CornellBox::build()
 
   //xz_rect
   QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
-  matIdx.GetPortalControl().Set(cell_cnt, 3);
-  texIdx.GetPortalControl().Set(cell_cnt, 3);
+  matIdx[0].GetPortalControl().Set(cell_cnt, 3);
+  texIdx[0].GetPortalControl().Set(cell_cnt, 3);
   pts1.GetPortalControl().Set(pt_idx, vec3(213,554,227));
   pts1.GetPortalControl().Set(pt_idx+1, vec3(343,554,227));
   pts1.GetPortalControl().Set(pt_idx+2, vec3(343,554,332));
@@ -90,8 +92,8 @@ void CornellBox::build()
   close();
 
   QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
-  matIdx.GetPortalControl().Set(cell_cnt, 1);
-  texIdx.GetPortalControl().Set(cell_cnt, 1);
+  matIdx[0].GetPortalControl().Set(cell_cnt, 1);
+  texIdx[0].GetPortalControl().Set(cell_cnt, 1);
   pts1.GetPortalControl().Set(pt_idx, vec3(0,555,0));
   pts1.GetPortalControl().Set(pt_idx+1, vec3(555,555,0));
   pts1.GetPortalControl().Set(pt_idx+2, vec3(555,555,555));
@@ -99,8 +101,8 @@ void CornellBox::build()
   close();
 
   QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
-  matIdx.GetPortalControl().Set(cell_cnt, 1);
-  texIdx.GetPortalControl().Set(cell_cnt, 1);
+  matIdx[0].GetPortalControl().Set(cell_cnt, 1);
+  texIdx[0].GetPortalControl().Set(cell_cnt, 1);
   pts1.GetPortalControl().Set(pt_idx, vec3(0,0,0));
   pts1.GetPortalControl().Set(pt_idx+1, vec3(555,0,0));
   pts1.GetPortalControl().Set(pt_idx+2, vec3(555,0,555));
@@ -109,8 +111,8 @@ void CornellBox::build()
 
   //xy_rect
   QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
-  matIdx.GetPortalControl().Set(cell_cnt, 1);
-  texIdx.GetPortalControl().Set(cell_cnt, 1);
+  matIdx[0].GetPortalControl().Set(cell_cnt, 1);
+  texIdx[0].GetPortalControl().Set(cell_cnt, 1);
   pts1.GetPortalControl().Set(pt_idx, vec3(0,0,555));
   pts1.GetPortalControl().Set(pt_idx+1, vec3(555,0,555));
   pts1.GetPortalControl().Set(pt_idx+2, vec3(555,555,555));
@@ -120,12 +122,11 @@ void CornellBox::build()
 //    //sphere
   SphereIds.GetPortalControl().Set(0, vtkm::Vec<vtkm::Id, 3>(0,pt_idx,pt_idx+1));
 
-  matIdx.GetPortalControl().Set(cell_cnt, 4);
-  texIdx.GetPortalControl().Set(cell_cnt, 0);
+  matIdx[1].GetPortalControl().Set(0, 4);
+  texIdx[1].GetPortalControl().Set(0, 0);
   pts1.GetPortalControl().Set(pt_idx, vec3(190,90,190));
   pts1.GetPortalControl().Set(pt_idx+1, vec3(90,0,0));
   pt_idx += 2;
-  cell_cnt;
 
 //  //small box
   //xy
@@ -136,8 +137,8 @@ void CornellBox::build()
   pts[2] = vec3(165,330,165);
   pts[3] = vec3(0,330,165);
   invert(pts);
-  matIdx.GetPortalControl().Set(cell_cnt, 1);
-  texIdx.GetPortalControl().Set(cell_cnt, 1);
+  matIdx[0].GetPortalControl().Set(cell_cnt, 1);
+  texIdx[0].GetPortalControl().Set(cell_cnt, 1);
   pts1.GetPortalControl().Set(pt_idx, pts[0]);
   pts1.GetPortalControl().Set(pt_idx+1, pts[1]);
   pts1.GetPortalControl().Set(pt_idx+2, pts[2]);
@@ -150,8 +151,8 @@ void CornellBox::build()
   pts[2] = vec3(165,330,0);
   pts[3] = vec3(0,330,0);
   invert(pts);
-  matIdx.GetPortalControl().Set(cell_cnt, 1);
-  texIdx.GetPortalControl().Set(cell_cnt, 1);
+  matIdx[0].GetPortalControl().Set(cell_cnt, 1);
+  texIdx[0].GetPortalControl().Set(cell_cnt, 1);
   pts1.GetPortalControl().Set(pt_idx, pts[0]);
   pts1.GetPortalControl().Set(pt_idx+1, pts[1]);
   pts1.GetPortalControl().Set(pt_idx+2, pts[2]);
@@ -165,8 +166,8 @@ void CornellBox::build()
   pts[2] = vec3(165,330,165);
   pts[3] = vec3(165, 0, 165);
   invert(pts);
-  matIdx.GetPortalControl().Set(cell_cnt, 1);
-  texIdx.GetPortalControl().Set(cell_cnt, 1);
+  matIdx[0].GetPortalControl().Set(cell_cnt, 1);
+  texIdx[0].GetPortalControl().Set(cell_cnt, 1);
   pts1.GetPortalControl().Set(pt_idx, pts[0]);
   pts1.GetPortalControl().Set(pt_idx+1, pts[1]);
   pts1.GetPortalControl().Set(pt_idx+2, pts[2]);
@@ -179,8 +180,8 @@ void CornellBox::build()
   pts[2] = vec3(0,330,165);
   pts[3] = vec3(0, 0, 165);
   invert(pts);
-  matIdx.GetPortalControl().Set(cell_cnt, 1);
-  texIdx.GetPortalControl().Set(cell_cnt, 1);
+  matIdx[0].GetPortalControl().Set(cell_cnt, 1);
+  texIdx[0].GetPortalControl().Set(cell_cnt, 1);
   pts1.GetPortalControl().Set(pt_idx, pts[0]);
   pts1.GetPortalControl().Set(pt_idx+1, pts[1]);
   pts1.GetPortalControl().Set(pt_idx+2, pts[2]);
@@ -195,8 +196,8 @@ void CornellBox::build()
   pts[2] = vec3(165,330,165);
   pts[3] = vec3(0, 330, 165);
   invert(pts);
-  matIdx.GetPortalControl().Set(cell_cnt, 1);
-  texIdx.GetPortalControl().Set(cell_cnt, 1);
+  matIdx[0].GetPortalControl().Set(cell_cnt, 1);
+  texIdx[0].GetPortalControl().Set(cell_cnt, 1);
   pts1.GetPortalControl().Set(pt_idx, pts[0]);
   pts1.GetPortalControl().Set(pt_idx+1, pts[1]);
   pts1.GetPortalControl().Set(pt_idx+2, pts[2]);
@@ -209,8 +210,8 @@ void CornellBox::build()
   pts[2] = vec3(165,0,165);
   pts[3] = vec3(0, 0, 165);
   invert(pts);
-  matIdx.GetPortalControl().Set(cell_cnt, 1);
-  texIdx.GetPortalControl().Set(cell_cnt, 1);
+  matIdx[0].GetPortalControl().Set(cell_cnt, 1);
+  texIdx[0].GetPortalControl().Set(cell_cnt, 1);
   pts1.GetPortalControl().Set(pt_idx, pts[0]);
   pts1.GetPortalControl().Set(pt_idx+1, pts[1]);
   pts1.GetPortalControl().Set(pt_idx+2, pts[2]);
