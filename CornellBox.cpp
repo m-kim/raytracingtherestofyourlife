@@ -1,6 +1,9 @@
 #include "CornellBox.h"
 
 #include <vtkm/Transform3D.h>
+#include <vtkm/cont/ArrayCopy.h>
+#include <vtkm/cont/ArrayHandleCounting.h>
+
 
 void CornellBox::invert(vtkm::Vec<vec3,4> &pts)
 {
@@ -54,7 +57,8 @@ void CornellBox::build()
   SphereIds.Allocate(1);
   QuadIds.Allocate(12);
   pts1.Allocate(12 * 4 + 2);
-
+  ptsIdx.Allocate(12*4+2);
+  vtkm::cont::ArrayCopy(vtkm::cont::ArrayHandleCounting<vtkm::Id>(0,1, 12*4+2), ptsIdx);
   matIdx[0].Allocate(12);
   texIdx[0].Allocate(12);
   matIdx[1].Allocate(1);

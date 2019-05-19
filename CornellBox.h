@@ -11,6 +11,7 @@ public:
   vtkm::cont::ArrayHandle<vtkm::Id> texIdx[2];
   vtkm::cont::ArrayHandle<int> matType, texType;
   vtkm::cont::ArrayHandle<vec3> pts1;
+  vtkm::cont::ArrayHandle<vtkm::Id> ptsIdx;
 
   vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> QuadIds;
   vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,3>> SphereIds;

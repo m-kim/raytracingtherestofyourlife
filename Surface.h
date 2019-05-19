@@ -1,6 +1,7 @@
 #ifndef SURFACE_H
 #define SURFACE_H
 #include "Record.h"
+#include "vec3.h"
 
 class XZRect
 {
@@ -44,11 +45,28 @@ public:
   }
 };
 
-
-class Sphere
+template <typename Device>
+class SphereLeafIntersector
 {
 public:
-  Sphere(){}
+  using IdHandle = vtkm::cont::ArrayHandle<vtkm::Id>;
+  using Id2Handle = vtkm::cont::ArrayHandle<vtkm::Id2>;
+  using FloatHandle = vtkm::cont::ArrayHandle<vtkm::Float32>;
+  using IdArrayPortal = typename IdHandle::ExecutionTypes<Device>::PortalConst;
+  using Id2ArrayPortal = typename Id2Handle::ExecutionTypes<Device>::PortalConst;
+  IdArrayPortal PointIds;
+  IdArrayPortal MatIdx, TexIdx;
+
+  SphereLeafIntersector(){}
+  SphereLeafIntersector(const IdHandle& pointIds,
+                        const IdHandle& matIdx,
+                        const IdHandle& texIdx)
+    : PointIds(pointIds.PrepareForInput(Device()))
+    , MatIdx(matIdx.PrepareForInput(Device()))
+    , TexIdx(texIdx.PrepareForInput(Device()))
+  {
+
+  }
 
   VTKM_EXEC
   void get_sphere_uv(const vec3& p, float& u, float& v) const {
@@ -107,6 +125,52 @@ public:
       }
       return false;
   }
+
+  template<typename PtArrayType,
+            typename HitRecord,
+            typename HitId,
+            typename LeafPortalType,
+            typename Id2ArrayPortal,
+            int HitBitIdx = 2,
+            int ScatterBitIdx= 3>
+  VTKM_EXEC void LeafIntersect(
+                        const vtkm::Int32 &currentNode,
+                        vec3 &origin,
+                        vec3 &direction,
+                        HitRecord &hrec,
+                        HitId &hid,
+                        float &tmin,
+                        float &tmax,
+                        vtkm::UInt8 &scattered,
+                        Id2ArrayPortal SphereIds,
+                        PtArrayType pts,
+                        LeafPortalType leafs)
+  {
+    if (scattered & (1UL << ScatterBitIdx)){
+      const vtkm::Id sphereCount = leafs.Get(currentNode);
+      for (vtkm::Id i = 1; i <= sphereCount; ++i)
+      {
+        const vtkm::Id sphereIndex = leafs.Get(currentNode + i);
+        if (sphereIndex < SphereIds.GetNumberOfValues())
+        {
+          auto pointIndex = SphereIds.Get(sphereIndex);
+          vec3 pt = pts.Get(pointIndex[1]);
+          vec3 rpt = pts.Get(pointIndex[2]);
+
+          HitRecord  temp_rec;
+          HitId temp_hid;
+          auto h =   hit(origin, direction, temp_rec, temp_hid, tmin, tmax,
+                         pt, rpt[0],MatIdx.Get(i-1),TexIdx.Get(i-1));
+          if (h){
+            tmax = temp_rec[static_cast<vtkm::Id>(HR::T)];
+            hrec = temp_rec;
+            hid = temp_hid;
+          }
+          scattered |= (h << HitBitIdx);
+        }
+      }
+    }
+  }
 };
 
 
@@ -114,14 +178,26 @@ class SphereExecWrapper : public vtkm::cont::ExecutionObjectBase
 {
 
 public:
-  SphereExecWrapper()
+  vtkm::cont::ArrayHandle<vtkm::Id> &PointIds;
+  vtkm::cont::ArrayHandle<vtkm::Id> &MatIdx;
+  vtkm::cont::ArrayHandle<vtkm::Id> &TexIdx;
+
+  SphereExecWrapper(vtkm::cont::ArrayHandle<vtkm::Id> &pointIds,
+                    vtkm::cont::ArrayHandle<vtkm::Id> &matIdx,
+                    vtkm::cont::ArrayHandle<vtkm::Id> &texIdx
+
+                    )
+    : PointIds(pointIds)
+    , MatIdx(matIdx)
+    , TexIdx(texIdx)
+
   {
   }
 
   template <typename Device>
-  VTKM_CONT Sphere PrepareForExecution(Device) const
+  VTKM_CONT SphereLeafIntersector<Device> PrepareForExecution(Device) const
   {
-    return Sphere();
+    return SphereLeafIntersector<Device>(PointIds, MatIdx, TexIdx);
   }
 };
 
