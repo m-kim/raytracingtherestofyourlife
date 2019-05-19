@@ -18,11 +18,13 @@ public:
   {
   }
 
-  template<typename HitRecord>
+  template<typename HitRecord, typename ScatterRecord>
   VTKM_EXEC
   bool scatter(const vec3 &origin, const vec3 &direction, const HitRecord& hrec, ScatterRecord& srec, vec3 albedo) const {
-      srec.is_specular = false;
-      srec.attenuation = albedo;
+      //srec.is_specular = false;
+      srec[static_cast<vtkm::Id>(SR::Ax)] = albedo[0];
+      srec[static_cast<vtkm::Id>(SR::Ay)] = albedo[1];
+      srec[static_cast<vtkm::Id>(SR::Az)] = albedo[2];
       return true;
   }
   template<typename HitRecord>
@@ -36,8 +38,10 @@ public:
           typename MatTypeArray,
           typename TexTypeArray,
           typename HitRecord, typename HitId,
+           typename ScatterRecord,
           int FinishedBitIdx = 1,
-          int ScatterBitIdx = 3>
+          int ScatterBitIdx = 3,
+           int SpecularBitIdx = 4>
   VTKM_EXEC
   void operator()(vtkm::Id idx,
                   vec3 &origin,
@@ -57,7 +61,9 @@ public:
         if (mt == 0){
           auto tt = texType.Get(hid[static_cast<vtkm::Id>(HI::T)]);
           vec3 em = emit(origin, direction, hrec, col.Get(tt));
-          fin &= (scatter(origin, direction, hrec, srec, col.Get(tt)) << ScatterBitIdx); //scattered
+          auto sctr = scatter(origin, direction, hrec, srec, col.Get(tt));
+          fin |= (sctr << ScatterBitIdx); //scattered
+          fin &= ~(1UL << SpecularBitIdx);
           emitted.Set(canvasSize * depth + idx, em);
 
         }
@@ -79,9 +85,9 @@ public:
   {
   }
 
-  template<typename HitRecord>
+  template<typename HitRecord, typename ScatterRecord>
   VTKM_EXEC
-  bool scatter(const vec3 &origin, const vec3 &direction, const HitRecord& hrec, ScatterRecord& srec, vec3) const {
+  bool scatter(const vec3 &origin, const vec3 &direction, const HitRecord& hrec, ScatterRecord &srec, vtkm::UInt8 &fin, vec3) const {
         return false;}
   template<typename HitRecord>
   VTKM_EXEC
@@ -99,7 +105,7 @@ public:
           typename ColorArrayType,
           typename MatTypeArray,
           typename TexTypeArray,
-  typename HitRecord, typename HitId,
+  typename HitRecord, typename HitId, typename ScatterRecord,
   int FinBitIdx = 1,
   int ScatterBitIdx= 3>
   VTKM_EXEC
@@ -121,7 +127,7 @@ public:
         if (mt == 1){
           auto tt = texType.Get(hid[static_cast<vtkm::Id>(HI::T)]);
           vec3 em = emit(origin, direction, hrec, col.Get(tt));
-          fin &= (scatter(origin, direction, hrec, srec, col.Get(tt)) << ScatterBitIdx); //scattered
+          fin &= (scatter(origin, direction, hrec, srec, fin, col.Get(tt)) << ScatterBitIdx); //scattered
           emitted.Set(canvasSize * depth + idx, em);
         }
       }
@@ -168,11 +174,14 @@ public:
        return v - 2*dot(v,n)*n;
   }
 
-  template<typename HitRecord>
+  template<typename HitRecord,
+           typename ScatterRecord>
   VTKM_EXEC
   bool scatter(const vec3 &origin, const vec3 &direction, const HitRecord& hrec, ScatterRecord& srec, vec3 albedo, double _rand) const {
-      srec.is_specular = true;
-      srec.attenuation = vec3(1.0, 1.0, 1.0);
+      //srec.attenuation = vec3(1.0, 1.0, 1.0);
+    srec[static_cast<vtkm::Id>(SR::Ax)] = 1;
+    srec[static_cast<vtkm::Id>(SR::Ay)] = 1;
+    srec[static_cast<vtkm::Id>(SR::Az)] = 1;
       vec3 outward_normal;
       vec3 n(hrec[static_cast<vtkm::Id>(HR::Nx)], hrec[static_cast<vtkm::Id>(HR::Ny)],hrec[static_cast<vtkm::Id>(HR::Nz)]);
 
@@ -198,16 +207,20 @@ public:
           reflect_prob = 1.0;
        }
        if (_rand < reflect_prob) {
-          srec.o[0] = hrec[static_cast<vtkm::Id>(HR::Px)];
-          srec.o[1] = hrec[static_cast<vtkm::Id>(HR::Py)];
-          srec.o[2] = hrec[static_cast<vtkm::Id>(HR::Pz)];
-          srec.dir = reflected;
+          srec[static_cast<vtkm::Id>(SR::Ox)] = hrec[static_cast<vtkm::Id>(HR::Px)];
+          srec[static_cast<vtkm::Id>(SR::Oy)] = hrec[static_cast<vtkm::Id>(HR::Py)];
+          srec[static_cast<vtkm::Id>(SR::Oz)] = hrec[static_cast<vtkm::Id>(HR::Pz)];
+          srec[static_cast<vtkm::Id>(SR::Dx)] = reflected[0];
+          srec[static_cast<vtkm::Id>(SR::Dy)] = reflected[1];
+          srec[static_cast<vtkm::Id>(SR::Dz)] = reflected[2];
        }
        else {
-         srec.o[0] = hrec[static_cast<vtkm::Id>(HR::Px)];
-         srec.o[1] = hrec[static_cast<vtkm::Id>(HR::Py)];
-         srec.o[2] = hrec[static_cast<vtkm::Id>(HR::Pz)];
-          srec.dir = refracted;
+         srec[static_cast<vtkm::Id>(SR::Ox)] = hrec[static_cast<vtkm::Id>(HR::Px)];
+         srec[static_cast<vtkm::Id>(SR::Oy)] = hrec[static_cast<vtkm::Id>(HR::Py)];
+         srec[static_cast<vtkm::Id>(SR::Oz)] = hrec[static_cast<vtkm::Id>(HR::Pz)];
+         srec[static_cast<vtkm::Id>(SR::Dx)] = refracted[0];
+         srec[static_cast<vtkm::Id>(SR::Dy)] = refracted[1];
+         srec[static_cast<vtkm::Id>(SR::Dz)] = refracted[2];
        }
        return true;
   }
@@ -223,8 +236,10 @@ public:
           typename TexTypeArray,
           typename HitRecord,
           typename HitId,
-  int FinishedBitIdx = 1,
-  int ScatterBitIdx = 3  >
+           typename ScatterRecord,
+          int FinishedBitIdx = 1,
+          int ScatterBitIdx = 3,
+           int SpecularBitIdx = 4>
   VTKM_EXEC
   void operator()(vtkm::Id idx,
                   unsigned int &seed,
@@ -246,7 +261,9 @@ public:
         if (mt == 2){
           auto tt = texType.Get(hid[static_cast<vtkm::Id>(HI::T)]);
           vec3 em = emit(origin, direction, hrec, col.Get(tt));
-          fin &= (scatter(origin, direction, hrec, srec, col.Get(tt), xorshiftWang::getRandF(seed)) << ScatterBitIdx);//vtkm::random::xorshift::getRandF(randState));
+          auto sctr = scatter(origin, direction, hrec, srec, col.Get(tt), xorshiftWang::getRandF(seed));
+          fin |= (sctr << ScatterBitIdx);//vtkm::random::xorshift::getRandF(randState));
+          fin |= (1UL << SpecularBitIdx);
           emitted.Set(canvasSize * depth + idx, em);
 
         }

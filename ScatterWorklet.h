@@ -59,9 +59,10 @@ public:
 
   using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>);
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10);
-  template<typename VecArrayType, typename HitRecord,
+  template<typename VecArrayType, typename HitRecord, typename ScatterRecord,
   int FinBitIdx = 1,
-  int ScatterBitIdx= 3>
+  int ScatterBitIdx= 3,
+           int SpecularBitIdx = 4>
   VTKM_EXEC
   void operator()(vtkm::Id idx,
                   vec3 &r_origin,
@@ -81,10 +82,16 @@ public:
       out_direction = r_direction;
 
       if (fin & (1UL << ScatterBitIdx)){
-        if (srec.is_specular) {
-          atten = srec.attenuation;
-          out_origin = srec.o;
-          out_direction = srec.dir;
+        if (fin & (1UL << SpecularBitIdx )){//srec.is_specular) {
+          atten[0] = srec[static_cast<vtkm::Id>(SR::Ax)];
+          atten[1] = srec[static_cast<vtkm::Id>(SR::Ay)];
+          atten[2] = srec[static_cast<vtkm::Id>(SR::Az)];
+          out_origin[0] = srec[static_cast<vtkm::Id>(SR::Ox)];
+          out_origin[1] = srec[static_cast<vtkm::Id>(SR::Oy)];
+          out_origin[2] = srec[static_cast<vtkm::Id>(SR::Oz)];
+          out_direction[0] = srec[static_cast<vtkm::Id>(SR::Dx)];
+          out_direction[1] = srec[static_cast<vtkm::Id>(SR::Dy)];
+          out_direction[2] = srec[static_cast<vtkm::Id>(SR::Dz)];
         }
         else {
 
@@ -99,12 +106,14 @@ public:
           auto pdf_val = 0.5 * sum_value + 0.5 * newPdf.value(generated_dir);
 
           auto sctr = scattering_pdf(r_origin, r_direction, hrec, out_origin, out_direction)/pdf_val;
-          atten = srec.attenuation * sctr;
+          atten[0] = srec[static_cast<vtkm::Id>(SR::Ax)] * sctr;
+          atten[1] = srec[static_cast<vtkm::Id>(SR::Ay)] * sctr;
+          atten[2] = srec[static_cast<vtkm::Id>(SR::Az)] * sctr;
         }
       }
       attenuation.Set(canvasSize * depth + idx, atten);
     }
-    fin |= (fin >> ScatterBitIdx);
+    fin &= ~(fin >> ScatterBitIdx);
   }
 
   const int depth, canvasSize;

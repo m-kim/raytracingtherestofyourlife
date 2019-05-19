@@ -4,12 +4,5 @@
 enum class HR {U,V,T, Nx, Ny, Nz, Px, Py, Pz};
 enum class HI {M, T};
 
-struct ScatterRecord
-{
-    vec3 o, dir;
-    bool is_specular;
-    vec3 attenuation;
-
-    int pdfIdx;
-};
+enum class SR {Ox,Oy,Oz, Dx,Dy,Dz, Ax,Ay,Az};
 #endif

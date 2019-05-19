@@ -380,11 +380,11 @@ void intersect(RayType &rays,
 
 }
 
-template<typename HitRecord, typename HitId>
+template<typename HitRecord, typename HitId, typename ScatterRecord>
 void applyMaterials(RayType &rays,
                     HitRecord &hrecs,
                     HitId &hids,
-                    vtkm::cont::ArrayHandle<ScatterRecord> &srecs,
+                    ScatterRecord &srecs,
                     vtkm::cont::ArrayHandle<vec3> tex,
                     vtkm::cont::ArrayHandle<int> matType,
                     vtkm::cont::ArrayHandle<int> texType,
@@ -431,11 +431,11 @@ void generateRays(
   Invoke(sphereGenDir, whichPDF, hrecs, generated_dir, seeds, light_sphere_pts[0], light_sphere_pts[1]);
   }
 
-template<typename HitRecord>
+template<typename HitRecord, typename ScatterRecord>
 void applyPDFs(
     RayType &rays,
     HitRecord &hrecs,
-    vtkm::cont::ArrayHandle<ScatterRecord> srecs,
+    ScatterRecord srecs,
     vtkm::cont::ArrayHandle<vtkm::Float32> &sum_values,
     ArrayType generated_dir,
     ArrayType &attenuation,
@@ -561,13 +561,39 @@ int main(int argc, char *argv[]) {
 
   vtkm::cont::ArrayHandle<vtkm::Float32> sum_values;
 
-  vtkm::cont::ArrayHandle<ScatterRecord> srecs;
-
   vtkm::cont::ArrayHandle<vtkm::Int32> matIdArray, texIdArray;
   matIdArray.Allocate(canvasSize);
   texIdArray.Allocate(canvasSize);
 
-
+  rays.AddBuffer(1, "specular_Ox");
+  rays.AddBuffer(1, "specular_Oy");
+  rays.AddBuffer(1, "specular_Oz");
+  rays.AddBuffer(1, "specular_Dx");
+  rays.AddBuffer(1, "specular_Dy");
+  rays.AddBuffer(1, "specular_Dz");
+  rays.AddBuffer(1, "specular_Ax");
+  rays.AddBuffer(1, "specular_Ay");
+  rays.AddBuffer(1, "specular_Az");
+  using ScatterRecord = vtkm::cont::ArrayHandleCompositeVector<vtkm::cont::ArrayHandle<vtkm::Float32>,
+  vtkm::cont::ArrayHandle<vtkm::Float32>,
+  vtkm::cont::ArrayHandle<vtkm::Float32>,
+  vtkm::cont::ArrayHandle<vtkm::Float32>,
+  vtkm::cont::ArrayHandle<vtkm::Float32>,
+  vtkm::cont::ArrayHandle<vtkm::Float32>,
+  vtkm::cont::ArrayHandle<vtkm::Float32>,
+  vtkm::cont::ArrayHandle<vtkm::Float32>,
+  vtkm::cont::ArrayHandle<vtkm::Float32>>;
+  auto srecs = ScatterRecord(
+        rays.GetBuffer("specular_Ox").Buffer,
+         rays.GetBuffer("specular_Oy").Buffer,
+         rays.GetBuffer("specular_Oz").Buffer,
+         rays.GetBuffer("specular_Dx").Buffer,
+         rays.GetBuffer("specular_Dy").Buffer,
+         rays.GetBuffer("specular_Dz").Buffer,
+        rays.GetBuffer("specular_Ax").Buffer,
+        rays.GetBuffer("specular_Ay").Buffer,
+        rays.GetBuffer("specular_Az").Buffer
+        );
   using HitRecord = vtkm::cont::ArrayHandleCompositeVector<decltype(rays.U),
   decltype(rays.V),
   decltype(rays.Distance),
@@ -591,7 +617,6 @@ int main(int argc, char *argv[]) {
 
   attenuation.Allocate(canvasSize* depthcount);
   emitted.Allocate(canvasSize * depthcount);
-  srecs.Allocate(canvasSize);
   ArrayType sumtotl;
   sumtotl.Allocate(canvasSize);
   tmin.Allocate(canvasSize);
