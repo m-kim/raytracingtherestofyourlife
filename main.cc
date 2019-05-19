@@ -343,76 +343,7 @@ void intersect(RayType &rays,
   vtkm::worklet::Invoker Invoke;
 
   vtkm::Id canvasSize = rays.DirX.GetNumberOfValues();
-//  for (int i=0; i<cb.cellTypeArray.size(); i++){
-//    if (cb.cellTypeArray[i] == 0){
 
-//    }
-//    else if (cb.cellTypeArray[i] == 1){
-//      //xz
-//      QuadIntersect quad;
-
-//      vtkm::cont::ArrayHandle<vtkm::Int32> nodes;
-//      nodes.Allocate(rays.Dir.GetNumberOfValues());
-//      for (int j=0; j<nodes.GetNumberOfValues(); j++){
-//        nodes.GetPortalControl().Set(j, 0);
-//      }
-
-//       vtkm::cont::ArrayHandle<vtkm::Id> leafs;
-//      leafs.Allocate(6);
-//      leafs.GetPortalControl().Set(0, 5);
-//      leafs.GetPortalControl().Set(1, 0);
-//      leafs.GetPortalControl().Set(2, 1);
-//      leafs.GetPortalControl().Set(3, 2);
-//      leafs.GetPortalControl().Set(4, 3);
-//      leafs.GetPortalControl().Set(5, 4);
-
-//      vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> QuadIds;
-//      QuadIds.Allocate(5);
-//      QuadIds.GetPortalControl().Set(0, vtkm::Vec<vtkm::Id, 5>(0,0,1,2,3));
-//      QuadIds.GetPortalControl().Set(1, vtkm::Vec<vtkm::Id, 5>(0,4,5,6,7));
-//      QuadIds.GetPortalControl().Set(2, vtkm::Vec<vtkm::Id, 5>(0,8,9,10,11));
-//      QuadIds.GetPortalControl().Set(3, vtkm::Vec<vtkm::Id, 5>(0,12,13,14,15));
-//      QuadIds.GetPortalControl().Set(4, vtkm::Vec<vtkm::Id, 5>(0,16,17,18,19));
-//      Invoke(quad, nodes, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, cb.pts1[i], leafs,
-//             cb.matIdx[i], cb.texIdx[i], QuadIds);
-
-//    }
-//    else if (cb.cellTypeArray[i] == 2){
-//      //xy
-//      QuadIntersect quad;
-
-//      vtkm::cont::ArrayHandle<vtkm::Int32> nodes;
-//      nodes.Allocate(rays.Dir.GetNumberOfValues());
-//      for (int j=0; j<nodes.GetNumberOfValues(); j++){
-//        nodes.GetPortalControl().Set(j, 0);
-//      }
-
-//       vtkm::cont::ArrayHandle<vtkm::Id> leafs;
-//      leafs.Allocate(4);
-//      leafs.GetPortalControl().Set(0, 3);
-//      leafs.GetPortalControl().Set(1, 0);
-//      leafs.GetPortalControl().Set(2, 1);
-//      leafs.GetPortalControl().Set(3, 2);
-
-//      vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> QuadIds;
-//      QuadIds.Allocate(3);
-//      QuadIds.GetPortalControl().Set(0, vtkm::Vec<vtkm::Id, 5>(0,0,1,2,3));
-//      QuadIds.GetPortalControl().Set(1, vtkm::Vec<vtkm::Id, 5>(0,4,5,6,7));
-//      QuadIds.GetPortalControl().Set(2, vtkm::Vec<vtkm::Id, 5>(0,8,9,10,11));
-
-//      Invoke(quad, nodes, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, cb.pts1[i], leafs,
-//             cb.matIdx[i], cb.texIdx[i], QuadIds);
-
-//    }
-//    else if (cb.cellTypeArray[i] == 3){
-
-//      vtkm::cont::ArrayHandle<vtkm::Int32> nodes;
-//      nodes.Allocate(rays.Dir.GetNumberOfValues());
-//      for (int j=0; j<nodes.GetNumberOfValues(); j++){
-//        nodes.GetPortalControl().Set(j, 0);
-//      }
-
-//  }
 
   QuadIntersect quad;
 
@@ -636,10 +567,6 @@ int main(int argc, char *argv[]) {
   matIdArray.Allocate(canvasSize);
   texIdArray.Allocate(canvasSize);
 
-  vtkm::cont::ArrayHandle<vtkm::Float32> pxArray,pyArray,pzArray;
-  pxArray.Allocate(rays.U.GetNumberOfValues());
-  pyArray.Allocate(rays.U.GetNumberOfValues());
-  pzArray.Allocate(rays.U.GetNumberOfValues());
 
   using HitRecord = vtkm::cont::ArrayHandleCompositeVector<decltype(rays.U),
   decltype(rays.V),
@@ -647,11 +574,11 @@ int main(int argc, char *argv[]) {
   decltype(rays.NormalX),
   decltype(rays.NormalY),
   decltype(rays.NormalZ),
-  decltype(pxArray),
-  decltype(pyArray),
-  decltype(pzArray)>;
+  decltype(rays.IntersectionX),
+  decltype(rays.IntersectionY),
+  decltype(rays.IntersectionZ)>;
 
-  auto hrecs = HitRecord(rays.U, rays.V, rays.Distance, rays.NormalX, rays.NormalY, rays.NormalZ, pxArray, pyArray, pzArray);
+  auto hrecs = HitRecord(rays.U, rays.V, rays.Distance, rays.NormalX, rays.NormalY, rays.NormalZ, rays.IntersectionX, rays.IntersectionY, rays.IntersectionZ);
 
   using HitId = vtkm::cont::ArrayHandleCompositeVector<decltype(matIdArray), decltype(texIdArray)>;
   auto hids = HitId(matIdArray, texIdArray);
