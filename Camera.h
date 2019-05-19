@@ -17,8 +17,8 @@
 //  Laboratory (LANL), the U.S. Government retains certain rights in
 //  this software.
 //============================================================================
-#ifndef vtk_m_rendering_raytracing_Camera_h
-#define vtk_m_rendering_raytracing_Camera_h
+#ifndef vtk_m_rendering_pathtracer_Camera_h
+#define vtk_m_rendering_pathtracer_Camera_h
 
 #include <vtkm/cont/CoordinateSystem.h>
 #include <vtkm/rendering/Camera.h>
