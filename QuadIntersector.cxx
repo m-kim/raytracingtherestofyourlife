@@ -17,7 +17,7 @@
 //  Laboratory (LANL), the U.S. Government retains certain rights in
 //  this software.
 //============================================================================
-#include "SphereIntersector.h"
+#include "QuadIntersector.h"
 #include <vtkm/VectorAnalysis.h>
 #include <vtkm/cont/Algorithm.h>
 #include <vtkm/rendering/raytracing/BVHTraverser.h>
@@ -212,16 +212,16 @@ public:
 
 } // namespace detail
 
-SphereIntersector::SphereIntersector()
+QuadIntersector::QuadIntersector()
   : ShapeIntersector()
 {
 }
 
-SphereIntersector::~SphereIntersector()
+QuadIntersector::~QuadIntersector()
 {
 }
 
-void SphereIntersector::SetData(const vtkm::cont::CoordinateSystem& coords,
+void QuadIntersector::SetData(const vtkm::cont::CoordinateSystem& coords,
                                 vtkm::cont::ArrayHandle<vtkm::Id> pointIds,
                                 vtkm::cont::ArrayHandle<vtkm::Float32> radii)
 {
@@ -243,18 +243,18 @@ void SphereIntersector::SetData(const vtkm::cont::CoordinateSystem& coords,
   this->SetAABBs(AABB);
 }
 
-void SphereIntersector::IntersectRays(vtkm::rendering::raytracing::Ray<vtkm::Float32>& rays, bool returnCellIndex)
+void QuadIntersector::IntersectRays(vtkm::rendering::raytracing::Ray<vtkm::Float32>& rays, bool returnCellIndex)
 {
   IntersectRaysImp(rays, returnCellIndex);
 }
 
-void SphereIntersector::IntersectRays(vtkm::rendering::raytracing::Ray<vtkm::Float64>& rays, bool returnCellIndex)
+void QuadIntersector::IntersectRays(vtkm::rendering::raytracing::Ray<vtkm::Float64>& rays, bool returnCellIndex)
 {
   IntersectRaysImp(rays, returnCellIndex);
 }
 
 template <typename Precision>
-void SphereIntersector::IntersectRaysImp(vtkm::rendering::raytracing::Ray<Precision>& rays, bool vtkmNotUsed(returnCellIndex))
+void QuadIntersector::IntersectRaysImp(vtkm::rendering::raytracing::Ray<Precision>& rays, bool vtkmNotUsed(returnCellIndex))
 {
 
   //TODO: finish calling interesction
@@ -267,7 +267,7 @@ void SphereIntersector::IntersectRaysImp(vtkm::rendering::raytracing::Ray<Precis
 }
 
 template <typename Precision>
-void SphereIntersector::IntersectionDataImp(vtkm::rendering::raytracing::Ray<Precision>& rays,
+void QuadIntersector::IntersectionDataImp(vtkm::rendering::raytracing::Ray<Precision>& rays,
                                             const vtkm::cont::Field* scalarField,
                                             const vtkm::Range& scalarRange)
 {
@@ -294,21 +294,21 @@ void SphereIntersector::IntersectionDataImp(vtkm::rendering::raytracing::Ray<Pre
     .Invoke(rays.HitIdx, rays.Scalar, *scalarField, PointIds);
 }
 
-void SphereIntersector::IntersectionData(vtkm::rendering::raytracing::Ray<vtkm::Float32>& rays,
+void QuadIntersector::IntersectionData(vtkm::rendering::raytracing::Ray<vtkm::Float32>& rays,
                                          const vtkm::cont::Field* scalarField,
                                          const vtkm::Range& scalarRange)
 {
   IntersectionDataImp(rays, scalarField, scalarRange);
 }
 
-void SphereIntersector::IntersectionData(vtkm::rendering::raytracing::Ray<vtkm::Float64>& rays,
+void QuadIntersector::IntersectionData(vtkm::rendering::raytracing::Ray<vtkm::Float64>& rays,
                                          const vtkm::cont::Field* scalarField,
                                          const vtkm::Range& scalarRange)
 {
   IntersectionDataImp(rays, scalarField, scalarRange);
 }
 
-vtkm::Id SphereIntersector::GetNumberOfShapes() const
+vtkm::Id QuadIntersector::GetNumberOfShapes() const
 {
   return PointIds.GetNumberOfValues();
 }
