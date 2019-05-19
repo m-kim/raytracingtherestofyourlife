@@ -348,7 +348,6 @@ void intersect(RayType &rays,
   vtkm::Id canvasSize = rays.DirX.GetNumberOfValues();
 
 
-  QuadIntersect quad;
 
   vtkm::cont::ArrayHandle<vtkm::Int32> nodes;
   nodes.Allocate(rays.Dir.GetNumberOfValues());
@@ -364,8 +363,9 @@ void intersect(RayType &rays,
     leafs.GetPortalControl().Set(i+1, i);
   }
 
-  Invoke(quad, nodes, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, cb.pts1, leafs,
-         cb.matIdx[0], cb.texIdx[0], cb.QuadIds);
+  QuadIntersect quad;
+  QuadExecWrapper quadIntersect(cb.ptsIdx, cb.matIdx[0], cb.texIdx[0]);
+  Invoke(quad, nodes, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, quadIntersect, cb.pts1, leafs, cb.QuadIds);
 
   vtkm::cont::ArrayHandle<vtkm::Id> sphereleafs;
   sphereleafs.Allocate(2);
