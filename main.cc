@@ -326,13 +326,15 @@ std::vector<vtkm::cont::ArrayHandle<vec3>> ptsArray;
 using RayType = vtkm::rendering::raytracing::Ray<float>;
 
 template<typename HitRecord,
-         typename HitId>
+         typename HitId,
+         typename emittedType,
+         typename attenType>
 void intersect(RayType &rays,
                HitRecord &hrecs,
                HitId &hids,
                vtkm::cont::ArrayHandle<float> &tmin,
-               ArrayType &emitted,
-               ArrayType &attenuation,
+               emittedType &emitted,
+               attenType &attenuation,
                const vtkm::Id depth)
 {
   using MyAlgos = MyAlgorithms<vtkm::cont::DeviceAdapterAlgorithm<VTKM_DEFAULT_DEVICE_ADAPTER_TAG>, VTKM_DEFAULT_DEVICE_ADAPTER_TAG>;
@@ -380,7 +382,8 @@ void intersect(RayType &rays,
 
 }
 
-template<typename HitRecord, typename HitId, typename ScatterRecord>
+template<typename HitRecord, typename HitId, typename ScatterRecord,
+         typename emittedType>
 void applyMaterials(RayType &rays,
                     HitRecord &hrecs,
                     HitId &hids,
@@ -388,7 +391,7 @@ void applyMaterials(RayType &rays,
                     vtkm::cont::ArrayHandle<vec3> tex,
                     vtkm::cont::ArrayHandle<int> matType,
                     vtkm::cont::ArrayHandle<int> texType,
-                    ArrayType &emitted,
+                    emittedType &emitted,
                     vtkm::cont::ArrayHandle<unsigned int> &seeds,
                     vtkm::Id canvasSize,
                     vtkm::Id depth)
@@ -409,11 +412,12 @@ void applyMaterials(RayType &rays,
 
 }
 
-template<typename HitRecord>
+template<typename HitRecord,
+         typename GenDirType>
 void generateRays(
     vtkm::cont::ArrayHandle<int> &whichPDF,
     HitRecord &hrecs,
-    ArrayType &generated_dir,
+    GenDirType &generated_dir,
     vtkm::cont::ArrayHandle<unsigned int> &seeds,
     std::vector<ArrayType> &light_box_pts,
     std::vector<ArrayType> &light_sphere_pts
@@ -431,14 +435,15 @@ void generateRays(
   Invoke(sphereGenDir, whichPDF, hrecs, generated_dir, seeds, light_sphere_pts[0], light_sphere_pts[1]);
   }
 
-template<typename HitRecord, typename ScatterRecord>
+template<typename HitRecord, typename ScatterRecord,
+         typename attenType, typename GenDirType>
 void applyPDFs(
     RayType &rays,
     HitRecord &hrecs,
     ScatterRecord srecs,
     vtkm::cont::ArrayHandle<vtkm::Float32> &sum_values,
-    ArrayType generated_dir,
-    ArrayType &attenuation,
+    GenDirType generated_dir,
+    attenType &attenuation,
     vtkm::cont::ArrayHandle<unsigned int> &seeds,
     std::vector<ArrayType> light_box_pts,
     std::vector<ArrayType> light_sphere_pts,
@@ -609,19 +614,38 @@ int main(int argc, char *argv[]) {
   using HitId = vtkm::cont::ArrayHandleCompositeVector<decltype(matIdArray), decltype(texIdArray)>;
   auto hids = HitId(matIdArray, texIdArray);
 
-  vtkm::cont::ArrayHandle<float> tmin;
-  ArrayType attenuation;
-  ArrayType emitted;
-  ArrayType generated_dir;
+  rays.AddBuffer(depthcount, "attenuationX");
+  rays.AddBuffer(depthcount, "attenuationY");
+  rays.AddBuffer(depthcount, "attenuationZ");
+  rays.AddBuffer(depthcount, "emittedX");
+  rays.AddBuffer(depthcount, "emittedY");
+  rays.AddBuffer(depthcount, "emittedZ");
+  rays.AddBuffer(1, "generated_dirX");
+  rays.AddBuffer(1, "generated_dirY");
+  rays.AddBuffer(1, "generated_dirZ");
+  rays.AddBuffer(1, "sumtotlx");
+  rays.AddBuffer(1, "sumtotly");
+  rays.AddBuffer(1, "sumtotlz");
+  rays.AddBuffer(1, "sum_values");
+  using vec3CompositeType = vtkm::cont::ArrayHandleCompositeVector<
+    vtkm::cont::ArrayHandle<vtkm::Float32>,
+    vtkm::cont::ArrayHandle<vtkm::Float32>,
+    vtkm::cont::ArrayHandle<vtkm::Float32>>;
+  auto attenuation = vec3CompositeType(
+      rays.GetBuffer("attenuationX").Buffer, rays.GetBuffer("attenuationY").Buffer, rays.GetBuffer("attenuationZ").Buffer);
+  auto emitted = vec3CompositeType(
+        rays.GetBuffer("emittedX").Buffer,rays.GetBuffer("emittedY").Buffer,rays.GetBuffer("emittedZ").Buffer);
+
+  auto generated_dir = vec3CompositeType(
+        rays.GetBuffer("generated_dirX").Buffer,rays.GetBuffer("generated_dirY").Buffer,rays.GetBuffer("generated_dirZ").Buffer);
   vtkm::cont::ArrayHandle<int> whichPDF;
 
-  attenuation.Allocate(canvasSize* depthcount);
-  emitted.Allocate(canvasSize * depthcount);
-  ArrayType sumtotl;
-  sumtotl.Allocate(canvasSize);
-  tmin.Allocate(canvasSize);
-  sum_values.Allocate(nx*ny);
-  generated_dir.Allocate(nx*ny);
+  auto  sumtotl = vec3CompositeType(
+      rays.GetBuffer("sumtotlx").Buffer,rays.GetBuffer("sumtotly").Buffer,rays.GetBuffer("sumtotlz").Buffer);
+
+  auto tmin = rays.MinDistance;
+
+  sum_values = rays.GetBuffer("sum_values").Buffer;
   whichPDF.Allocate(nx*ny);
 
   for (unsigned int i=0; i<canvasSize; i++){
