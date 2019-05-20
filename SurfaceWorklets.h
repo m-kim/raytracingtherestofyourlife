@@ -54,7 +54,7 @@ public:
                   LeafPortalType leafs
                   ) const
   {
-    surf.LeafIntersect(currentNode,
+    surf.IntersectLeaf(currentNode,
                        origin,
                        direction,
                        hrec,
@@ -158,7 +158,7 @@ public:
                   ) const
 
   {
-    surf.LeafIntersect(currentNode,
+    surf.IntersectLeaf(currentNode,
              origin,
              direction,
              hrec,

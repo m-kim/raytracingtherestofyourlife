@@ -1,5 +1,6 @@
 #ifndef SURFACE_H
 #define SURFACE_H
+#include "AABBSurface.h"
 #include "Record.h"
 #include "vec3.h"
 
@@ -206,7 +207,7 @@ public:
            typename LeafPortalType,
            int HitBitIdx = 2,
            int ScatterBitIdx= 3>
-  VTKM_EXEC void LeafIntersect(
+  VTKM_EXEC void IntersectLeaf(
                   const vtkm::Int32 &currentNode,
                   vec3 &origin,
                   vec3 &direction,
@@ -383,7 +384,7 @@ public:
             typename LeafPortalType,
             int HitBitIdx = 2,
             int ScatterBitIdx= 3>
-  VTKM_EXEC void LeafIntersect(
+  VTKM_EXEC void IntersectLeaf(
                         const vtkm::Int32 &currentNode,
                         vec3 &origin,
                         vec3 &direction,
