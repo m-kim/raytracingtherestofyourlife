@@ -52,22 +52,17 @@ public:
   using ControlSignature = void(FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
-  FieldInOut<>,
-  WholeArrayInOut<>,
-  WholeArrayInOut<>
-
+  FieldInOut<>
   );
-  using ExecutionSignature = void(_1, _2, _3, _4, _5, _6);
+  using ExecutionSignature = void(_1, _2, _3, _4);
 
-  template<typename PtArrayType, typename HitRecord>
+  template<typename HitRecord>
   VTKM_EXEC
   void operator()(
       int which,
        HitRecord &hrec,
        vec3 &generated,
-      unsigned int &seed,
-       PtArrayType pt1,
-       PtArrayType pt2
+      unsigned int &seed
     ) const
   {
     if (which <= current ){
@@ -175,7 +170,7 @@ public:
   );
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6);
 
-  template<typename PtArrayType, typename HitRecord>
+  template<typename PtArrayType, typename RadArrayType, typename HitRecord>
   VTKM_EXEC
   void operator()(vtkm::Id idx,
           int &which,
@@ -183,12 +178,12 @@ public:
            vec3 &generated,
                   unsigned int &seed,
            PtArrayType pt1,
-           PtArrayType pt2
+           RadArrayType rad
            ) const
   {
     if (which == current){
       for (int i = 0; i < pt1.GetNumberOfValues(); i++){
-        float radius = pt2.Get(i)[0];
+        float radius = rad.Get(i);
         vec3 p(hrec[static_cast<vtkm::Id>(HR::Px)], hrec[static_cast<vtkm::Id>(HR::Py)], hrec[static_cast<vtkm::Id>(HR::Pz)]);
         generated = random(p, xorshiftWang::getRandF(seed), xorshiftWang::getRandF(seed), pt1.Get(i), radius);
       }
@@ -298,8 +293,7 @@ public:
                   vec3 center, float radius,
                    SurfExec surf) const {
 
-    vtkm::Vec<vtkm::Float32, 9> rec;
-    vtkm::Vec<vtkm::Id,2> hid;
+    vtkm::Vec<vtkm::Float32, 9> rec, hid;
     int matId,texId;
     if (surf.hit(o, v, rec, hid, 0.001, FLT_MAX, center, radius, matId, texId )) {
         float cos_theta_max = sqrt(1 - radius*radius/vtkm::MagnitudeSquared(center-o));
@@ -312,8 +306,8 @@ public:
   }
 
 
-  using ControlSignature = void(FieldInOut<>,
-  FieldInOut<>,
+  using ControlSignature = void(FieldIn<>,
+  FieldIn<>,
   FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
@@ -328,13 +322,14 @@ public:
 
   template<typename PtArrayType,
           typename FlippedType,
-  typename HitRecord,
+          typename HitRecord,
            typename SphereExec,
+           typename RadiiArrayType,
   int ScatterBitIndex = 3>
   VTKM_EXEC
   void operator()(vtkm::Id idx,
-                  vec3 &origin,
-                  vec3 &direction,
+                  const vec3 &origin,
+                  const vec3 &direction,
                   HitRecord &hrec,
                   FlippedType &scattered,
                   float &sum_value,
@@ -342,14 +337,14 @@ public:
                   unsigned int &seed,
                   SphereExec surf,
                   PtArrayType pt1,
-                  PtArrayType pt2
+                  RadiiArrayType radii
                   ) const
   {
     if (scattered & (1UL << ScatterBitIndex)){
       float weight = 1.0/list_size;
       int index = int(xorshiftWang::getRandF(seed) *list_size);
       for (int i = 0; i < pt1.GetNumberOfValues(); i++){
-        float radius = pt2.Get(i)[0];
+        float radius = radii.Get(i);
         vec3 p(hrec[static_cast<vtkm::Id>(HR::Px)], hrec[static_cast<vtkm::Id>(HR::Py)], hrec[static_cast<vtkm::Id>(HR::Pz)]);
         sum_value += weight*pdf_value(p, generated, pt1.Get(i), radius, surf);
       }

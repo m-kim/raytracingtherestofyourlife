@@ -21,7 +21,9 @@ public:
   vtkm::cont::ArrayHandle<vtkm::Id> conn[2];
 
   vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> QuadIds;
-  vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,3>> SphereIds;
+  vtkm::cont::ArrayHandle<vtkm::Id> SphereIds;
+
+  vtkm::cont::ArrayHandle<vtkm::Float32> SphereRadii;
 
   void invert(vtkm::Vec<vec3,4> &pts);
   void build();

@@ -303,18 +303,20 @@ class SphereLeafIntersector
 {
 public:
   using IdHandle = vtkm::cont::ArrayHandle<vtkm::Id>;
-  using Id3Handle = vtkm::cont::ArrayHandle<vtkm::Id3>;
   using FloatHandle = vtkm::cont::ArrayHandle<vtkm::Float32>;
   using IdArrayPortal = typename IdHandle::ExecutionTypes<Device>::PortalConst;
-  using Id3ArrayPortal = typename Id3Handle::ExecutionTypes<Device>::PortalConst;
-  Id3ArrayPortal PointIds;
+  using FloatArrayPortal = typename FloatHandle::ExecutionTypes<Device>::PortalConst;
+  IdArrayPortal PointIds;
   IdArrayPortal MatIdx, TexIdx;
+  FloatArrayPortal Radii;
 
   SphereLeafIntersector(){}
-  SphereLeafIntersector(const Id3Handle& pointIds,
+  SphereLeafIntersector(const IdHandle& pointIds,
+                        const FloatHandle &radii,
                         const IdHandle& matIdx,
                         const IdHandle& texIdx)
     : PointIds(pointIds.PrepareForInput(Device()))
+    , Radii(radii.PrepareForInput(Device()))
     , MatIdx(matIdx.PrepareForInput(Device()))
     , TexIdx(texIdx.PrepareForInput(Device()))
   {
@@ -403,14 +405,14 @@ public:
       for (vtkm::Id i = 1; i <= sphereCount; ++i)
       {
         const vtkm::Id sphereIndex = leafs.Get(currentNode + i);
+        auto radius = Radii.Get(sphereIndex);
         auto pointIndex = PointIds.Get(sphereIndex);
-        vec3 pt = pts.Get(pointIndex[1]);
-        vec3 rpt = pts.Get(pointIndex[2]);
+        vec3 pt = pts.Get(pointIndex);
 
         HitRecord  temp_rec;
         HitId temp_hid;
         auto h =   hit(origin, direction, temp_rec, temp_hid, tmin, tmax,
-                       pt, rpt[0],MatIdx.Get(sphereIndex),TexIdx.Get(sphereIndex));
+                       pt, radius,MatIdx.Get(sphereIndex),TexIdx.Get(sphereIndex));
         if (h){
           tmax = temp_rec[static_cast<vtkm::Id>(HR::T)];
           hrec = temp_rec;
@@ -425,18 +427,20 @@ public:
 
 class SphereExecWrapper : public vtkm::cont::ExecutionObjectBase
 {
-  using IdType = vtkm::Vec<vtkm::Id, 3>;
 public:
-  vtkm::cont::ArrayHandle<IdType> PointIds;
+  vtkm::cont::ArrayHandle<vtkm::Id> PointIds;
+  vtkm::cont::ArrayHandle<vtkm::Float32> Radii;
   vtkm::cont::ArrayHandle<vtkm::Id> MatIdx;
   vtkm::cont::ArrayHandle<vtkm::Id> TexIdx;
 
-  SphereExecWrapper(vtkm::cont::ArrayHandle<IdType> &pointIds,
+  SphereExecWrapper(vtkm::cont::ArrayHandle<vtkm::Id> &pointIds,
+                    vtkm::cont::ArrayHandle<vtkm::Float32> radii,
                     vtkm::cont::ArrayHandle<vtkm::Id> &matIdx,
                     vtkm::cont::ArrayHandle<vtkm::Id> &texIdx
 
                     )
     : PointIds(pointIds)
+    , Radii(radii)
     , MatIdx(matIdx)
     , TexIdx(texIdx)
 
@@ -446,7 +450,7 @@ public:
   template <typename Device>
   VTKM_CONT SphereLeafIntersector<Device> PrepareForExecution(Device) const
   {
-    return SphereLeafIntersector<Device>(PointIds, MatIdx, TexIdx);
+    return SphereLeafIntersector<Device>(PointIds, Radii, MatIdx, TexIdx);
   }
 };
 

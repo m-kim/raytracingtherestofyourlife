@@ -253,15 +253,16 @@ void CornellBox::build()
   close();
 
   //    //sphere
-    SphereIds.GetPortalControl().Set(0, vtkm::Vec<vtkm::Id, 3>(0,pt_idx,pt_idx+1));
+    SphereIds.GetPortalControl().Set(0, pt_idx);
 
     matIdx[1].GetPortalControl().Set(0, 4);
     texIdx[1].GetPortalControl().Set(0, 0);
     shapes[1].GetPortalControl().Set(0, vtkm::CELL_SHAPE_VERTEX);
     numindices[1].GetPortalControl().Set(0, 2);
     pts1.GetPortalControl().Set(pt_idx, vec3(190,90,190));
-    pts1.GetPortalControl().Set(pt_idx+1, vec3(90,0,0));
 
+    SphereRadii.Allocate(1);
+    SphereRadii.GetPortalControl().Set(0, 90);
     coord.SetData(pts1);
 }
 

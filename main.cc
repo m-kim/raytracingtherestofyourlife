@@ -86,6 +86,7 @@ void buildBVH(vtkm::cont::CoordinateSystem &coords)
   vtkm::rendering::raytracing::AABBs aabbSpheres;
   vtkm::worklet::DispatcherMapField<::detail::FindSphereAABBs>(::detail::FindSphereAABBs())
     .Invoke(cb.SphereIds,
+            cb.SphereRadii,
             aabbSpheres.xmins,
             aabbSpheres.ymins,
             aabbSpheres.zmins,
@@ -133,8 +134,9 @@ void intersect(RayType &rays,
   QuadIntersect quad;
   SphereIntersecttWorklet sphereWorklet(canvasSize, depth);
 
+
   QuadExecWrapper quadIntersect(cb.QuadIds, cb.matIdx[0], cb.texIdx[0]);
-  SphereExecWrapper sphereIntersect(cb.SphereIds,cb.matIdx[1], cb.texIdx[1]);
+  SphereExecWrapper sphereIntersect(cb.SphereIds, cb.SphereRadii, cb.matIdx[1], cb.texIdx[1]);
 
 #if 0
    vtkm::cont::ArrayHandle<vtkm::Id> leafs;
@@ -228,7 +230,8 @@ void generateRays(
     GenDirType &generated_dir,
     vtkm::cont::ArrayHandle<unsigned int> &seeds,
     std::vector<ArrayType> &light_box_pts,
-    std::vector<ArrayType> &light_sphere_pts
+    std::vector<ArrayType> &light_sphere_pts,
+    std::vector<vtkm::cont::ArrayHandle<vtkm::Float32>> &light_sphere_radii
     )
 {
   vtkm::worklet::Invoker Invoke;
@@ -238,9 +241,9 @@ void generateRays(
   SphereGenerateDir sphereGenDir(3);
 
   Invoke(genDir, seeds, whichPDF);
-  Invoke(cosGenDir, whichPDF, hrecs, generated_dir, seeds,  light_sphere_pts[0], light_sphere_pts[1]);
+  Invoke(cosGenDir, whichPDF, hrecs, generated_dir, seeds);
   Invoke(xzRectGenDir, whichPDF, hrecs, generated_dir, seeds, light_box_pts[0], light_box_pts[1]);
-  Invoke(sphereGenDir, whichPDF, hrecs, generated_dir, seeds, light_sphere_pts[0], light_sphere_pts[1]);
+  Invoke(sphereGenDir, whichPDF, hrecs, generated_dir, seeds, light_sphere_pts[0], light_sphere_radii[0]);
   }
 
 template<typename HitRecord, typename ScatterRecord,
@@ -255,6 +258,7 @@ void applyPDFs(
     vtkm::cont::ArrayHandle<unsigned int> &seeds,
     std::vector<ArrayType> light_box_pts,
     std::vector<ArrayType> light_sphere_pts,
+    std::vector<vtkm::cont::ArrayHandle<vtkm::Float32>> light_sphere_radii,
     int lightables,
     vtkm::Id canvasSize,
     vtkm::Id depth
@@ -266,9 +270,9 @@ void applyPDFs(
   PDFCosineWorklet pdfWorklet(canvasSize, depth, canvasSize, lightables);
   XZRectExecWrapper xzsurf;
   Invoke(xzPDFWorklet, rays.Origin, rays.Dir,hrecs, rays.Status, sum_values, generated_dir, seeds,xzsurf, light_box_pts[0], light_box_pts[1]);
-  SphereExecWrapper surf(cb.SphereIds,cb.matIdx[1], cb.texIdx[1]);
+  SphereExecWrapper surf(cb.SphereIds, cb.SphereRadii, cb.matIdx[1], cb.texIdx[1]);
 
-  Invoke(spherePDFWorklet, rays.Origin, rays.Dir,hrecs, rays.Status, sum_values, generated_dir, seeds, surf, light_sphere_pts[0], light_sphere_pts[1]);
+  Invoke(spherePDFWorklet, rays.Origin, rays.Dir,hrecs, rays.Status, sum_values, generated_dir, seeds, surf, light_sphere_pts[0], light_sphere_radii[0]);
 
   Invoke(pdfWorklet, rays.Origin, rays.Dir, hrecs, srecs, rays.Status, sum_values, generated_dir,  rays.Origin, rays.Dir, attenuation);
 
@@ -340,7 +344,8 @@ int main(int argc, char *argv[]) {
   auto canvasSize = nx*ny;
 
   constexpr int lightables = 2;
-  std::vector<ArrayType> light_box_pts(2), light_sphere_pts(2);
+  std::vector<ArrayType> light_box_pts(2), light_sphere_pts(1);
+  std::vector<vtkm::cont::ArrayHandle<vtkm::Float32>> light_sphere_radii(1);
   light_box_pts[0].Allocate(1);
   light_box_pts[0].GetPortalControl().Set(0, vec3(213, 554, 227));
   light_box_pts[1].Allocate(1);
@@ -348,8 +353,8 @@ int main(int argc, char *argv[]) {
 
   light_sphere_pts[0].Allocate(1);
   light_sphere_pts[0].GetPortalControl().Set(0, vec3(190, 90, 190));
-  light_sphere_pts[1].Allocate(1);
-  light_sphere_pts[1].GetPortalControl().Set(0, vec3(90,0,0));
+  light_sphere_radii[0].Allocate(1);
+  light_sphere_radii[0].GetPortalControl().Set(0, 90);
 
   cb.build();
 
@@ -493,8 +498,8 @@ int main(int argc, char *argv[]) {
       intersect(rays, hrecs,hids, tmin, emitted, attenuation, depth);
 
       applyMaterials(rays, hrecs, hids, srecs, cb.tex, cb.matType, cb.texType, emitted, seeds, canvasSize, depth);
-      generateRays(whichPDF, hrecs, generated_dir, seeds, light_box_pts, light_sphere_pts);
-      applyPDFs(rays, hrecs, srecs, sum_values, generated_dir, attenuation, seeds, light_box_pts, light_sphere_pts, lightables, canvasSize, depth);
+      generateRays(whichPDF, hrecs, generated_dir, seeds, light_box_pts, light_sphere_pts, light_sphere_radii);
+      applyPDFs(rays, hrecs, srecs, sum_values, generated_dir, attenuation, seeds, light_box_pts, light_sphere_pts, light_sphere_radii, lightables, canvasSize, depth);
 
       vtkm::cont::ArrayHandleCast<vtkm::Int32, vtkm::cont::ArrayHandle<vtkm::UInt8>> castedStatus(rays.Status);
 

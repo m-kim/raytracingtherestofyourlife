@@ -84,6 +84,7 @@ public:
   VTKM_CONT
   FindSphereAABBs() {}
   typedef void ControlSignature(FieldIn<>,
+                                FieldIn<>,
                                 FieldOut<>,
                                 FieldOut<>,
                                 FieldOut<>,
@@ -91,9 +92,10 @@ public:
                                 FieldOut<>,
                                 FieldOut<>,
                                 WholeArrayIn<vtkm::rendering::raytracing::Vec3RenderingTypes>);
-  typedef void ExecutionSignature(_1, _2, _3, _4, _5, _6, _7, _8);
+  typedef void ExecutionSignature(_1, _2, _3, _4, _5, _6, _7, _8, _9);
   template <typename PointPortalType>
-  VTKM_EXEC void operator()(const vtkm::Id3 pointId,
+  VTKM_EXEC void operator()(const vtkm::Id pointId,
+                            const vtkm::Float32& radius,
                             vtkm::Float32& xmin,
                             vtkm::Float32& ymin,
                             vtkm::Float32& zmin,
@@ -105,9 +107,8 @@ public:
     // cast to Float32
     vtkm::Vec<vtkm::Float32, 3> point;
     vtkm::Vec<vtkm::Float32, 3> temp;
-    point = static_cast<vtkm::Vec<vtkm::Float32, 3>>(points.Get(pointId[1]));
+    point = static_cast<vtkm::Vec<vtkm::Float32, 3>>(points.Get(pointId));
 
-    vtkm::Float32 radius = points.Get(pointId[2])[0];
     temp[0] = radius;
     temp[1] = 0.f;
     temp[2] = 0.f;
