@@ -42,7 +42,7 @@ namespace vtkm
 {
 namespace rendering
 {
-namespace pathtracer
+namespace pathtracing
 {
 
 class PixelData : public vtkm::worklet::WorkletMapField

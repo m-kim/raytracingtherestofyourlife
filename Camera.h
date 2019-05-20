@@ -30,7 +30,7 @@ namespace vtkm
 {
 namespace rendering
 {
-namespace pathtracer
+namespace pathtracing
 {
 
 class VTKM_RENDERING_EXPORT Camera

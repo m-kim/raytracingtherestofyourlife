@@ -379,7 +379,7 @@ int main(int argc, char *argv[]) {
 
   sum_values = rays.GetBuffer("sum_values").Buffer;
   whichPDF.Allocate(nx*ny);
-  vtkm::rendering::pathtracer::Camera cam;
+  vtkm::rendering::pathtracing::Camera cam;
   cam.SetPosition(vec3(278,278,-800));
   cam.SetWidth(nx);
   cam.SetHeight(ny);
