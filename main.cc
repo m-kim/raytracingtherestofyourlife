@@ -39,7 +39,6 @@
 
 
 using ArrayType = vtkm::cont::ArrayHandle<vec3>;
-CornellBox cb;
 
 inline vec3 de_nan(const vec3& c) {
     vec3 temp = c;
@@ -65,9 +64,11 @@ vtkm::rendering::raytracing::LinearBVH bvhSphere, bvhQuad;
 
 using RayType = vtkm::rendering::raytracing::Ray<float>;
 
-void buildBVH(vtkm::cont::CoordinateSystem &coords)
+void buildBVH(
+              CornellBox &cb)
 {
 
+  vtkm::cont::CoordinateSystem coords = cb.coord;
   vtkm::rendering::raytracing::AABBs aabbQuads;
   vtkm::worklet::DispatcherMapField<::detail::FindQuadAABBs>(::detail::FindQuadAABBs())
     .Invoke(cb.QuadIds,
@@ -107,7 +108,8 @@ template<typename HitRecord,
          typename HitId,
          typename emittedType,
          typename attenType>
-void intersect(RayType &rays,
+void intersect(CornellBox &cb,
+               RayType &rays,
                HitRecord &hrecs,
                HitId &hids,
                vtkm::cont::ArrayHandle<float> &tmin,
@@ -248,7 +250,7 @@ void generateRays(
 
 template<typename HitRecord, typename ScatterRecord,
          typename attenType, typename GenDirType>
-void applyPDFs(
+void applyPDFs(CornellBox &cb,
     RayType &rays,
     HitRecord &hrecs,
     ScatterRecord srecs,
@@ -340,6 +342,8 @@ int main(int argc, char *argv[]) {
   const int ny = std::get<1>(tup);
   const int ns = std::get<2>(tup);
   const int depthcount = std::get<3>(tup);
+
+  CornellBox cb;
 
   auto canvasSize = nx*ny;
 
@@ -467,7 +471,7 @@ int main(int argc, char *argv[]) {
   cam.SetLookAt(vec3(278,278,-799));
   vtkm::cont::ArrayHandle<unsigned int> seeds = cam.seeds;
 
-  buildBVH(cb.coord);
+  buildBVH(cb);
   for (unsigned int i=0; i<canvasSize; i++){
 
     unsigned int idx = i;
@@ -495,11 +499,11 @@ int main(int argc, char *argv[]) {
     for (int depth=0; depth<depthcount; depth++){
       MyAlgos::Copy<float, float, StorageTag>(0, sum_values);
 
-      intersect(rays, hrecs,hids, tmin, emitted, attenuation, depth);
+      intersect(cb, rays, hrecs,hids, tmin, emitted, attenuation, depth);
 
       applyMaterials(rays, hrecs, hids, srecs, cb.tex, cb.matType, cb.texType, emitted, seeds, canvasSize, depth);
       generateRays(whichPDF, hrecs, generated_dir, seeds, light_box_pts, light_sphere_pts, light_sphere_radii);
-      applyPDFs(rays, hrecs, srecs, sum_values, generated_dir, attenuation, seeds, light_box_pts, light_sphere_pts, light_sphere_radii, lightables, canvasSize, depth);
+      applyPDFs(cb, rays, hrecs, srecs, sum_values, generated_dir, attenuation, seeds, light_box_pts, light_sphere_pts, light_sphere_radii, lightables, canvasSize, depth);
 
       vtkm::cont::ArrayHandleCast<vtkm::Int32, vtkm::cont::ArrayHandle<vtkm::UInt8>> castedStatus(rays.Status);
 
