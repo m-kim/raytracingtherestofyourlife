@@ -201,7 +201,8 @@ public:
     return true;
   }
 
-  template<typename PtArrayType,
+  template<typename Precision,
+           typename PtArrayType,
            typename HitRecord,
            typename HitId,
            typename LeafPortalType,
@@ -209,15 +210,15 @@ public:
            int ScatterBitIdx= 3>
   VTKM_EXEC void IntersectLeaf(
                   const vtkm::Int32 &currentNode,
-                  vec3 &origin,
-                  vec3 &direction,
+                  const vtkm::Vec<Precision,3> &origin,
+                  const vtkm::Vec<Precision,3> &direction,
                   HitRecord &hrec,
                   HitId &hid,
                   float &tmin,
                   float &tmax,
                   vtkm::UInt8 &scattered,
-                  PtArrayType pts,
-                  LeafPortalType leafs
+                  const PtArrayType &pts,
+                  const LeafPortalType &leafs
       ) const
 
   {
@@ -378,7 +379,8 @@ public:
       return false;
   }
 
-  template<typename PtArrayType,
+  template<typename Precision,
+           typename PtArrayType,
             typename HitRecord,
             typename HitId,
             typename LeafPortalType,
@@ -386,15 +388,15 @@ public:
             int ScatterBitIdx= 3>
   VTKM_EXEC void IntersectLeaf(
                         const vtkm::Int32 &currentNode,
-                        vec3 &origin,
-                        vec3 &direction,
+                        const vtkm::Vec<Precision,3> &origin,
+                        const vtkm::Vec<Precision,3> &direction,
                         HitRecord &hrec,
                         HitId &hid,
                         float &tmin,
                         float &tmax,
                         vtkm::UInt8 &scattered,
-                        PtArrayType pts,
-                        LeafPortalType leafs)
+                        const PtArrayType &pts,
+                        const LeafPortalType &leafs)
   {
     if (scattered & (1UL << ScatterBitIdx)){
       const vtkm::Id sphereCount = leafs.Get(currentNode);

@@ -53,6 +53,8 @@ void CornellBox::build()
   texType.GetPortalControl().Set(3, 3); //super bright
   texType.GetPortalControl().Set(4, 0); //dielectric
 
+
+  vtkm::cont::ArrayHandle<vec3> pts1;
   pts1.Allocate(12 * 4 + 2);
   ptsIdx[0].Allocate(12*4);
 
@@ -260,17 +262,24 @@ void CornellBox::build()
     pts1.GetPortalControl().Set(pt_idx, vec3(190,90,190));
     pts1.GetPortalControl().Set(pt_idx+1, vec3(90,0,0));
 
+    coord.SetData(pts1);
 }
 
 vtkm::cont::DataSet CornellBox::buildDataSet()
 {
-  if (pts1.GetNumberOfValues() == 0){
+  if (coord.GetData().GetNumberOfValues() == 0){
     build();
 
   }
 
   vtkm::cont::DataSetBuilderExplicit dsb;
-  auto ds = dsb.Create(pts1, shapes[0], numindices[0], conn[0], "coordinates", "cell");
+
+  vtkm::cont::DataSet ds;
+  ds.AddCoordinateSystem(coord);
+  vtkm::cont::CellSetExplicit<> cellsetQuads;
+  cellsetQuads.Fill(12*4, shapes[0], numindices[0], conn[0], ptsIdx[0]);
+  ds.AddCellSet(cellsetQuads);
+
 
   vtkm::cont::CellSetExplicit<> cellsetSphere;
   cellsetSphere.Fill(1,
@@ -282,4 +291,5 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   ds.AddCellSet(cellsetSphere);
 
 
+  return ds;
 }

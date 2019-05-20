@@ -23,6 +23,9 @@
 #include <omp.h>
 #include <vtkm/cont/Algorithm.h>
 #include <vtkm/worklet/Invoker.h>
+#include <vtkm/rendering/raytracing/BoundingVolumeHierarchy.h>
+#include "BVHTraverser.h"
+
 #include <fstream>
 #include "Worklets.h"
 #include "SurfaceWorklets.h"
@@ -32,6 +35,8 @@
 
 #include "CornellBox.h"
 #include "PathAlgorithms.h"
+#include "AABBSurface.h"
+
 
 using ArrayType = vtkm::cont::ArrayHandle<vec3>;
 CornellBox cb;
@@ -55,11 +60,48 @@ struct Append
 };
 
 
-std::vector<vtkm::cont::ArrayHandle<vec3>> ptsArray;
+vtkm::rendering::raytracing::LinearBVH bvhSphere, bvhQuad;
 
 
 using RayType = vtkm::rendering::raytracing::Ray<float>;
 
+void buildBVH(vtkm::cont::CoordinateSystem &coords)
+{
+
+  vtkm::rendering::raytracing::AABBs aabbQuads;
+  vtkm::worklet::DispatcherMapField<::detail::FindQuadAABBs>(::detail::FindQuadAABBs())
+    .Invoke(cb.QuadIds,
+            aabbQuads.xmins,
+            aabbQuads.ymins,
+            aabbQuads.zmins,
+            aabbQuads.xmaxs,
+            aabbQuads.ymaxs,
+            aabbQuads.zmaxs,
+            cb.coord);
+
+  bvhQuad.SetData(aabbQuads);
+  bvhQuad.Construct();
+
+
+  vtkm::rendering::raytracing::AABBs aabbSpheres;
+  vtkm::worklet::DispatcherMapField<::detail::FindSphereAABBs>(::detail::FindSphereAABBs())
+    .Invoke(cb.SphereIds,
+            aabbSpheres.xmins,
+            aabbSpheres.ymins,
+            aabbSpheres.zmins,
+            aabbSpheres.xmaxs,
+            aabbSpheres.ymaxs,
+            aabbSpheres.zmaxs,
+            cb.coord);
+
+  bvhSphere.SetData(aabbSpheres);
+  bvhSphere.Construct();
+
+
+  //ShapeBounds = bvh.TotalBounds;
+
+
+}
 template<typename HitRecord,
          typename HitId,
          typename emittedType,
@@ -88,7 +130,10 @@ void intersect(RayType &rays,
   for (int j=0; j<nodes.GetNumberOfValues(); j++){
     nodes.GetPortalControl().Set(j, 0);
   }
+  QuadIntersect quad;
+  QuadExecWrapper quadIntersect(cb.QuadIds, cb.matIdx[0], cb.texIdx[0]);
 
+#if 0
    vtkm::cont::ArrayHandle<vtkm::Id> leafs;
   leafs.Allocate(13);
   leafs.GetPortalControl().Set(0, 12);
@@ -97,8 +142,6 @@ void intersect(RayType &rays,
     leafs.GetPortalControl().Set(i+1, i);
   }
 
-  QuadIntersect quad;
-  QuadExecWrapper quadIntersect(cb.QuadIds, cb.matIdx[0], cb.texIdx[0]);
   Invoke(quad,
          nodes,
          rays.Origin,
@@ -109,9 +152,12 @@ void intersect(RayType &rays,
          rays.Distance,
          rays.Status,
          quadIntersect,
-         cb.pts1,
+         cb.coord,
          leafs);
-
+#else
+  vtkm::rendering::pathtracing::BVHTraverser traverser;
+  traverser.IntersectRays(rays, bvhQuad, hrecs, hids, tmin, quadIntersect, cb.coord);
+#endif
   vtkm::cont::ArrayHandle<vtkm::Id> sphereleafs;
   sphereleafs.Allocate(2);
   sphereleafs.GetPortalControl().Set(0, 1);
@@ -119,7 +165,18 @@ void intersect(RayType &rays,
 
   SphereExecWrapper surf(cb.SphereIds,cb.matIdx[1], cb.texIdx[1]);
   SphereIntersecttWorklet sphereIntersect(canvasSize, depth);
-  Invoke(sphereIntersect, nodes, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, surf, cb.pts1, sphereleafs);
+  Invoke(sphereIntersect,
+         nodes,
+         rays.Origin,
+         rays.Dir,
+         hrecs,
+         hids,
+         tmin,
+         rays.Distance,
+         rays.Status,
+         surf,
+         cb.coord,
+         sphereleafs);
 
 
   CollectIntersecttWorklet collectIntersect(canvasSize, depth);
@@ -399,6 +456,7 @@ int main(int argc, char *argv[]) {
   cam.SetLookAt(vec3(278,278,-799));
   vtkm::cont::ArrayHandle<unsigned int> seeds = cam.seeds;
 
+  buildBVH(cb.coord);
   for (unsigned int i=0; i<canvasSize; i++){
 
     unsigned int idx = i;

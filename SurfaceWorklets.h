@@ -27,8 +27,8 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   ExecObject surf,
-  WholeArrayInOut<>,
-  WholeArrayInOut<>
+  WholeArrayIn<>,
+  WholeArrayIn<>
   );
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
 
@@ -50,8 +50,8 @@ public:
                   float &tmax,
                   vtkm::UInt8 &scattered,
                   SphereExec surf,
-                  PtArrayType pts,
-                  LeafPortalType leafs
+                  const PtArrayType &pts,
+                  const LeafPortalType &leafs
                   ) const
   {
     surf.IntersectLeaf(currentNode,
@@ -130,8 +130,8 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   ExecObject surf,
-  WholeArrayInOut<>,
-  WholeArrayInOut<>
+  WholeArrayIn<>,
+  WholeArrayIn<>
   );
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
 
@@ -153,8 +153,8 @@ public:
                   float &tmax,
                   vtkm::UInt8 &scattered,
                   SurfExec &surf,
-                  PtArrayType pts,
-                  LeafPortalType leafs
+                  const PtArrayType &pts,
+                  const LeafPortalType &leafs
                   ) const
 
   {
