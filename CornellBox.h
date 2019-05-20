@@ -12,11 +12,11 @@ public:
   vtkm::cont::ArrayHandle<vtkm::Id> texIdx[2];
   vtkm::cont::ArrayHandle<int> matType, texType;
   vtkm::cont::ArrayHandle<vec3> pts1;
-  vtkm::cont::ArrayHandle<vtkm::UInt8> shapes;
-  vtkm::cont::ArrayHandle<vtkm::Id> ptsIdx;
-  vtkm::cont::ArrayHandle<vtkm::IdComponent> numindices;
+  vtkm::cont::ArrayHandle<vtkm::UInt8> shapes[2];
+  vtkm::cont::ArrayHandle<vtkm::Id> ptsIdx[2];
+  vtkm::cont::ArrayHandle<vtkm::IdComponent> numindices[2];
 
-  vtkm::cont::ArrayHandle<vtkm::Id> conn;
+  vtkm::cont::ArrayHandle<vtkm::Id> conn[2];
 
   vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> QuadIds;
   vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,3>> SphereIds;
@@ -24,7 +24,7 @@ public:
   void invert(vtkm::Vec<vec3,4> &pts);
   void build();
 
-  vtkm::cont::DataSet buildCellSet();
+  vtkm::cont::DataSet buildDataSet();
 };
 
 #endif
