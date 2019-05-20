@@ -259,8 +259,8 @@ public:
           hrec[static_cast<vtkm::Id>(HR::Nx)] = normal[0];
           hrec[static_cast<vtkm::Id>(HR::Ny)] = normal[1];
           hrec[static_cast<vtkm::Id>(HR::Nz)] = normal[2];
-          hid[static_cast<vtkm::Id>(HI::M)] = MatIdx.Get(i-1);
-          hid[static_cast<vtkm::Id>(HI::T)] = TexIdx.Get(i-1);
+          hid[static_cast<vtkm::Id>(HI::M)] = MatIdx.Get(quadIndex);
+          hid[static_cast<vtkm::Id>(HI::T)] = TexIdx.Get(quadIndex);
         }
         scattered |= (h << HitBitIdx);
 
@@ -408,7 +408,7 @@ public:
         HitRecord  temp_rec;
         HitId temp_hid;
         auto h =   hit(origin, direction, temp_rec, temp_hid, tmin, tmax,
-                       pt, rpt[0],MatIdx.Get(i-1),TexIdx.Get(i-1));
+                       pt, rpt[0],MatIdx.Get(sphereIndex),TexIdx.Get(sphereIndex));
         if (h){
           tmax = temp_rec[static_cast<vtkm::Id>(HR::T)];
           hrec = temp_rec;
