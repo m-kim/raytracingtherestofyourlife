@@ -5,8 +5,8 @@ project(PathTracing VERSION 0.1 LANGUAGES CXX)
 find_package(VTKm REQUIRED
   OPTIONAL_COMPONENTS CUDA OpenMP)
 
-set (PathTracingSrc main.cc CornellBox.cpp Camera.cxx  )
-set (PathTracingHdr Worklets.h MapperRayTracer.h CanvasRayTracer.h
+set (PathTracingSrc main.cc CornellBox.cpp Camera.cxx )
+set (PathTracingHdr Worklets.h AABBSurface.h BVHTraverser.h
   EmitWorklet.h ScatterWorklet.h SurfaceWorklets.h Surface.h PdfWorklet.h Record.h onb.h
   CornellBox.h vec3.h wangXor.h)
 
@@ -33,8 +33,8 @@ if(VTKm_ENABLE_CUDA)
 
   target_include_directories(CornellBox_CUDA PUBLIC /home/mark/local/anaconda3/envs/cling/include/)
   target_include_directories(CornellBox_CUDA PUBLIC /home/mark/local/vtk-m-1.3.0/include/vtkm-1.3/)
-  #set_target_properties(CornellBox_CUDA PROPERTIES
-  #  CUDA_STANDARD 14)
+  set_target_properties(CornellBox_CUDA PROPERTIES
+    CUDA_STANDARD 14)
   target_link_libraries(CornellBox_CUDA PUBLIC
     "/home/mark/local/vtk-m-1.3.0/lib/libvtkm_rendering-1.3.so"
     "/home/mark/local/vtk-m-1.3.0/lib/libvtkm_cont-1.3.so"

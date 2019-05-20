@@ -396,7 +396,7 @@ public:
                         float &tmax,
                         vtkm::UInt8 &scattered,
                         const PtArrayType &pts,
-                        const LeafPortalType &leafs)
+                        const LeafPortalType &leafs) const
   {
     if (scattered & (1UL << ScatterBitIdx)){
       const vtkm::Id sphereCount = leafs.Get(currentNode);

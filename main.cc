@@ -131,7 +131,10 @@ void intersect(RayType &rays,
     nodes.GetPortalControl().Set(j, 0);
   }
   QuadIntersect quad;
+  SphereIntersecttWorklet sphereWorklet(canvasSize, depth);
+
   QuadExecWrapper quadIntersect(cb.QuadIds, cb.matIdx[0], cb.texIdx[0]);
+  SphereExecWrapper sphereIntersect(cb.SphereIds,cb.matIdx[1], cb.texIdx[1]);
 
 #if 0
    vtkm::cont::ArrayHandle<vtkm::Id> leafs;
@@ -154,18 +157,12 @@ void intersect(RayType &rays,
          quadIntersect,
          cb.coord,
          leafs);
-#else
-  vtkm::rendering::pathtracing::BVHTraverser traverser;
-  traverser.IntersectRays(rays, bvhQuad, hrecs, hids, tmin, quadIntersect, cb.coord);
-#endif
   vtkm::cont::ArrayHandle<vtkm::Id> sphereleafs;
   sphereleafs.Allocate(2);
   sphereleafs.GetPortalControl().Set(0, 1);
   sphereleafs.GetPortalControl().Set(1, 0);
 
-  SphereExecWrapper surf(cb.SphereIds,cb.matIdx[1], cb.texIdx[1]);
-  SphereIntersecttWorklet sphereIntersect(canvasSize, depth);
-  Invoke(sphereIntersect,
+  Invoke(sphereWorklet,
          nodes,
          rays.Origin,
          rays.Dir,
@@ -177,6 +174,15 @@ void intersect(RayType &rays,
          surf,
          cb.coord,
          sphereleafs);
+#else
+  vtkm::rendering::pathtracing::BVHTraverser traverser;
+  traverser.IntersectRays(rays, bvhQuad, hrecs, hids, tmin, quadIntersect, cb.coord);
+
+  vtkm::rendering::pathtracing::BVHTraverser traverser2;
+  traverser2.IntersectRays(rays, bvhSphere, hrecs, hids, tmin, sphereIntersect, cb.coord);
+
+#endif
+
 
 
   CollectIntersecttWorklet collectIntersect(canvasSize, depth);
