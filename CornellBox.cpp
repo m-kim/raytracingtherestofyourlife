@@ -4,6 +4,8 @@
 #include <vtkm/cont/ArrayCopy.h>
 #include <vtkm/cont/ArrayHandleCounting.h>
 #include "vtkm/cont/DataSetBuilderExplicit.h"
+#include "SphereExtractor.h"
+#include "QuadExtractor.h"
 
 void CornellBox::invert(vtkm::Vec<vec3,4> &pts)
 {
@@ -56,13 +58,13 @@ void CornellBox::build()
 
   vtkm::cont::ArrayHandle<vec3> pts1;
   pts1.Allocate(12 * 4 + 2);
-  ptsIdx[0].Allocate(12*4);
+  ptsIdx[0].Allocate(12);
 
   numindices[0].Allocate(12);
   shapes[0].Allocate(12);
   conn[0].Allocate(12);
   QuadIds.Allocate(12);
-  vtkm::cont::ArrayCopy(vtkm::cont::ArrayHandleCounting<vtkm::Id>(0,1, 12*4), ptsIdx[0]);
+  vtkm::cont::ArrayCopy(vtkm::cont::ArrayHandleCounting<vtkm::Id>(0,1, 12), ptsIdx[0]);
   vtkm::cont::ArrayCopy(vtkm::cont::ArrayHandleCounting<vtkm::Id>(0,1, 12*4), conn[0]);
 
   numindices[1].Allocate(1);
@@ -291,6 +293,8 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
 
   ds.AddCellSet(cellsetSphere);
 
+  vtkm::rendering::raytracing::SphereExtractor sphereExtractor;
+  sphereExtractor.ExtractCells(cellsetSphere, 90);
 
   return ds;
 }
