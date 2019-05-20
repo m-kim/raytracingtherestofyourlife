@@ -49,16 +49,16 @@ template <typename Device>
 class QuadLeafIntersector
 {
 public:
+  using Id5Handle = vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>>;
   using IdHandle = vtkm::cont::ArrayHandle<vtkm::Id>;
-  using Id2Handle = vtkm::cont::ArrayHandle<vtkm::Id2>;
   using FloatHandle = vtkm::cont::ArrayHandle<vtkm::Float32>;
   using IdArrayPortal = typename IdHandle::ExecutionTypes<Device>::PortalConst;
-  using Id2ArrayPortal = typename Id2Handle::ExecutionTypes<Device>::PortalConst;
-  IdArrayPortal PointIds;
+  using Id5ArrayPortal = typename Id5Handle::ExecutionTypes<Device>::PortalConst;
+  Id5ArrayPortal PointIds;
   IdArrayPortal MatIdx, TexIdx;
 
   QuadLeafIntersector(){}
-  QuadLeafIntersector(const IdHandle& pointIds,
+  QuadLeafIntersector(const Id5Handle& pointIds,
                         const IdHandle& matIdx,
                         const IdHandle& texIdx)
     : PointIds(pointIds.PrepareForInput(Device()))
@@ -204,7 +204,6 @@ public:
            typename HitRecord,
            typename HitId,
            typename LeafPortalType,
-           typename IdArrayPortal,
            int HitBitIdx = 2,
            int ScatterBitIdx= 3>
   VTKM_EXEC void LeafIntersect(
@@ -217,9 +216,8 @@ public:
                   float &tmax,
                   vtkm::UInt8 &scattered,
                   PtArrayType pts,
-                  LeafPortalType leafs,
-                  IdArrayPortal QuadIds
-                  ) const
+                  LeafPortalType leafs
+      ) const
 
   {
 
@@ -228,45 +226,43 @@ public:
       for (vtkm::Id i = 1; i <= quadCount; ++i)
       {
         const vtkm::Id quadIndex = leafs.Get(currentNode + i);
-        if (quadIndex < QuadIds.GetNumberOfValues())
-        {
-          auto pointIndex = QuadIds.Get(quadIndex);
+        auto pointIndex = PointIds.Get(quadIndex);
 
-          vec3 q, r, s, t;
-          q = pts.Get(pointIndex[1]);
-          r = pts.Get(pointIndex[2]);
-          s = pts.Get(pointIndex[3]);
-          t = pts.Get(pointIndex[4]);
+        vec3 q, r, s, t;
+        q = pts.Get(pointIndex[1]);
+        r = pts.Get(pointIndex[2]);
+        s = pts.Get(pointIndex[3]);
+        t = pts.Get(pointIndex[4]);
 
-          HitRecord temp_rec;
+        HitRecord temp_rec;
 
-          auto h = hit(origin, direction, q,r,s,t,
-                        temp_rec[static_cast<vtkm::Id>(HR::U)],
-                        temp_rec[static_cast<vtkm::Id>(HR::V)],
-                        temp_rec[static_cast<vtkm::Id>(HR::T)]);
-          h = h && (temp_rec[static_cast<vtkm::Id>(HR::T)] < tmax) &&
-              (temp_rec[static_cast<vtkm::Id>(HR::T)] > tmin);
-          if (h){
-            tmax = temp_rec[static_cast<vtkm::Id>(HR::T)];
-            hrec = temp_rec;
+        auto h = hit(origin, direction, q,r,s,t,
+                      temp_rec[static_cast<vtkm::Id>(HR::U)],
+                      temp_rec[static_cast<vtkm::Id>(HR::V)],
+                      temp_rec[static_cast<vtkm::Id>(HR::T)]);
+        h = h && (temp_rec[static_cast<vtkm::Id>(HR::T)] < tmax) &&
+            (temp_rec[static_cast<vtkm::Id>(HR::T)] > tmin);
+        if (h){
+          tmax = temp_rec[static_cast<vtkm::Id>(HR::T)];
+          hrec = temp_rec;
 
-            vec3 normal = vtkm::TriangleNormal(q,r,s);
-            vtkm::Normalize(normal);
-            if (vtkm::dot(normal, direction) > 0.f)
-              normal = -normal;
+          vec3 normal = vtkm::TriangleNormal(q,r,s);
+          vtkm::Normalize(normal);
+          if (vtkm::dot(normal, direction) > 0.f)
+            normal = -normal;
 
-            vec3 p(origin + direction * tmax);
-            hrec[static_cast<vtkm::Id>(HR::Px)] = p[0];
-            hrec[static_cast<vtkm::Id>(HR::Py)] = p[1];
-            hrec[static_cast<vtkm::Id>(HR::Pz)] = p[2];
-            hrec[static_cast<vtkm::Id>(HR::Nx)] = normal[0];
-            hrec[static_cast<vtkm::Id>(HR::Ny)] = normal[1];
-            hrec[static_cast<vtkm::Id>(HR::Nz)] = normal[2];
-            hid[static_cast<vtkm::Id>(HI::M)] = MatIdx.Get(i-1);
-            hid[static_cast<vtkm::Id>(HI::T)] = TexIdx.Get(i-1);
-          }
-          scattered |= (h << HitBitIdx);
+          vec3 p(origin + direction * tmax);
+          hrec[static_cast<vtkm::Id>(HR::Px)] = p[0];
+          hrec[static_cast<vtkm::Id>(HR::Py)] = p[1];
+          hrec[static_cast<vtkm::Id>(HR::Pz)] = p[2];
+          hrec[static_cast<vtkm::Id>(HR::Nx)] = normal[0];
+          hrec[static_cast<vtkm::Id>(HR::Ny)] = normal[1];
+          hrec[static_cast<vtkm::Id>(HR::Nz)] = normal[2];
+          hid[static_cast<vtkm::Id>(HI::M)] = MatIdx.Get(i-1);
+          hid[static_cast<vtkm::Id>(HI::T)] = TexIdx.Get(i-1);
         }
+        scattered |= (h << HitBitIdx);
+
       }
     }
   }
@@ -274,13 +270,13 @@ public:
 };
 class QuadExecWrapper : public vtkm::cont::ExecutionObjectBase
 {
-
+  using IdType = vtkm::Vec<vtkm::Id, 5>;
 public:
-  vtkm::cont::ArrayHandle<vtkm::Id> &PointIds;
+  vtkm::cont::ArrayHandle<IdType> &PointIds;
   vtkm::cont::ArrayHandle<vtkm::Id> &MatIdx;
   vtkm::cont::ArrayHandle<vtkm::Id> &TexIdx;
 
-  QuadExecWrapper(vtkm::cont::ArrayHandle<vtkm::Id> &pointIds,
+  QuadExecWrapper(vtkm::cont::ArrayHandle<IdType> &pointIds,
                     vtkm::cont::ArrayHandle<vtkm::Id> &matIdx,
                     vtkm::cont::ArrayHandle<vtkm::Id> &texIdx
 
@@ -305,15 +301,15 @@ class SphereLeafIntersector
 {
 public:
   using IdHandle = vtkm::cont::ArrayHandle<vtkm::Id>;
-  using Id2Handle = vtkm::cont::ArrayHandle<vtkm::Id2>;
+  using Id3Handle = vtkm::cont::ArrayHandle<vtkm::Id3>;
   using FloatHandle = vtkm::cont::ArrayHandle<vtkm::Float32>;
   using IdArrayPortal = typename IdHandle::ExecutionTypes<Device>::PortalConst;
-  using Id2ArrayPortal = typename Id2Handle::ExecutionTypes<Device>::PortalConst;
-  IdArrayPortal PointIds;
+  using Id3ArrayPortal = typename Id3Handle::ExecutionTypes<Device>::PortalConst;
+  Id3ArrayPortal PointIds;
   IdArrayPortal MatIdx, TexIdx;
 
   SphereLeafIntersector(){}
-  SphereLeafIntersector(const IdHandle& pointIds,
+  SphereLeafIntersector(const Id3Handle& pointIds,
                         const IdHandle& matIdx,
                         const IdHandle& texIdx)
     : PointIds(pointIds.PrepareForInput(Device()))
@@ -385,7 +381,6 @@ public:
             typename HitRecord,
             typename HitId,
             typename LeafPortalType,
-            typename Id2ArrayPortal,
             int HitBitIdx = 2,
             int ScatterBitIdx= 3>
   VTKM_EXEC void LeafIntersect(
@@ -397,7 +392,6 @@ public:
                         float &tmin,
                         float &tmax,
                         vtkm::UInt8 &scattered,
-                        Id2ArrayPortal SphereIds,
                         PtArrayType pts,
                         LeafPortalType leafs)
   {
@@ -406,23 +400,20 @@ public:
       for (vtkm::Id i = 1; i <= sphereCount; ++i)
       {
         const vtkm::Id sphereIndex = leafs.Get(currentNode + i);
-        if (sphereIndex < SphereIds.GetNumberOfValues())
-        {
-          auto pointIndex = SphereIds.Get(sphereIndex);
-          vec3 pt = pts.Get(pointIndex[1]);
-          vec3 rpt = pts.Get(pointIndex[2]);
+        auto pointIndex = PointIds.Get(sphereIndex);
+        vec3 pt = pts.Get(pointIndex[1]);
+        vec3 rpt = pts.Get(pointIndex[2]);
 
-          HitRecord  temp_rec;
-          HitId temp_hid;
-          auto h =   hit(origin, direction, temp_rec, temp_hid, tmin, tmax,
-                         pt, rpt[0],MatIdx.Get(i-1),TexIdx.Get(i-1));
-          if (h){
-            tmax = temp_rec[static_cast<vtkm::Id>(HR::T)];
-            hrec = temp_rec;
-            hid = temp_hid;
-          }
-          scattered |= (h << HitBitIdx);
+        HitRecord  temp_rec;
+        HitId temp_hid;
+        auto h =   hit(origin, direction, temp_rec, temp_hid, tmin, tmax,
+                       pt, rpt[0],MatIdx.Get(i-1),TexIdx.Get(i-1));
+        if (h){
+          tmax = temp_rec[static_cast<vtkm::Id>(HR::T)];
+          hrec = temp_rec;
+          hid = temp_hid;
         }
+        scattered |= (h << HitBitIdx);
       }
     }
   }
@@ -431,13 +422,13 @@ public:
 
 class SphereExecWrapper : public vtkm::cont::ExecutionObjectBase
 {
-
+  using IdType = vtkm::Vec<vtkm::Id, 3>;
 public:
-  vtkm::cont::ArrayHandle<vtkm::Id> &PointIds;
-  vtkm::cont::ArrayHandle<vtkm::Id> &MatIdx;
-  vtkm::cont::ArrayHandle<vtkm::Id> &TexIdx;
+  vtkm::cont::ArrayHandle<IdType> PointIds;
+  vtkm::cont::ArrayHandle<vtkm::Id> MatIdx;
+  vtkm::cont::ArrayHandle<vtkm::Id> TexIdx;
 
-  SphereExecWrapper(vtkm::cont::ArrayHandle<vtkm::Id> &pointIds,
+  SphereExecWrapper(vtkm::cont::ArrayHandle<IdType> &pointIds,
                     vtkm::cont::ArrayHandle<vtkm::Id> &matIdx,
                     vtkm::cont::ArrayHandle<vtkm::Id> &texIdx
 

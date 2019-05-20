@@ -98,17 +98,28 @@ void intersect(RayType &rays,
   }
 
   QuadIntersect quad;
-  QuadExecWrapper quadIntersect(cb.ptsIdx, cb.matIdx[0], cb.texIdx[0]);
-  Invoke(quad, nodes, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, quadIntersect, cb.pts1, leafs, cb.QuadIds);
+  QuadExecWrapper quadIntersect(cb.QuadIds, cb.matIdx[0], cb.texIdx[0]);
+  Invoke(quad,
+         nodes,
+         rays.Origin,
+         rays.Dir,
+         hrecs,
+         hids,
+         tmin,
+         rays.Distance,
+         rays.Status,
+         quadIntersect,
+         cb.pts1,
+         leafs);
 
   vtkm::cont::ArrayHandle<vtkm::Id> sphereleafs;
   sphereleafs.Allocate(2);
   sphereleafs.GetPortalControl().Set(0, 1);
   sphereleafs.GetPortalControl().Set(1, 0);
 
-  SphereExecWrapper surf(cb.ptsIdx,cb.matIdx[1], cb.texIdx[1]);
+  SphereExecWrapper surf(cb.SphereIds,cb.matIdx[1], cb.texIdx[1]);
   SphereIntersecttWorklet sphereIntersect(canvasSize, depth);
-  Invoke(sphereIntersect, nodes, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, surf, cb.SphereIds, cb.pts1, sphereleafs);
+  Invoke(sphereIntersect, nodes, rays.Origin, rays.Dir, hrecs, hids, tmin, rays.Distance, rays.Status, surf, cb.pts1, sphereleafs);
 
 
   CollectIntersecttWorklet collectIntersect(canvasSize, depth);
@@ -192,7 +203,7 @@ void applyPDFs(
   PDFCosineWorklet pdfWorklet(canvasSize, depth, canvasSize, lightables);
   XZRectExecWrapper xzsurf;
   Invoke(xzPDFWorklet, rays.Origin, rays.Dir,hrecs, rays.Status, sum_values, generated_dir, seeds,xzsurf, light_box_pts[0], light_box_pts[1]);
-  SphereExecWrapper surf(cb.ptsIdx,cb.matIdx[1], cb.texIdx[1]);
+  SphereExecWrapper surf(cb.SphereIds,cb.matIdx[1], cb.texIdx[1]);
 
   Invoke(spherePDFWorklet, rays.Origin, rays.Dir,hrecs, rays.Status, sum_values, generated_dir, seeds, surf, light_sphere_pts[0], light_sphere_pts[1]);
 

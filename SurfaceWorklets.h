@@ -28,17 +28,15 @@ public:
   FieldInOut<>,
   ExecObject surf,
   WholeArrayInOut<>,
-  WholeArrayInOut<>,
   WholeArrayInOut<>
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
 
   template<typename PtArrayType,
             typename HitRecord,
             typename HitId,
             typename SphereExec,
             typename LeafPortalType,
-            typename Id2ArrayPortal,
             int HitBitIdx = 2,
             int ScatterBitIdx= 3>
   VTKM_EXEC
@@ -52,7 +50,6 @@ public:
                   float &tmax,
                   vtkm::UInt8 &scattered,
                   SphereExec surf,
-                  Id2ArrayPortal SphereIds,
                   PtArrayType pts,
                   LeafPortalType leafs
                   ) const
@@ -65,7 +62,6 @@ public:
                        tmin,
                        tmax,
                        scattered,
-                       SphereIds,
                        pts,
                        leafs);
   }
@@ -135,17 +131,15 @@ public:
   FieldInOut<>,
   ExecObject surf,
   WholeArrayInOut<>,
-  WholeArrayInOut<>,
   WholeArrayInOut<>
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
 
   template<typename PtArrayType,
            typename HitRecord,
            typename HitId,
            typename SurfExec,
            typename LeafPortalType,
-           typename IdArrayPortal,
            int HitBitIdx = 2,
            int ScatterBitIdx= 3>
   VTKM_EXEC
@@ -160,8 +154,7 @@ public:
                   vtkm::UInt8 &scattered,
                   SurfExec &surf,
                   PtArrayType pts,
-                  LeafPortalType leafs,
-                  IdArrayPortal QuadIds
+                  LeafPortalType leafs
                   ) const
 
   {
@@ -174,8 +167,7 @@ public:
              tmax,
              scattered,
              pts,
-             leafs,
-             QuadIds);
+             leafs);
 
   }
 };
