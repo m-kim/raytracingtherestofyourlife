@@ -226,12 +226,13 @@ void applyMaterials(RayType &rays,
 
 template<typename HitRecord,
          typename GenDirType>
-void generateRays(
+void generateRays(CornellBox &cb,
     vtkm::cont::ArrayHandle<int> &whichPDF,
     HitRecord &hrecs,
     GenDirType &generated_dir,
     vtkm::cont::ArrayHandle<unsigned int> &seeds,
-    std::vector<ArrayType> &light_box_pts,
+    vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>>  light_box_pointids,
+    vtkm::cont::ArrayHandle<vtkm::Id> light_box_indices,
     std::vector<ArrayType> &light_sphere_pts,
     std::vector<vtkm::cont::ArrayHandle<vtkm::Float32>> &light_sphere_radii
     )
@@ -239,12 +240,12 @@ void generateRays(
   vtkm::worklet::Invoker Invoke;
   GenerateDir genDir(3);
   CosineGenerateDir cosGenDir(1);
-  XZRectGenerateDir xzRectGenDir(2);
+  QuadGenerateDir quadGenDir(2);
   SphereGenerateDir sphereGenDir(3);
 
   Invoke(genDir, seeds, whichPDF);
   Invoke(cosGenDir, whichPDF, hrecs, generated_dir, seeds);
-  Invoke(xzRectGenDir, whichPDF, hrecs, generated_dir, seeds, light_box_pts[0], light_box_pts[1]);
+  Invoke(quadGenDir, whichPDF, hrecs, generated_dir, seeds, light_box_pointids, light_box_indices, cb.coord);
   Invoke(sphereGenDir, whichPDF, hrecs, generated_dir, seeds, light_sphere_pts[0], light_sphere_radii[0]);
   }
 
@@ -351,12 +352,12 @@ int main(int argc, char *argv[]) {
   auto canvasSize = nx*ny;
 
   constexpr int lightables = 2;
-  std::vector<ArrayType> light_box_pts(2), light_sphere_pts(1);
+  std::vector<ArrayType> light_sphere_pts(1);
   std::vector<vtkm::cont::ArrayHandle<vtkm::Float32>> light_sphere_radii(1);
-  light_box_pts[0].Allocate(1);
-  light_box_pts[0].GetPortalControl().Set(0, vec3(213, 554, 227));
-  light_box_pts[1].Allocate(1);
-  light_box_pts[1].GetPortalControl().Set(0, vec3(343, 554, 332));
+  vtkm::Vec<vtkm::Id, 5> tmp[] = {vtkm::Vec<vtkm::Id,5>(0,8,9,10,11)};
+  auto light_box_pointids = vtkm::cont::make_ArrayHandle(tmp,1);
+  vtkm::Id tmp2[] = {0};
+  auto light_box_indices = vtkm::cont::make_ArrayHandle(tmp2,1);
 
   light_sphere_pts[0].Allocate(1);
   light_sphere_pts[0].GetPortalControl().Set(0, vec3(190, 90, 190));
@@ -506,12 +507,8 @@ int main(int argc, char *argv[]) {
       intersect(cb, rays, hrecs,hids, tmin, emitted, attenuation, depth);
 
       applyMaterials(rays, hrecs, hids, srecs, cb.tex, cb.matType, cb.texType, emitted, seeds, canvasSize, depth);
-      generateRays(whichPDF, hrecs, generated_dir, seeds, light_box_pts, light_sphere_pts, light_sphere_radii);
+      generateRays(cb, whichPDF, hrecs, generated_dir, seeds, light_box_pointids,light_box_indices, light_sphere_pts, light_sphere_radii);
 
-      vtkm::Vec<vtkm::Id, 5> tmp[] = {vtkm::Vec<vtkm::Id,5>(0,8,9,10,11)};
-      auto light_box_pointids = vtkm::cont::make_ArrayHandle(tmp,1);
-      vtkm::Id tmp2[] = {0};
-      auto light_box_indices = vtkm::cont::make_ArrayHandle(tmp2,1);
       applyPDFs(cb, rays, hrecs, srecs, sum_values, generated_dir, attenuation, seeds,
                 light_box_pointids, light_box_indices, light_sphere_pts, light_sphere_radii, lightables, canvasSize, depth);
 

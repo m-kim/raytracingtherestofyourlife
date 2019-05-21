@@ -78,15 +78,18 @@ public:
   int current;
 };
 
-class XZRectGenerateDir : public vtkm::worklet::WorkletMapField
+class QuadGenerateDir : public vtkm::worklet::WorkletMapField
 {
 public:
   VTKM_EXEC_CONT
-  XZRectGenerateDir(int cur = 1): current(cur) {}
+  QuadGenerateDir(int cur = 1): current(cur) {}
   VTKM_EXEC
-  vec3 random(const vec3& o, float r1, float r2,
-              float x0, float x1, float z0, float z1, float k) const {
-      vec3 random_point = vec3(x0 + r1*(x1-x0), k,  z0 + r2*(z1-z0));
+  vec3 random(const vec3& o, unsigned int &seed,
+              float x0, float x1, float y0, float y1, float z0, float z1) const {
+    auto r1 = xorshiftWang::getRandF(seed);
+    auto r2 = xorshiftWang::getRandF(seed);
+    auto r3 = xorshiftWang::getRandF(seed);
+      vec3 random_point = vec3(x0 + r1*(x1-x0), y0 + r2*(y1 - y0),  z0 + r3*(z1-z0));
       return random_point - o;
   }
 
@@ -94,32 +97,39 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
-  WholeArrayInOut<>,
-  WholeArrayInOut<>
+  WholeArrayIn<>,
+  WholeArrayIn<>,
+  WholeArrayIn<>
 
   );
-  using ExecutionSignature = void(_1, _2, _3, _4, _5, _6);
+  using ExecutionSignature = void(_1, _2, _3, _4, _5, _6, _7);
 
-  template<typename PtArrayType, typename HitRecord>
+  template<typename PtArrayType, typename HitRecord,
+           typename PointIdType, typename QuadIndicesType>
   VTKM_EXEC
   void operator()(int which,
-           HitRecord &hrec,
-           vec3 &generated,
-           unsigned int &seed,
-           PtArrayType pt1,
-           PtArrayType pt2
-           ) const
+                  HitRecord &hrec,
+                  vec3 &generated,
+                  unsigned int &seed,
+                  const PointIdType &PointIds,
+                  const QuadIndicesType &quadIndices,
+                  const PtArrayType pts
+                  ) const
   {
     if (current == which){
-      for (int i = 0; i < pt1.GetNumberOfValues(); i++){
-        float x0 = pt1.Get(i)[0];
-        float x1 = pt2.Get(i)[0];
-        float z0 = pt1.Get(i)[2];
-        float z1 = pt2.Get(i)[2];
-        float k = pt1.Get(i)[1];
+      for (int quadIndex=0; quadIndex<quadIndices.GetNumberOfValues(); quadIndex++){
+        auto pointIndex = PointIds.Get(quadIndex);
+
+        auto pt1 = pts.Get(pointIndex[1]);
+        auto pt2 = pts.Get(pointIndex[3]);
+        float x0 = pt1[0];
+        float x1 = pt2[0];
+        float z0 = pt1[2];
+        float z1 = pt2[2];
+        float y0 = pt1[1];
+        float y1 = pt1[1];
         vec3 p(hrec[static_cast<vtkm::Id>(HR::Px)], hrec[static_cast<vtkm::Id>(HR::Py)], hrec[static_cast<vtkm::Id>(HR::Pz)]);
-        generated = random(p, xorshiftWang::getRandF(seed), xorshiftWang::getRandF(seed),
-                           x0,x1,z0,z1,k);
+        generated = random(p,seed, x0,x1,y0,y1,z0,z1);
       }
     }
   }
