@@ -96,14 +96,14 @@ public:
   template <typename VecType, typename OutputPortal>
   VTKM_EXEC void operator()(const vtkm::Id& pointOffset,
                             vtkm::CellShapeTagGeneric shapeType,
-                            const VecType& vtkmNotUsed(cellIndices),
+                            const VecType& cellIndices,
                             const vtkm::Id& cellId,
                             OutputPortal& outputIndices) const
   {
 
     if (shapeType.Id == vtkm::CELL_SHAPE_VERTEX)
     {
-      outputIndices.Set(pointOffset, cellId);
+      outputIndices.Set(pointOffset, cellIndices[pointOffset]);
     }
   }
 }; //class pointify
