@@ -13,6 +13,7 @@
 #include <limits>
 #include <vector>
 #include <tuple>
+#include <sstream>
 #include <vtkm/cont/ArrayHandleConstant.h>
 #include "Camera.h"
 #include <vtkm/cont/internal/DeviceAdapterAlgorithmGeneral.h>
@@ -348,7 +349,8 @@ parse(int argc, char **argv){
   return std::make_tuple(x,y, s, depth);
 }
 
-ArrayType run(int nx, int ny, int samplecount, int depthcount)
+ArrayType run(int nx, int ny, int samplecount, int depthcount,
+              vtkm::rendering::Canvas &canvas, vtkm::rendering::pathtracing::Camera &rayCam)
 {
   using MyAlgos = details::PathAlgorithms<vtkm::cont::DeviceAdapterAlgorithm<VTKM_DEFAULT_DEVICE_ADAPTER_TAG>, VTKM_DEFAULT_DEVICE_ADAPTER_TAG>;
   using StorageTag = vtkm::cont::StorageTagBasic;
@@ -476,20 +478,9 @@ ArrayType run(int nx, int ny, int samplecount, int depthcount)
 
   auto tmin = rays.MinDistance;
 
-  vtkm::rendering::CanvasRayTracer canvas(nx,ny);
   sum_values = rays.GetBuffer("sum_values").Buffer;
   vtkm::Bounds bounds(vtkm::Range(0,555), vtkm::Range(0,555), vtkm::Range(0,555));
   whichPDF.Allocate(nx*ny);
-//  vtkm::rendering::Camera cam;
-//  cam.ResetToBounds(bounds);
-  vtkm::rendering::pathtracing::Camera rayCam;
-//  rayCam.SetParameters(cam,canvas);
-  rayCam.SetPosition(vec3(278,278,-800));
-  rayCam.SetWidth(nx);
-  rayCam.SetHeight(ny);
-  rayCam.SetFieldOfView(40);
-  rayCam.SetUp(vec3(0,1,0));
-  rayCam.SetLookAt(vec3(278,278,278));
   vtkm::cont::ArrayHandle<unsigned int> seeds = rayCam.seeds;
 
   buildBVH(cb);
@@ -574,7 +565,7 @@ ArrayType run(int nx, int ny, int samplecount, int depthcount)
   return cols;
 }
 
-void save(std::string &fn,
+void save(std::string fn,
           int nx, int ny, int samplecount,
           vtkm::cont::ArrayHandle<vec3> &cols)
 {
@@ -607,8 +598,35 @@ int main(int argc, char *argv[]) {
   const int samplecount = std::get<2>(tup);
   const int depthcount = std::get<3>(tup);
 
-  auto cols = run(nx,ny, samplecount, depthcount);
-  std::string str("output.pnm");
-  save(str, nx, ny, samplecount, cols);
+  vtkm::rendering::CanvasRayTracer canvas(nx,ny);
+  vtkm::rendering::pathtracing::Camera rayCam;
+  rayCam.SetPosition(vec3(278,278,-800));
+  rayCam.SetWidth(nx);
+  rayCam.SetHeight(ny);
+  rayCam.SetFieldOfView(40);
+  rayCam.SetUp(vec3(0,1,0));
+  rayCam.SetLookAt(vec3(278,278,278));
+
+  int numPhi = 30;
+  int numTheta = 30;
+
+  float rTheta = (2.0*M_PI)/float(numTheta);
+  float rPhi = (M_PI/2.0)/float(numPhi);
+
+  float r = -1078;
+  for (int i=0; i<numTheta; i++){
+    for (int j=0; j<numPhi; j++){
+      auto x = r * cos(i * rTheta) * sin(j * rPhi);
+      auto y = r * sin(i * rTheta) * sin(j * rPhi);
+      auto z = r * cos(i*rPhi);
+
+      vec3 pos(x+278, y+278, z+278 );
+      rayCam.SetPosition(pos);
+      auto cols = run(nx,ny, samplecount, depthcount, canvas, rayCam);
+      std::stringstream sstr;
+      sstr << "output-" << i*rTheta << "-" << j*rPhi << ".pnm";
+      save(sstr.str(), nx, ny, samplecount, cols);
+    }
+  }
 }
 
