@@ -4,47 +4,6 @@
 #include "Record.h"
 #include "vec3.h"
 
-class XZRect
-{
-public:
-  VTKM_EXEC_CONT XZRect(){}
-  template<typename HitRecord, typename HitId>
-  VTKM_EXEC
-  bool hit(const vec3& origin,
-           const vec3& dir,
-                  HitRecord& rec,
-                  HitId &hid,
-                  float tmin, float tmax,
-                  float x0, float x1, float z0, float z1,
-                  float k,
-                  int matId,
-                  int texId) const
-  {
-    float t = (k-origin[1]) / dir[1];
-    if (t < tmin || t > tmax)
-        return false;
-    float x = origin[0] + t*dir[0];
-    float z = origin[2] + t*dir[2];
-    if (x < x0 || x > x1 || z < z0 || z > z1)
-        return false;
-    rec[static_cast<vtkm::Id>(HR::U)] = (x-x0)/(x1-x0);
-    rec[static_cast<vtkm::Id>(HR::V)] = (z-z0)/(z1-z0);
-    rec[static_cast<vtkm::Id>(HR::T)] = t;
-    hid[static_cast<vtkm::Id>(HI::T)] = texId;
-    hid[static_cast<vtkm::Id>(HI::M)] = matId;
-    auto p = origin + dir * t;
-    rec[static_cast<vtkm::Id>(HR::Px)] = p[0];
-    rec[static_cast<vtkm::Id>(HR::Py)] = p[1];
-    rec[static_cast<vtkm::Id>(HR::Pz)] = p[2];
-
-    rec[static_cast<vtkm::Id>(HR::Nx)] = 0;
-    rec[static_cast<vtkm::Id>(HR::Ny)] = 1;
-    rec[static_cast<vtkm::Id>(HR::Nz)] = 0;
-
-
-    return true;
-  }
-};
 
 template <typename Device>
 class QuadLeafIntersector
@@ -479,18 +438,5 @@ public:
   }
 };
 
-class XZRectExecWrapper : public vtkm::cont::ExecutionObjectBase
-{
 
-public:
-  XZRectExecWrapper()
-  {
-  }
-
-  template <typename Device>
-  VTKM_CONT XZRect PrepareForExecution(Device) const
-  {
-    return XZRect();
-  }
-};
 #endif
