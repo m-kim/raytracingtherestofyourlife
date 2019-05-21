@@ -33,7 +33,7 @@ void CornellBox::invert(vtkm::Vec<vec3,4> &pts)
   pt = vec3ToVec4(pts[3]);
   pts[3] = vec4ToVec3(MatrixMultiply(mat, pt));
 }
-void CornellBox::build()
+vtkm::cont::DataSet CornellBox::buildDataSet()
 {
   tex.Allocate(4);
   tex.GetPortalControl().Set(0, vec3(0.65, 0.05, 0.05));
@@ -56,24 +56,18 @@ void CornellBox::build()
   texType.GetPortalControl().Set(4, 0); //dielectric
 
 
+  vtkm::cont::ArrayHandle<vtkm::UInt8> shapes;
+  vtkm::cont::ArrayHandle<vtkm::IdComponent> numindices;
+  vtkm::cont::ArrayHandle<vtkm::Id> conn;
   vtkm::cont::ArrayHandle<vec3> pts1;
-  pts1.Allocate(12 * 4 + 2);
-  ptsIdx[0].Allocate(12);
 
-  numindices[0].Allocate(12);
-  shapes[0].Allocate(12);
-  conn[0].Allocate(12);
-  QuadIds.Allocate(12);
-  vtkm::cont::ArrayCopy(vtkm::cont::ArrayHandleCounting<vtkm::Id>(0,1, 12), ptsIdx[0]);
-  vtkm::cont::ArrayCopy(vtkm::cont::ArrayHandleCounting<vtkm::Id>(0,1, 12*4), conn[0]);
+  pts1.Allocate(12 * 4 + 1);
+  numindices.Allocate(13);
+  shapes.Allocate(13);
+  conn.Allocate(13);
+  QuadIds.Allocate(13);
+  vtkm::cont::ArrayCopy(vtkm::cont::ArrayHandleCounting<vtkm::Id>(0,1, 12*4 + 1), conn);
 
-  numindices[1].Allocate(1);
-  shapes[1].Allocate(1);
-  conn[1].Allocate(1);
-  ptsIdx[1].Allocate(1);
-  SphereIds.Allocate(1);
-  vtkm::cont::ArrayCopy(vtkm::cont::ArrayHandleCounting<vtkm::Id>(12*4,1, 1), ptsIdx[1]);
-  vtkm::cont::ArrayCopy(vtkm::cont::ArrayHandleCounting<vtkm::Id>(0,1, 1), conn[1]);
 
   matIdx[0].Allocate(12);
   texIdx[0].Allocate(12);
@@ -82,23 +76,22 @@ void CornellBox::build()
   int cell_cnt = 0;
   int pt_idx = 0;
   auto close = [&](){  pt_idx += 4; cell_cnt++; };
+
   //yz_rect
-  QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
   matIdx[0].GetPortalControl().Set(cell_cnt, 2);
   texIdx[0].GetPortalControl().Set(cell_cnt, 2);
-  shapes[0].GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
-  numindices[0].GetPortalControl().Set(cell_cnt, 4);
+  shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
+  numindices.GetPortalControl().Set(cell_cnt, 4);
   pts1.GetPortalControl().Set(pt_idx, vec3(555,0,0));
   pts1.GetPortalControl().Set(pt_idx+1, vec3(555,555,0));
   pts1.GetPortalControl().Set(pt_idx+2, vec3(555,555,555));
   pts1.GetPortalControl().Set(pt_idx+3, vec3(555,0,555));
   close();
 
-  QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
   matIdx[0].GetPortalControl().Set(cell_cnt, 0);
   texIdx[0].GetPortalControl().Set(cell_cnt, 0);
-  shapes[0].GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
-  numindices[0].GetPortalControl().Set(cell_cnt, 4);
+  shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
+  numindices.GetPortalControl().Set(cell_cnt, 4);
   pts1.GetPortalControl().Set(pt_idx, vec3(0,0,0));
   pts1.GetPortalControl().Set(pt_idx+1, vec3(0,555,0));
   pts1.GetPortalControl().Set(pt_idx+2, vec3(0,555,555));
@@ -106,33 +99,30 @@ void CornellBox::build()
   close();
 
   //xz_rect
-  QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
   matIdx[0].GetPortalControl().Set(cell_cnt, 3);
   texIdx[0].GetPortalControl().Set(cell_cnt, 3);
-  shapes[0].GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
-  numindices[0].GetPortalControl().Set(cell_cnt, 4);
+  shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
+  numindices.GetPortalControl().Set(cell_cnt, 4);
   pts1.GetPortalControl().Set(pt_idx, vec3(213,554,227));
   pts1.GetPortalControl().Set(pt_idx+1, vec3(343,554,227));
   pts1.GetPortalControl().Set(pt_idx+2, vec3(343,554,332));
   pts1.GetPortalControl().Set(pt_idx+3, vec3(213,554,332));
   close();
 
-  QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
   matIdx[0].GetPortalControl().Set(cell_cnt, 1);
   texIdx[0].GetPortalControl().Set(cell_cnt, 1);
-  shapes[0].GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
-  numindices[0].GetPortalControl().Set(cell_cnt, 4);
+  shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
+  numindices.GetPortalControl().Set(cell_cnt, 4);
   pts1.GetPortalControl().Set(pt_idx, vec3(0,555,0));
   pts1.GetPortalControl().Set(pt_idx+1, vec3(555,555,0));
   pts1.GetPortalControl().Set(pt_idx+2, vec3(555,555,555));
   pts1.GetPortalControl().Set(pt_idx+3, vec3(0,555,555));
   close();
 
-  QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
   matIdx[0].GetPortalControl().Set(cell_cnt, 1);
   texIdx[0].GetPortalControl().Set(cell_cnt, 1);
-  shapes[0].GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
-  numindices[0].GetPortalControl().Set(cell_cnt, 4);
+  shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
+  numindices.GetPortalControl().Set(cell_cnt, 4);
   pts1.GetPortalControl().Set(pt_idx, vec3(0,0,0));
   pts1.GetPortalControl().Set(pt_idx+1, vec3(555,0,0));
   pts1.GetPortalControl().Set(pt_idx+2, vec3(555,0,555));
@@ -140,11 +130,10 @@ void CornellBox::build()
   close();
 
   //xy_rect
-  QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
   matIdx[0].GetPortalControl().Set(cell_cnt, 1);
   texIdx[0].GetPortalControl().Set(cell_cnt, 1);
-  shapes[0].GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
-  numindices[0].GetPortalControl().Set(cell_cnt, 4);
+  shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
+  numindices.GetPortalControl().Set(cell_cnt, 4);
   pts1.GetPortalControl().Set(pt_idx, vec3(0,0,555));
   pts1.GetPortalControl().Set(pt_idx+1, vec3(555,0,555));
   pts1.GetPortalControl().Set(pt_idx+2, vec3(555,555,555));
@@ -154,7 +143,6 @@ void CornellBox::build()
 
 //  //small box
   //xy
-  QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
   vtkm::Vec<vec3,4> pts;
   pts[0] = vec3(0,0,165);
   pts[1] = vec3(165,0,165);
@@ -163,15 +151,14 @@ void CornellBox::build()
   invert(pts);
   matIdx[0].GetPortalControl().Set(cell_cnt, 1);
   texIdx[0].GetPortalControl().Set(cell_cnt, 1);
-  shapes[0].GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
-  numindices[0].GetPortalControl().Set(cell_cnt, 4);
+  shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
+  numindices.GetPortalControl().Set(cell_cnt, 4);
   pts1.GetPortalControl().Set(pt_idx, pts[0]);
   pts1.GetPortalControl().Set(pt_idx+1, pts[1]);
   pts1.GetPortalControl().Set(pt_idx+2, pts[2]);
   pts1.GetPortalControl().Set(pt_idx+3, pts[3]);
   close();
 
-  QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
   pts[0] = vec3(0,0,0);
   pts[1] = vec3(165,0,0);
   pts[2] = vec3(165,330,0);
@@ -179,8 +166,8 @@ void CornellBox::build()
   invert(pts);
   matIdx[0].GetPortalControl().Set(cell_cnt, 1);
   texIdx[0].GetPortalControl().Set(cell_cnt, 1);
-  shapes[0].GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
-  numindices[0].GetPortalControl().Set(cell_cnt, 4);
+  shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
+  numindices.GetPortalControl().Set(cell_cnt, 4);
   pts1.GetPortalControl().Set(pt_idx, pts[0]);
   pts1.GetPortalControl().Set(pt_idx+1, pts[1]);
   pts1.GetPortalControl().Set(pt_idx+2, pts[2]);
@@ -188,7 +175,6 @@ void CornellBox::build()
   close();
 
   //yz
-  QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
   pts[0] = vec3(165,0,0);
   pts[1] = vec3(165,330,0);
   pts[2] = vec3(165,330,165);
@@ -196,15 +182,14 @@ void CornellBox::build()
   invert(pts);
   matIdx[0].GetPortalControl().Set(cell_cnt, 1);
   texIdx[0].GetPortalControl().Set(cell_cnt, 1);
-  shapes[0].GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
-  numindices[0].GetPortalControl().Set(cell_cnt, 4);
+  shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
+  numindices.GetPortalControl().Set(cell_cnt, 4);
   pts1.GetPortalControl().Set(pt_idx, pts[0]);
   pts1.GetPortalControl().Set(pt_idx+1, pts[1]);
   pts1.GetPortalControl().Set(pt_idx+2, pts[2]);
   pts1.GetPortalControl().Set(pt_idx+3, pts[3]);
   close();
 
-  QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
   pts[0] = vec3(0,0,0);
   pts[1] = vec3(0,330,0);
   pts[2] = vec3(0,330,165);
@@ -212,8 +197,8 @@ void CornellBox::build()
   invert(pts);
   matIdx[0].GetPortalControl().Set(cell_cnt, 1);
   texIdx[0].GetPortalControl().Set(cell_cnt, 1);
-  shapes[0].GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
-  numindices[0].GetPortalControl().Set(cell_cnt, 4);
+  shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
+  numindices.GetPortalControl().Set(cell_cnt, 4);
   pts1.GetPortalControl().Set(pt_idx, pts[0]);
   pts1.GetPortalControl().Set(pt_idx+1, pts[1]);
   pts1.GetPortalControl().Set(pt_idx+2, pts[2]);
@@ -222,7 +207,6 @@ void CornellBox::build()
 
 
   //xz_rect
-  QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
   pts[0] = vec3(0,333,0);
   pts[1] = vec3(165,330,0);
   pts[2] = vec3(165,330,165);
@@ -230,15 +214,14 @@ void CornellBox::build()
   invert(pts);
   matIdx[0].GetPortalControl().Set(cell_cnt, 1);
   texIdx[0].GetPortalControl().Set(cell_cnt, 1);
-  shapes[0].GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
-  numindices[0].GetPortalControl().Set(cell_cnt, 4);
+  shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
+  numindices.GetPortalControl().Set(cell_cnt, 4);
   pts1.GetPortalControl().Set(pt_idx, pts[0]);
   pts1.GetPortalControl().Set(pt_idx+1, pts[1]);
   pts1.GetPortalControl().Set(pt_idx+2, pts[2]);
   pts1.GetPortalControl().Set(pt_idx+3, pts[3]);
   close();
 
-  QuadIds.GetPortalControl().Set(cell_cnt, vtkm::Vec<vtkm::Id, 5>(0,pt_idx,pt_idx+1,pt_idx+2,pt_idx+3));
   pts[0] = vec3(0,0,0);
   pts[1] = vec3(165,0,0);
   pts[2] = vec3(165,0,165);
@@ -246,8 +229,8 @@ void CornellBox::build()
   invert(pts);
   matIdx[0].GetPortalControl().Set(cell_cnt, 1);
   texIdx[0].GetPortalControl().Set(cell_cnt, 1);
-  shapes[0].GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
-  numindices[0].GetPortalControl().Set(cell_cnt, 4);
+  shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
+  numindices.GetPortalControl().Set(cell_cnt, 4);
   pts1.GetPortalControl().Set(pt_idx, pts[0]);
   pts1.GetPortalControl().Set(pt_idx+1, pts[1]);
   pts1.GetPortalControl().Set(pt_idx+2, pts[2]);
@@ -255,46 +238,39 @@ void CornellBox::build()
   close();
 
   //    //sphere
-    SphereIds.GetPortalControl().Set(0, pt_idx);
 
-    matIdx[1].GetPortalControl().Set(0, 4);
-    texIdx[1].GetPortalControl().Set(0, 0);
-    shapes[1].GetPortalControl().Set(0, vtkm::CELL_SHAPE_VERTEX);
-    numindices[1].GetPortalControl().Set(0, 2);
-    pts1.GetPortalControl().Set(pt_idx, vec3(190,90,190));
+  matIdx[1].GetPortalControl().Set(0, 4);
+  texIdx[1].GetPortalControl().Set(0, 0);
+  shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_VERTEX);
+  numindices.GetPortalControl().Set(cell_cnt, 1);
+  pts1.GetPortalControl().Set(pt_idx, vec3(190,90,190));
+  cell_cnt++;
+  pt_idx++;
 
-    SphereRadii.Allocate(1);
-    SphereRadii.GetPortalControl().Set(0, 90);
-    coord.SetData(pts1);
-}
-
-vtkm::cont::DataSet CornellBox::buildDataSet()
-{
-  if (coord.GetData().GetNumberOfValues() == 0){
-    build();
-
-  }
+  coord.SetData( pts1);
 
   vtkm::cont::DataSetBuilderExplicit dsb;
-
-  vtkm::cont::DataSet ds;
-  ds.AddCoordinateSystem(coord);
-  vtkm::cont::CellSetExplicit<> cellsetQuads;
-  cellsetQuads.Fill(12*4, shapes[0], numindices[0], conn[0], ptsIdx[0]);
-  ds.AddCellSet(cellsetQuads);
-
-
-  vtkm::cont::CellSetExplicit<> cellsetSphere;
-  cellsetSphere.Fill(1,
-                     shapes[1],
-                    numindices[1],
-                    conn[1],
-                    ptsIdx[1]);
-
-  ds.AddCellSet(cellsetSphere);
-
-  vtkm::rendering::raytracing::SphereExtractor sphereExtractor;
-  sphereExtractor.ExtractCells(cellsetSphere, 90);
+  auto arr = coord.GetData().Cast<vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32,3>>>();
+  ds = dsb.Create(arr,shapes,numindices,conn, "coords", "cells");
 
   return ds;
+}
+
+void CornellBox::extract()
+{
+
+  vtkm::rendering::raytracing::SphereExtractor sphereExtractor;
+  sphereExtractor.ExtractCells(ds.GetCellSet(0), 90);
+  SphereIds = sphereExtractor.GetPointIds();
+  SphereRadii = sphereExtractor.GetRadii();
+
+  for (int i=0; i<SphereIds.GetNumberOfValues(); i++){
+    std::cout << SphereIds.GetPortalConstControl().Get(i) << std::endl;
+    std::cout << SphereRadii.GetPortalConstControl().Get(i) << std::endl;
+
+  }
+  vtkm::rendering::raytracing::QuadExtractor quadExtractor;
+  quadExtractor.ExtractCells(ds.GetCellSet(0));
+  QuadIds = quadExtractor.GetQuadIds();
+
 }

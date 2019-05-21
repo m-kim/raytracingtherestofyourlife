@@ -360,9 +360,9 @@ int main(int argc, char *argv[]) {
   light_sphere_radii[0].Allocate(1);
   light_sphere_radii[0].GetPortalControl().Set(0, 90);
 
-  cb.build();
   auto ds = cb.buildDataSet();
 
+  cb.extract();
   vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32, 2>> uvs;
   uvs.Allocate(nx*ny);
 

@@ -14,11 +14,6 @@ public:
   vtkm::cont::ArrayHandle<int> matType, texType;
   vtkm::cont::CoordinateSystem coord;
 
-  vtkm::cont::ArrayHandle<vtkm::UInt8> shapes[2];
-  vtkm::cont::ArrayHandle<vtkm::Id> ptsIdx[2];
-  vtkm::cont::ArrayHandle<vtkm::IdComponent> numindices[2];
-
-  vtkm::cont::ArrayHandle<vtkm::Id> conn[2];
 
   vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> QuadIds;
   vtkm::cont::ArrayHandle<vtkm::Id> SphereIds;
@@ -26,9 +21,11 @@ public:
   vtkm::cont::ArrayHandle<vtkm::Float32> SphereRadii;
 
   void invert(vtkm::Vec<vec3,4> &pts);
-  void build();
+  void extract();
 
   vtkm::cont::DataSet buildDataSet();
+
+  vtkm::cont::DataSet ds;
 };
 
 #endif
