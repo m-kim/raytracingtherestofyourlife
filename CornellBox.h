@@ -19,6 +19,7 @@ public:
   vtkm::cont::ArrayHandle<vtkm::Id> SphereIds;
 
   vtkm::cont::ArrayHandle<vtkm::Float32> SphereRadii;
+  vtkm::cont::ArrayHandle<vtkm::Id> ShapeOffset;
 
   void invert(vtkm::Vec<vec3,4> &pts);
   void extract();

@@ -263,7 +263,7 @@ void CornellBox::extract()
   sphereExtractor.ExtractCells(ds.GetCellSet(0), 90);
   SphereIds = sphereExtractor.GetPointIds();
   SphereRadii = sphereExtractor.GetRadii();
-
+  ShapeOffset = ds.GetCellSet(0).Cast<vtkm::cont::CellSetExplicit<>>().GetIndexOffsetArray(vtkm::TopologyElementTagPoint(), vtkm::TopologyElementTagCell());
   for (int i=0; i<SphereIds.GetNumberOfValues(); i++){
     std::cout << SphereIds.GetPortalConstControl().Get(i) << std::endl;
     std::cout << SphereRadii.GetPortalConstControl().Get(i) << std::endl;
