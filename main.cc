@@ -261,8 +261,8 @@ void applyPDFs(CornellBox &cb,
               vtkm::cont::ArrayHandle<unsigned int> &seeds,
                vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>>  light_box_pointids,
                vtkm::cont::ArrayHandle<vtkm::Id> light_box_indices,
-              std::vector<ArrayType> light_sphere_pts,
-              std::vector<vtkm::cont::ArrayHandle<vtkm::Float32>> light_sphere_radii,
+              vtkm::cont::ArrayHandle<vtkm::Id> &light_sphere_pointids,
+              vtkm::cont::ArrayHandle<vtkm::Id> & light_sphere_indices,
               int lightables,
               vtkm::Id canvasSize,
               vtkm::Id depth
@@ -278,7 +278,19 @@ void applyPDFs(CornellBox &cb,
           light_box_pointids, light_box_indices, cb.coord);
   SphereExecWrapper surf(cb.SphereIds, cb.SphereRadii, cb.matIdx[1], cb.texIdx[1]);
 
-  Invoke(spherePDFWorklet, rays.Origin, rays.Dir,hrecs, rays.Status, sum_values, generated_dir, seeds, surf, light_sphere_pts[0], light_sphere_radii[0]);
+
+  Invoke(spherePDFWorklet,
+         rays.Origin,
+         rays.Dir,hrecs,
+         rays.Status,
+         sum_values,
+         generated_dir,
+         seeds,
+         surf,
+         light_sphere_pointids,
+         light_box_indices,
+         cb.coord,
+         cb.SphereRadii);
 
   Invoke(pdfWorklet, rays.Origin, rays.Dir, hrecs, srecs, rays.Status, sum_values, generated_dir,  rays.Origin, rays.Dir, attenuation);
 
@@ -509,8 +521,12 @@ int main(int argc, char *argv[]) {
       applyMaterials(rays, hrecs, hids, srecs, cb.tex, cb.matType, cb.texType, emitted, seeds, canvasSize, depth);
       generateRays(cb, whichPDF, hrecs, generated_dir, seeds, light_box_pointids,light_box_indices, light_sphere_pts, light_sphere_radii);
 
+      vtkm::Id tmp[] = {vtkm::Id(4*12)};
+      auto light_sphere_pointids = vtkm::cont::make_ArrayHandle(tmp,1);
+      vtkm::Id tmp2[] = {0};
+      auto light_sphere_indices = vtkm::cont::make_ArrayHandle(tmp2,1);
       applyPDFs(cb, rays, hrecs, srecs, sum_values, generated_dir, attenuation, seeds,
-                light_box_pointids, light_box_indices, light_sphere_pts, light_sphere_radii, lightables, canvasSize, depth);
+                light_box_pointids, light_box_indices, light_sphere_pointids, light_sphere_indices, lightables, canvasSize, depth);
 
       vtkm::cont::ArrayHandleCast<vtkm::Int32, vtkm::cont::ArrayHandle<vtkm::UInt8>> castedStatus(rays.Status);
 

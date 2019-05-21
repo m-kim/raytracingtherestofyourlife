@@ -343,18 +343,21 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   ExecObject surf,
-  WholeArrayInOut<>,
-  WholeArrayInOut<>
-
+  WholeArrayIn<>,
+  WholeArrayIn<>,
+  WholeArrayIn<>,
+  WholeArrayIn<>
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12);
 
   template<typename PtArrayType,
-          typename FlippedType,
-          typename HitRecord,
+           typename FlippedType,
+           typename HitRecord,
            typename SphereExec,
+           typename IndexArrayType,
            typename RadiiArrayType,
-  int ScatterBitIndex = 3>
+           typename PointIdType,
+           int ScatterBitIndex = 3>
   VTKM_EXEC
   void operator()(vtkm::Id idx,
                   const vec3 &origin,
@@ -365,17 +368,20 @@ public:
                   vec3 &generated,
                   unsigned int &seed,
                   SphereExec surf,
-                  PtArrayType pt1,
-                  RadiiArrayType radii
+                  const PointIdType &PointIds,
+                  const IndexArrayType &idxArray,
+                  const PtArrayType &pt1,
+                  const RadiiArrayType &radii
                   ) const
   {
     if (scattered & (1UL << ScatterBitIndex)){
       float weight = 1.0/list_size;
       int index = int(xorshiftWang::getRandF(seed) *list_size);
-      for (int i = 0; i < pt1.GetNumberOfValues(); i++){
-        float radius = radii.Get(i);
+      for (int i = 0; i < idxArray.GetNumberOfValues(); i++){
+        auto radius = radii.Get(i);
+        auto pointIndex = PointIds.Get(i);
         vec3 p(hrec[static_cast<vtkm::Id>(HR::Px)], hrec[static_cast<vtkm::Id>(HR::Py)], hrec[static_cast<vtkm::Id>(HR::Pz)]);
-        sum_value += weight*pdf_value(p, generated, pt1.Get(i), radius, surf);
+        sum_value += weight*pdf_value(p, generated, pt1.Get(pointIndex), radius, surf);
       }
     }
   }
