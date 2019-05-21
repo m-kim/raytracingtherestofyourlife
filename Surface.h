@@ -201,6 +201,44 @@ public:
     return true;
   }
 
+  template<typename HitRecord, typename HitId>
+  VTKM_EXEC bool intersect(const vec3& origin,
+                           const vec3& direction,
+                           HitRecord& temp_rec,
+                           HitId &hid,
+                           float tmin, float tmax,
+                           const vec3 &q, const vec3 &r, const vec3 &s, const vec3 &t,
+                           const vtkm::Id &index
+
+                     ) const
+  {
+    auto h = hit(origin, direction, q,r,s,t,
+                  temp_rec[static_cast<vtkm::Id>(HR::U)],
+                  temp_rec[static_cast<vtkm::Id>(HR::V)],
+                  temp_rec[static_cast<vtkm::Id>(HR::T)]);
+    h = h && (temp_rec[static_cast<vtkm::Id>(HR::T)] < tmax) &&
+        (temp_rec[static_cast<vtkm::Id>(HR::T)] > tmin);
+    if (h){
+
+      vec3 normal = vtkm::TriangleNormal(q,r,s);
+      vtkm::Normalize(normal);
+      if (vtkm::dot(normal, direction) > 0.f)
+        normal = -normal;
+
+      vec3 p(origin + direction * temp_rec[static_cast<vtkm::Id>(HR::T)]);
+      temp_rec[static_cast<vtkm::Id>(HR::Px)] = p[0];
+      temp_rec[static_cast<vtkm::Id>(HR::Py)] = p[1];
+      temp_rec[static_cast<vtkm::Id>(HR::Pz)] = p[2];
+      temp_rec[static_cast<vtkm::Id>(HR::Nx)] = normal[0];
+      temp_rec[static_cast<vtkm::Id>(HR::Ny)] = normal[1];
+      temp_rec[static_cast<vtkm::Id>(HR::Nz)] = normal[2];
+      hid[static_cast<vtkm::Id>(HI::M)] = MatIdx.Get(index);
+      hid[static_cast<vtkm::Id>(HI::T)] = TexIdx.Get(index);
+    }
+
+    return h;
+  }
+
   template<typename Precision,
            typename PtArrayType,
            typename HitRecord,
@@ -238,30 +276,17 @@ public:
 
         HitRecord temp_rec;
 
-        auto h = hit(origin, direction, q,r,s,t,
-                      temp_rec[static_cast<vtkm::Id>(HR::U)],
-                      temp_rec[static_cast<vtkm::Id>(HR::V)],
-                      temp_rec[static_cast<vtkm::Id>(HR::T)]);
-        h = h && (temp_rec[static_cast<vtkm::Id>(HR::T)] < tmax) &&
-            (temp_rec[static_cast<vtkm::Id>(HR::T)] > tmin);
+        auto h = intersect(origin,
+                           direction,
+                           temp_rec,
+                           hid,
+                           tmin,
+                           tmax,
+                           q,r,s,t,
+                           quadIndex);
         if (h){
-          tmax = temp_rec[static_cast<vtkm::Id>(HR::T)];
           hrec = temp_rec;
-
-          vec3 normal = vtkm::TriangleNormal(q,r,s);
-          vtkm::Normalize(normal);
-          if (vtkm::dot(normal, direction) > 0.f)
-            normal = -normal;
-
-          vec3 p(origin + direction * tmax);
-          hrec[static_cast<vtkm::Id>(HR::Px)] = p[0];
-          hrec[static_cast<vtkm::Id>(HR::Py)] = p[1];
-          hrec[static_cast<vtkm::Id>(HR::Pz)] = p[2];
-          hrec[static_cast<vtkm::Id>(HR::Nx)] = normal[0];
-          hrec[static_cast<vtkm::Id>(HR::Ny)] = normal[1];
-          hrec[static_cast<vtkm::Id>(HR::Nz)] = normal[2];
-          hid[static_cast<vtkm::Id>(HI::M)] = MatIdx.Get(quadIndex);
-          hid[static_cast<vtkm::Id>(HI::T)] = TexIdx.Get(quadIndex);
+          tmax = temp_rec[static_cast<vtkm::Id>(HR::T)];
         }
         scattered |= (h << HitBitIdx);
 

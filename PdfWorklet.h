@@ -192,11 +192,11 @@ public:
   int current;
 };
 
-class XZRectPDFWorklet : public vtkm::worklet::WorkletMapField
+class QuadPDFWorklet : public vtkm::worklet::WorkletMapField
 {
 public:
   VTKM_CONT
-  XZRectPDFWorklet(int ls
+  QuadPDFWorklet(int ls
       )
     :list_size(ls)
   {
@@ -206,18 +206,20 @@ public:
   template<typename ExecSurf>
   VTKM_EXEC
   float  pdf_value(const vec3& o, const vec3& v,
-                   float x0, float x1, float z0, float z1, float k,
-                   ExecSurf surf) const {
+                   const vec3 &q, const vec3 &r, const vec3 &s, const vec3 &t,
+                   ExecSurf &surf) const {
     vtkm::Vec<vtkm::Float32, 9> rec;
     vtkm::Vec<vtkm::Int8,2> hid;
-    int matId,texId;
-    if (surf.hit(o,v, rec, hid, 0.001, FLT_MAX,x0,x1,z0,z1,k, matId, texId)) {
-        float area = (x1-x0)*(z1-z0);
-        auto rect = rec[static_cast<vtkm::Id>(HR::T)];
-        float distance_squared = rect * rect * vtkm::MagnitudeSquared(v);
-        vec3 n(rec[static_cast<vtkm::Id>(HR::Nx)],rec[static_cast<vtkm::Id>(HR::Ny)],rec[static_cast<vtkm::Id>(HR::Nz)]);
-        float cosine = fabs(dot(v, n) * vtkm::RMagnitude(v));
-        return  distance_squared / (cosine * area);
+    if (surf.intersect(o,v, rec, hid, 0.001, FLT_MAX, q,r,s,t, 0)) {
+      auto qr = vtkm::Magnitude(r - q);
+      auto qt = vtkm::Magnitude(t - q);
+
+      float area = qr * qt;
+      auto rect = rec[static_cast<vtkm::Id>(HR::T)];
+      float distance_squared = rect * rect * vtkm::MagnitudeSquared(v);
+      vec3 n(rec[static_cast<vtkm::Id>(HR::Nx)],rec[static_cast<vtkm::Id>(HR::Ny)],rec[static_cast<vtkm::Id>(HR::Nz)]);
+      float cosine = fabs(dot(v, n) * vtkm::RMagnitude(v));
+      return  distance_squared / (cosine * area);
     }
     else
         return 0;
@@ -232,15 +234,18 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   ExecObject surf,
-  WholeArrayInOut<>,
-  WholeArrayInOut<>
+  WholeArrayIn<>,
+  WholeArrayIn<>,
+  WholeArrayIn<>
 
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
 
   template<typename PtArrayType,
+           typename PointIdType,
+           typename QuadIndicesType,
           typename FlippedType,
-  typename HitRecord,
+          typename HitRecord,
            typename ExecSurf,
   int ScatterBitIndex = 3>
   VTKM_EXEC
@@ -253,24 +258,38 @@ public:
                   vec3 &generated,
                   unsigned int &seed,
                   ExecSurf surf,
-                  PtArrayType pt1,
-                  PtArrayType pt2
+                  const PointIdType &PointIds,
+                  const QuadIndicesType &quadIndices,
+                  const PtArrayType &pts
                   ) const
   {
     if (scattered & (1UL << ScatterBitIndex)){
       float weight = 1.0/list_size;
-      int index = int(xorshiftWang::getRandF(seed) * list_size);
-      for (int i = 0; i < pt1.GetNumberOfValues(); i++){
-        float x0 = pt1.Get(i)[0];
-        float x1 = pt2.Get(i)[0];
-        float z0 = pt1.Get(i)[2];
-        float z1 = pt2.Get(i)[2];
-        float k = pt1.Get(i)[1];
+      //int index = int(xorshiftWang::getRandF(seed) * list_size);
+      for (int quadIndex=0; quadIndex<quadIndices.GetNumberOfValues(); quadIndex++){
+        auto pointIndex = PointIds.Get(quadIndex);
+
+        vec3 q, r, s, t;
+        q = pts.Get(pointIndex[1]);
+        r = pts.Get(pointIndex[2]);
+        s = pts.Get(pointIndex[3]);
+        t = pts.Get(pointIndex[4]);
         vec3 p(hrec[static_cast<vtkm::Id>(HR::Px)], hrec[static_cast<vtkm::Id>(HR::Py)], hrec[static_cast<vtkm::Id>(HR::Pz)]);
-        sum_value += weight*pdf_value(p, generated, x0,x1,z0,z1,k, surf);
-        //if (!index)
+        sum_value += weight*pdf_value(p, generated, q,r,s,t, surf);
 
       }
+
+//      for (int i = 0; i < pt1.GetNumberOfValues(); i++){
+//        float x0 = pt1.Get(i)[0];
+//        float x1 = pt2.Get(i)[0];
+//        float z0 = pt1.Get(i)[2];
+//        float z1 = pt2.Get(i)[2];
+//        float k = pt1.Get(i)[1];
+//        vec3 p(hrec[static_cast<vtkm::Id>(HR::Px)], hrec[static_cast<vtkm::Id>(HR::Py)], hrec[static_cast<vtkm::Id>(HR::Pz)]);
+//        sum_value += weight*pdf_value(p, generated, x0,x1,z0,z1,k, surf);
+//        //if (!index)
+
+//      }
     }
   }
 
