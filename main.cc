@@ -348,16 +348,11 @@ parse(int argc, char **argv){
   return std::make_tuple(x,y, s, depth);
 }
 
-int main(int argc, char *argv[]) {
+ArrayType run(int nx, int ny, int samplecount, int depthcount)
+{
   using MyAlgos = details::PathAlgorithms<vtkm::cont::DeviceAdapterAlgorithm<VTKM_DEFAULT_DEVICE_ADAPTER_TAG>, VTKM_DEFAULT_DEVICE_ADAPTER_TAG>;
   using StorageTag = vtkm::cont::StorageTagBasic;
   using Device = VTKM_DEFAULT_DEVICE_ADAPTER_TAG;
-
-  const auto tup = parse(argc, argv);
-  const int nx = std::get<0>(tup);
-  const int ny = std::get<1>(tup);
-  const int ns = std::get<2>(tup);
-  const int depthcount = std::get<3>(tup);
 
   CornellBox cb;
 
@@ -512,7 +507,7 @@ int main(int argc, char *argv[]) {
   }
 
   vtkm::worklet::Invoker Invoke;
-  for (int s =0; s<ns; s++){
+  for (int s =0; s<samplecount; s++){
     UVGen uvgen(nx, ny, s);
     Invoke(uvgen, seeds, uvs);
 
@@ -576,14 +571,21 @@ int main(int argc, char *argv[]) {
 
   }
 
+  return cols;
+}
+
+void save(std::string &fn,
+          int nx, int ny, int samplecount,
+          vtkm::cont::ArrayHandle<vec3> &cols)
+{
   std::fstream fs;
-  fs.open("output.pnm", std::fstream::out);
+  fs.open(fn.c_str(), std::fstream::out);
   if (fs.is_open()){
     fs << "P3\n" << nx << " "  << ny << " 255" << std::endl;
     for (int i=0; i<cols.GetNumberOfValues(); i++){
       auto col = cols.GetPortalConstControl().Get(i);
       col = de_nan(col);
-      col = col / float(ns);
+      col = col / float(samplecount);
       col = vec3( sqrt(col[0]), sqrt(col[1]), sqrt(col[2]) );
       int ir = int(255.99*col[0]);
       int ig = int(255.99*col[1]);
@@ -595,5 +597,18 @@ int main(int argc, char *argv[]) {
   else
     std::cout << "Couldn't save pnm." << std::endl;
 //  std::vector<std::uint8_t> PngBuffer;
+}
+
+int main(int argc, char *argv[]) {
+
+  const auto tup = parse(argc, argv);
+  const int nx = std::get<0>(tup);
+  const int ny = std::get<1>(tup);
+  const int samplecount = std::get<2>(tup);
+  const int depthcount = std::get<3>(tup);
+
+  auto cols = run(nx,ny, samplecount, depthcount);
+  std::string str("output.pnm");
+  save(str, nx, ny, samplecount, cols);
 }
 
