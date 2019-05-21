@@ -481,16 +481,21 @@ int main(int argc, char *argv[]) {
 
   auto tmin = rays.MinDistance;
 
+  vtkm::rendering::CanvasRayTracer canvas(nx,ny);
   sum_values = rays.GetBuffer("sum_values").Buffer;
+  vtkm::Bounds bounds(vtkm::Range(0,555), vtkm::Range(0,555), vtkm::Range(0,555));
   whichPDF.Allocate(nx*ny);
-  vtkm::rendering::pathtracing::Camera cam;
-  cam.SetPosition(vec3(278,278,-800));
-  cam.SetWidth(nx);
-  cam.SetHeight(ny);
-  cam.SetFieldOfView(40);
-  cam.SetUp(vec3(0,1,0));
-  cam.SetLookAt(vec3(278,278,-799));
-  vtkm::cont::ArrayHandle<unsigned int> seeds = cam.seeds;
+//  vtkm::rendering::Camera cam;
+//  cam.ResetToBounds(bounds);
+  vtkm::rendering::pathtracing::Camera rayCam;
+//  rayCam.SetParameters(cam,canvas);
+  rayCam.SetPosition(vec3(278,278,-800));
+  rayCam.SetWidth(nx);
+  rayCam.SetHeight(ny);
+  rayCam.SetFieldOfView(40);
+  rayCam.SetUp(vec3(0,1,0));
+  rayCam.SetLookAt(vec3(278,278,278));
+  vtkm::cont::ArrayHandle<unsigned int> seeds = rayCam.seeds;
 
   buildBVH(cb);
   for (unsigned int i=0; i<canvasSize; i++){
@@ -511,8 +516,7 @@ int main(int argc, char *argv[]) {
     UVGen uvgen(nx, ny, s);
     Invoke(uvgen, seeds, uvs);
 
-    vtkm::Bounds bounds(vtkm::Range(0,555), vtkm::Range(0,555), vtkm::Range(-800,555));
-    cam.CreateRays(rays, bounds);
+    rayCam.CreateRays(rays, bounds);
 
     MyAlgos::Copy<vtkm::UInt8, vtkm::UInt8, StorageTag>((1UL << 3), rays.Status);
 

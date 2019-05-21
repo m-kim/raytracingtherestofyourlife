@@ -872,7 +872,7 @@ VTKM_CONT void Camera::CreateRaysImpl(vtkm::rendering::raytracing::Ray<Precision
   logger->OpenLogEntry("ray_camera");
 
   bool ortho = this->CameraView.GetMode() == vtkm::rendering::Camera::MODE_2D;
-  this->UpdateDimensions(rays, boundingBox, ortho);
+  //this->UpdateDimensions(rays, boundingBox, ortho);
   this->WriteSettingsToLog();
   vtkm::cont::Timer<vtkm::cont::DeviceAdapterTagSerial> timer;
   //Set the origin of the ray back to the camera position
