@@ -174,28 +174,38 @@ public:
   FieldInOut<>,
   FieldInOut<>,
   FieldInOut<>,
-  WholeArrayInOut<>,
-  WholeArrayInOut<>
+  WholeArrayIn<>,
+  WholeArrayIn<>,
+  WholeArrayIn<>,
+  WholeArrayIn<>
 
   );
-  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6);
+  using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8);
 
-  template<typename PtArrayType, typename RadArrayType, typename HitRecord>
+  template<typename PtArrayType,
+           typename HitRecord,
+           typename PointIdType,
+           typename IndexArrayType,
+           typename RadiiArrayType>
   VTKM_EXEC
   void operator()(vtkm::Id idx,
           int &which,
            HitRecord &hrec,
            vec3 &generated,
                   unsigned int &seed,
-           PtArrayType pt1,
-           RadArrayType rad
+                  const PointIdType &PointIds,
+                  const IndexArrayType &idxArray,
+                  const PtArrayType &pt1,
+                  const RadiiArrayType &radii
            ) const
   {
     if (which == current){
-      for (int i = 0; i < pt1.GetNumberOfValues(); i++){
-        float radius = rad.Get(i);
+      for (int i = 0; i < idxArray.GetNumberOfValues(); i++){
+        auto radius = radii.Get(i);
+        auto pointIndex = PointIds.Get(i);
+
         vec3 p(hrec[static_cast<vtkm::Id>(HR::Px)], hrec[static_cast<vtkm::Id>(HR::Py)], hrec[static_cast<vtkm::Id>(HR::Pz)]);
-        generated = random(p, xorshiftWang::getRandF(seed), xorshiftWang::getRandF(seed), pt1.Get(i), radius);
+        generated = random(p, xorshiftWang::getRandF(seed), xorshiftWang::getRandF(seed), pt1.Get(pointIndex), radius);
       }
     }
   }
