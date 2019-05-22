@@ -5,11 +5,11 @@
 #include "Surface.h"
 #include "Record.h"
 #include "wangXor.h"
-class GenerateDir : public vtkm::worklet::WorkletMapField
+class WorketletGenerateDir : public vtkm::worklet::WorkletMapField
 {
 public:
   VTKM_EXEC_CONT
-  GenerateDir(int ts) : type_size(ts){}
+  WorketletGenerateDir(int ts) : type_size(ts){}
 
   using ControlSignature = void(FieldInOut<>, FieldInOut<>);
   using ExecutionSignature = void( _1, _2);
@@ -21,10 +21,10 @@ public:
   const int type_size;
 };
 
-class CosineGenerateDir : public vtkm::worklet::WorkletMapField
+class CosineWorketletGenerateDir : public vtkm::worklet::WorkletMapField
 {
 public:
-  CosineGenerateDir(int cur = 0) : current(cur){}
+  CosineWorketletGenerateDir(int cur = 0) : current(cur){}
 
   VTKM_EXEC
   vec3 random(const vec3& o, float r1, float r2,
@@ -79,11 +79,11 @@ public:
   int current;
 };
 
-class QuadGenerateDir : public vtkm::worklet::WorkletMapField
+class QuadWorkletGenerateDir : public vtkm::worklet::WorkletMapField
 {
 public:
   VTKM_EXEC_CONT
-  QuadGenerateDir(int cur = 1): current(cur) {}
+  QuadWorkletGenerateDir(int cur = 1): current(cur) {}
   VTKM_EXEC
   vec3 random(const vec3& o, unsigned int &seed,
               float x0, float x1, float y0, float y1, float z0, float z1) const {
@@ -137,11 +137,11 @@ public:
 
   int current;
 };
-class SphereGenerateDir : public vtkm::worklet::WorkletMapField
+class SphereWorkletGenerateDir : public vtkm::worklet::WorkletMapField
 {
 public:
   VTKM_EXEC_CONT
-  SphereGenerateDir(int cur = 2): current(cur) {}
+  SphereWorkletGenerateDir(int cur = 2): current(cur) {}
 
   VTKM_EXEC
   inline vec3 de_nan(const vec3& c) const {

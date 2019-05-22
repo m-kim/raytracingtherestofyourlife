@@ -43,6 +43,7 @@
 #include "SphereIntersector.h"
 #include "QuadPdf.h"
 #include "SpherePdf.h"
+#include "QuadGenerateDir.h"
 
 using ArrayType = vtkm::cont::ArrayHandle<vec3>;
 
@@ -238,6 +239,7 @@ template<typename HitRecord,
 void generateRays(CornellBox &cb,
                   vtkm::cont::ArrayHandle<int> &whichPDF,
                   HitRecord &hrecs,
+                  vtkm::rendering::raytracing::Ray<vtkm::Float32> &rays,
                   GenDirType &generated_dir,
                   vtkm::cont::ArrayHandle<unsigned int> &seeds,
                   vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>>  light_box_pointids,
@@ -247,14 +249,16 @@ void generateRays(CornellBox &cb,
                   )
 {
   vtkm::worklet::Invoker Invoke;
-  GenerateDir genDir(3);
-  CosineGenerateDir cosGenDir(1);
-  QuadGenerateDir quadGenDir(2);
-  SphereGenerateDir sphereGenDir(3);
-
+  WorketletGenerateDir genDir(3);
+  CosineWorketletGenerateDir cosGenDir(1);
+  SphereWorkletGenerateDir sphereGenDir(3);
   Invoke(genDir, seeds, whichPDF);
   Invoke(cosGenDir, whichPDF, hrecs, generated_dir, seeds);
-  Invoke(quadGenDir, whichPDF, hrecs, generated_dir, seeds, light_box_pointids, light_box_indices, cb.coord);
+
+  QuadGenerateDir quadGen(light_box_pointids);
+  quadGen.SetData(cb.coord, seeds, light_box_indices, whichPDF);
+  quadGen.apply(rays);
+
   Invoke(sphereGenDir, whichPDF, hrecs, generated_dir, seeds, light_sphere_pointids, light_sphere_indices, cb.coord, cb.SphereRadii);
   }
 
@@ -495,7 +499,7 @@ ArrayType run(int nx, int ny, int samplecount, int depthcount,
       intersect(cb, rays, hrecs,hids, matIdArray, texIdArray, tmin, emitted, attenuation, depth);
 
       applyMaterials(rays, hrecs, hids, srecs, cb.tex, cb.matType, cb.texType, emitted, seeds, canvasSize, depth);
-      generateRays(cb, whichPDF, hrecs, generated_dir, seeds, light_box_pointids,light_box_indices, light_sphere_pointids, light_sphere_indices);
+      generateRays(cb, whichPDF, hrecs, rays, generated_dir, seeds, light_box_pointids,light_box_indices, light_sphere_pointids, light_sphere_indices);
 
       applyPDFs(cb, rays, hrecs, srecs, sum_values, generated_dir, attenuation, seeds,
                 light_box_pointids, light_box_indices, light_sphere_pointids, light_sphere_indices, lightables, canvasSize, depth);
