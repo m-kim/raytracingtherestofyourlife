@@ -25,6 +25,8 @@
 #include <vtkm/cont/Algorithm.h>
 #include <vtkm/worklet/Invoker.h>
 #include <vtkm/rendering/raytracing/BoundingVolumeHierarchy.h>
+#include <vtkm/cont/ArrayHandleExtractComponent.h>
+
 #include "BVHTraverser.h"
 
 #include <fstream>
@@ -323,6 +325,7 @@ parse(int argc, char **argv){
   int s = 10;
   int depth = 5;
 
+  bool hemi = false;
   for (int i=1; i<argc; i++){
     if (!strcmp(argv[i], "-x")){
       if (i+1 < argc){
@@ -349,9 +352,13 @@ parse(int argc, char **argv){
         i += 1;
       }
     }
+    else if (!strcmp(argv[i], "-hemisphere"))
+    {
+      hemi = true;
+    }
   }
 
-  return std::make_tuple(x,y, s, depth);
+  return std::make_tuple(x,y, s, depth, hemi);
 }
 
 ArrayType run(int nx, int ny, int samplecount, int depthcount,
@@ -404,9 +411,6 @@ ArrayType run(int nx, int ny, int samplecount, int depthcount,
 
   vtkm::cont::ArrayHandle<vtkm::Float32> sum_values;
 
-  vtkm::cont::ArrayHandle<vtkm::Int32> matIdArray, texIdArray;
-  matIdArray.Allocate(canvasSize);
-  texIdArray.Allocate(canvasSize);
 
   rays.AddBuffer(1, "specular_Ox");
   rays.AddBuffer(1, "specular_Oy");
@@ -417,16 +421,8 @@ ArrayType run(int nx, int ny, int samplecount, int depthcount,
   rays.AddBuffer(1, "specular_Ax");
   rays.AddBuffer(1, "specular_Ay");
   rays.AddBuffer(1, "specular_Az");
-  using ScatterRecord = vtkm::cont::ArrayHandleCompositeVector<vtkm::cont::ArrayHandle<vtkm::Float32>,
-  vtkm::cont::ArrayHandle<vtkm::Float32>,
-  vtkm::cont::ArrayHandle<vtkm::Float32>,
-  vtkm::cont::ArrayHandle<vtkm::Float32>,
-  vtkm::cont::ArrayHandle<vtkm::Float32>,
-  vtkm::cont::ArrayHandle<vtkm::Float32>,
-  vtkm::cont::ArrayHandle<vtkm::Float32>,
-  vtkm::cont::ArrayHandle<vtkm::Float32>,
-  vtkm::cont::ArrayHandle<vtkm::Float32>>;
-  auto srecs = ScatterRecord(
+
+  auto srecs = vtkm::rendering::pathtracing::QuadIntersector::ScatterRecord(
         rays.GetBuffer("specular_Ox").Buffer,
          rays.GetBuffer("specular_Oy").Buffer,
          rays.GetBuffer("specular_Oz").Buffer,
@@ -587,14 +583,8 @@ void save(std::string fn,
 //  std::vector<std::uint8_t> PngBuffer;
 }
 
-int main(int argc, char *argv[]) {
-
-  const auto tup = parse(argc, argv);
-  const int nx = std::get<0>(tup);
-  const int ny = std::get<1>(tup);
-  const int samplecount = std::get<2>(tup);
-  const int depthcount = std::get<3>(tup);
-
+void generateHemisphere(int nx, int ny, int samplecount, int depthcount)
+{
   vtkm::rendering::CanvasRayTracer canvas(nx,ny);
   vtkm::rendering::pathtracing::Camera rayCam;
   rayCam.SetPosition(vec3(278,278,-800));
@@ -624,6 +614,33 @@ int main(int argc, char *argv[]) {
       sstr << "output-" << i*rTheta << "-" << j*rPhi << ".pnm";
       save(sstr.str(), nx, ny, samplecount, cols);
     }
+  }
+}
+int main(int argc, char *argv[]) {
+
+  const auto tup = parse(argc, argv);
+  const int nx = std::get<0>(tup);
+  const int ny = std::get<1>(tup);
+  const int samplecount = std::get<2>(tup);
+  const int depthcount = std::get<3>(tup);
+  const bool hemi = std::get<4>(tup);
+  if (hemi)
+    generateHemisphere(nx,ny, samplecount, depthcount);
+  else
+  {
+    vtkm::rendering::CanvasRayTracer canvas(nx,ny);
+    vtkm::rendering::pathtracing::Camera rayCam;
+    rayCam.SetPosition(vec3(278,278,-800));
+    rayCam.SetWidth(nx);
+    rayCam.SetHeight(ny);
+    rayCam.SetFieldOfView(40);
+    rayCam.SetUp(vec3(0,1,0));
+    rayCam.SetLookAt(vec3(278,278,278));
+    auto cols = run(nx,ny, samplecount, depthcount, canvas, rayCam);
+    std::stringstream sstr;
+    sstr << "output.pnm";
+    save(sstr.str(), nx, ny, samplecount, cols);
+
   }
 }
 
