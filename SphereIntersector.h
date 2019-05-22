@@ -17,8 +17,8 @@
 //  Laboratory (LANL), the U.S. Government retains certain rights in
 //  this software.
 //============================================================================
-#ifndef vtk_m_rendering_pathtracer_Sphere_Intersector_h
-#define vtk_m_rendering_pathtracer_Sphere_Intersector_h
+#ifndef vtk_m_rendering_pathtracing_Sphere_Intersector_h
+#define vtk_m_rendering_pathtracing_Sphere_Intersector_h
 
 #include <vtkm/rendering/raytracing/ShapeIntersector.h>
 
@@ -26,7 +26,7 @@ namespace vtkm
 {
 namespace rendering
 {
-namespace pathtracer
+namespace pathtracing
 {
 
 class SphereIntersector : public vtkm::rendering::raytracing::ShapeIntersector
@@ -34,14 +34,42 @@ class SphereIntersector : public vtkm::rendering::raytracing::ShapeIntersector
 protected:
   vtkm::cont::ArrayHandle<vtkm::Id> PointIds;
   vtkm::cont::ArrayHandle<vtkm::Float32> Radii;
+  vtkm::cont::ArrayHandle<vtkm::Id> MatIdx, TexIdx;
+  vtkm::cont::ArrayHandle<vtkm::Int32> MatIdArray, TexIdArray;
 
 public:
+  using ScatterRecord = vtkm::cont::ArrayHandleCompositeVector<vtkm::cont::ArrayHandle<vtkm::Float32>,
+  vtkm::cont::ArrayHandle<vtkm::Float32>,
+  vtkm::cont::ArrayHandle<vtkm::Float32>,
+  vtkm::cont::ArrayHandle<vtkm::Float32>,
+  vtkm::cont::ArrayHandle<vtkm::Float32>,
+  vtkm::cont::ArrayHandle<vtkm::Float32>,
+  vtkm::cont::ArrayHandle<vtkm::Float32>,
+  vtkm::cont::ArrayHandle<vtkm::Float32>,
+  vtkm::cont::ArrayHandle<vtkm::Float32>>;
+  using HitRecord = vtkm::cont::ArrayHandleCompositeVector<vtkm::cont::ArrayHandle<vtkm::Float32>,
+  vtkm::cont::ArrayHandle<vtkm::Float32>,
+  vtkm::cont::ArrayHandle<vtkm::Float32>,
+  vtkm::cont::ArrayHandle<vtkm::Float32>,
+  vtkm::cont::ArrayHandle<vtkm::Float32>,
+  vtkm::cont::ArrayHandle<vtkm::Float32>,
+  vtkm::cont::ArrayHandle<vtkm::Float32>,
+  vtkm::cont::ArrayHandle<vtkm::Float32>,
+  vtkm::cont::ArrayHandle<vtkm::Float32>>;
+  using IdArray = vtkm::cont::ArrayHandle<vtkm::Int32>;
+  using HitId = vtkm::cont::ArrayHandleCompositeVector<IdArray, IdArray>;
+
   SphereIntersector();
   virtual ~SphereIntersector() override;
 
   void SetData(const vtkm::cont::CoordinateSystem& coords,
                vtkm::cont::ArrayHandle<vtkm::Id> pointIds,
-               vtkm::cont::ArrayHandle<vtkm::Float32> radii);
+               vtkm::cont::ArrayHandle<vtkm::Float32> radii,
+               vtkm::cont::ArrayHandle<vtkm::Id> &matIdx,
+               vtkm::cont::ArrayHandle<vtkm::Id> &texIdx,
+               IdArray &matIdArray,
+               IdArray &texIdArray);
+
 
   void IntersectRays(vtkm::rendering::raytracing::Ray<vtkm::Float32>& rays, bool returnCellIndex = false) override;
 
@@ -52,10 +80,10 @@ public:
   void IntersectRaysImp(vtkm::rendering::raytracing::Ray<Precision>& rays, bool returnCellIndex);
 
 
-  template <typename Precision>
-  void IntersectionDataImp(vtkm::rendering::raytracing::Ray<Precision>& rays,
-                           const vtkm::cont::Field* scalarField,
-                           const vtkm::Range& scalarRange);
+//  template <typename Precision>
+//  void IntersectionDataImp(vtkm::rendering::raytracing::Ray<Precision>& rays,
+//                           const vtkm::cont::Field* scalarField,
+//                           const vtkm::Range& scalarRange);
 
   void IntersectionData(vtkm::rendering::raytracing::Ray<vtkm::Float32>& rays,
                         const vtkm::cont::Field* scalarField,

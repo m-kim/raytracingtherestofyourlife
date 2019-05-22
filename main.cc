@@ -40,6 +40,7 @@
 #include "PathAlgorithms.h"
 #include "AABBSurface.h"
 #include "QuadIntersector.h"
+#include "SphereIntersector.h"
 
 using ArrayType = vtkm::cont::ArrayHandle<vec3>;
 
@@ -138,10 +139,6 @@ void intersect(CornellBox &cb,
   for (int j=0; j<nodes.GetNumberOfValues(); j++){
     nodes.GetPortalControl().Set(j, 0);
   }
-  SphereIntersecttWorklet sphereWorklet(canvasSize, depth);
-
-
-  SphereExecWrapper sphereIntersect(cb.SphereIds, cb.SphereRadii, cb.matIdx[1], cb.texIdx[1]);
 
 #if 0
    vtkm::cont::ArrayHandle<vtkm::Id> leafs;
@@ -189,9 +186,11 @@ void intersect(CornellBox &cb,
   quadIntersector.SetData(cb.coord, cb.QuadIds, cb.matIdx[0], cb.texIdx[0], matIdArray, texIdArray);
   quadIntersector.IntersectRays(rays);
 
+  vtkm::rendering::pathtracing::SphereIntersector sphereIntersector;
 
-  vtkm::rendering::pathtracing::BVHTraverser traverser2;
-  traverser2.IntersectRays(rays, bvhSphere, hrecs, hids, tmin, sphereIntersect, cb.coord);
+  sphereIntersector.SetData(cb.coord, cb.SphereIds, cb.SphereRadii, cb.matIdx[1], cb.texIdx[1], matIdArray, texIdArray);
+  sphereIntersector.IntersectRays(rays);
+
 
 #endif
 

@@ -5,7 +5,7 @@ project(PathTracing VERSION 0.1 LANGUAGES CXX)
 find_package(VTKm REQUIRED
   OPTIONAL_COMPONENTS CUDA OpenMP)
 
-set (PathTracingSrc main.cc CornellBox.cpp Camera.cxx SphereExtractor.cxx QuadExtractor.cxx QuadIntersector.cxx)
+set (PathTracingSrc main.cc CornellBox.cpp Camera.cxx SphereExtractor.cxx QuadExtractor.cxx QuadIntersector.cxx SphereIntersector.cxx)
 set (PathTracingHdr Worklets.h AABBSurface.h BVHTraverser.h
   EmitWorklet.h ScatterWorklet.h SurfaceWorklets.h Surface.h PdfWorklet.h Record.h onb.h
   CornellBox.h vec3.h wangXor.h)
