@@ -42,6 +42,7 @@
 #include "QuadIntersector.h"
 #include "SphereIntersector.h"
 #include "QuadPdf.h"
+#include "SpherePdf.h"
 
 using ArrayType = vtkm::cont::ArrayHandle<vec3>;
 
@@ -276,29 +277,18 @@ void applyPDFs(CornellBox &cb,
               vtkm::Id depth
     )
 {
+  vtkm::worklet::Invoker Invoke;
   QuadPdf quadPdf(cb.QuadIds, light_box_pointids);
-  quadPdf.SetData(cb.coord, cb.matIdx[0], cb.texIdx[1],
+  quadPdf.SetData(cb.coord, cb.matIdx[0], cb.texIdx[0],
       seeds, light_box_indices, lightables);
   quadPdf.apply(rays);
-  vtkm::worklet::Invoker Invoke;
-  SpherePDFWorklet spherePDFWorklet(lightables);
+
+  SpherePdf spherePdf(cb.SphereIds, light_sphere_pointids, cb.SphereRadii);
+  spherePdf.SetData(cb.coord, cb.matIdx[1], cb.texIdx[1],
+      seeds, light_sphere_indices, lightables);
+  spherePdf.apply(rays);
+
   PDFCosineWorklet pdfWorklet(canvasSize, depth, canvasSize, lightables);
-  SphereExecWrapper surf(cb.SphereIds, cb.SphereRadii, cb.matIdx[1], cb.texIdx[1]);
-
-
-  Invoke(spherePDFWorklet,
-         rays.Origin,
-         rays.Dir,hrecs,
-         rays.Status,
-         sum_values,
-         generated_dir,
-         seeds,
-         surf,
-         light_sphere_pointids,
-         light_sphere_indices,
-         cb.coord,
-         cb.SphereRadii);
-
   Invoke(pdfWorklet, rays.Origin, rays.Dir, hrecs, srecs, rays.Status, sum_values, generated_dir,  rays.Origin, rays.Dir, attenuation);
 
 }

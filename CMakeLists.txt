@@ -7,7 +7,7 @@ find_package(VTKm REQUIRED
 
 set (PathTracingSrc main.cc CornellBox.cpp Camera.cxx
   SphereExtractor.cxx QuadExtractor.cxx QuadIntersector.cxx
-  SphereIntersector.cxx QuadPdf.cxx)
+  SphereIntersector.cxx QuadPdf.cxx SpherePdf.cxx)
 set (PathTracingHdr Worklets.h AABBSurface.h BVHTraverser.h
   EmitWorklet.h ScatterWorklet.h SurfaceWorklets.h Surface.h PdfWorklet.h Record.h onb.h
   CornellBox.h vec3.h wangXor.h)
