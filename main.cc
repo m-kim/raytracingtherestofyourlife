@@ -37,7 +37,7 @@
 #include "CornellBox.h"
 #include "PathAlgorithms.h"
 #include "AABBSurface.h"
-
+#include "QuadIntersector.h"
 
 using ArrayType = vtkm::cont::ArrayHandle<vec3>;
 
@@ -113,6 +113,8 @@ void intersect(CornellBox &cb,
                RayType &rays,
                HitRecord &hrecs,
                HitId &hids,
+               vtkm::cont::ArrayHandle<vtkm::Int32> &matIdArray,
+               vtkm::cont::ArrayHandle<vtkm::Int32> &texIdArray,
                vtkm::cont::ArrayHandle<float> &tmin,
                emittedType &emitted,
                attenType &attenuation,
@@ -134,11 +136,9 @@ void intersect(CornellBox &cb,
   for (int j=0; j<nodes.GetNumberOfValues(); j++){
     nodes.GetPortalControl().Set(j, 0);
   }
-  QuadIntersect quad;
   SphereIntersecttWorklet sphereWorklet(canvasSize, depth);
 
 
-  QuadExecWrapper quadIntersect(cb.QuadIds, cb.matIdx[0], cb.texIdx[0]);
   SphereExecWrapper sphereIntersect(cb.SphereIds, cb.SphereRadii, cb.matIdx[1], cb.texIdx[1]);
 
 #if 0
@@ -180,8 +180,13 @@ void intersect(CornellBox &cb,
          cb.coord,
          sphereleafs);
 #else
-  vtkm::rendering::pathtracing::BVHTraverser traverser;
-  traverser.IntersectRays(rays, bvhQuad, hrecs, hids, tmin, quadIntersect, cb.coord);
+
+
+  vtkm::rendering::pathtracing::QuadIntersector quadIntersector;
+
+  quadIntersector.SetData(cb.coord, cb.QuadIds, cb.matIdx[0], cb.texIdx[0], matIdArray, texIdArray);
+  quadIntersector.IntersectRays(rays);
+
 
   vtkm::rendering::pathtracing::BVHTraverser traverser2;
   traverser2.IntersectRays(rays, bvhSphere, hrecs, hids, tmin, sphereIntersect, cb.coord);
@@ -432,20 +437,7 @@ ArrayType run(int nx, int ny, int samplecount, int depthcount,
         rays.GetBuffer("specular_Ay").Buffer,
         rays.GetBuffer("specular_Az").Buffer
         );
-  using HitRecord = vtkm::cont::ArrayHandleCompositeVector<decltype(rays.U),
-  decltype(rays.V),
-  decltype(rays.Distance),
-  decltype(rays.NormalX),
-  decltype(rays.NormalY),
-  decltype(rays.NormalZ),
-  decltype(rays.IntersectionX),
-  decltype(rays.IntersectionY),
-  decltype(rays.IntersectionZ)>;
 
-  auto hrecs = HitRecord(rays.U, rays.V, rays.Distance, rays.NormalX, rays.NormalY, rays.NormalZ, rays.IntersectionX, rays.IntersectionY, rays.IntersectionZ);
-
-  using HitId = vtkm::cont::ArrayHandleCompositeVector<decltype(matIdArray), decltype(texIdArray)>;
-  auto hids = HitId(matIdArray, texIdArray);
 
   rays.AddBuffer(depthcount, "attenuationX");
   rays.AddBuffer(depthcount, "attenuationY");
@@ -477,6 +469,9 @@ ArrayType run(int nx, int ny, int samplecount, int depthcount,
       rays.GetBuffer("sumtotlx").Buffer,rays.GetBuffer("sumtotly").Buffer,rays.GetBuffer("sumtotlz").Buffer);
 
   auto tmin = rays.MinDistance;
+  vtkm::cont::ArrayHandle<vtkm::Int32> matIdArray, texIdArray;
+  matIdArray.Allocate(canvasSize);
+  texIdArray.Allocate(canvasSize);
 
   sum_values = rays.GetBuffer("sum_values").Buffer;
   vtkm::Bounds bounds(vtkm::Range(0,555), vtkm::Range(0,555), vtkm::Range(0,555));
@@ -509,8 +504,10 @@ ArrayType run(int nx, int ny, int samplecount, int depthcount,
 
     for (int depth=0; depth<depthcount; depth++){
       MyAlgos::Copy<float, float, StorageTag>(0, sum_values);
+      auto hrecs = vtkm::rendering::pathtracing::QuadIntersector::HitRecord(rays.U, rays.V, rays.Distance, rays.NormalX, rays.NormalY, rays.NormalZ, rays.IntersectionX, rays.IntersectionY, rays.IntersectionZ);
+      auto hids = vtkm::rendering::pathtracing::QuadIntersector::HitId(matIdArray, texIdArray);
 
-      intersect(cb, rays, hrecs,hids, tmin, emitted, attenuation, depth);
+      intersect(cb, rays, hrecs,hids, matIdArray, texIdArray, tmin, emitted, attenuation, depth);
 
       applyMaterials(rays, hrecs, hids, srecs, cb.tex, cb.matType, cb.texType, emitted, seeds, canvasSize, depth);
       generateRays(cb, whichPDF, hrecs, generated_dir, seeds, light_box_pointids,light_box_indices, light_sphere_pointids, light_sphere_indices);
