@@ -44,6 +44,7 @@
 #include "QuadPdf.h"
 #include "SpherePdf.h"
 #include "QuadGenerateDir.h"
+#include "SphereGenerateDir.h"
 
 using ArrayType = vtkm::cont::ArrayHandle<vec3>;
 
@@ -251,7 +252,6 @@ void generateRays(CornellBox &cb,
   vtkm::worklet::Invoker Invoke;
   WorketletGenerateDir genDir(3);
   CosineWorketletGenerateDir cosGenDir(1);
-  SphereWorkletGenerateDir sphereGenDir(3);
   Invoke(genDir, seeds, whichPDF);
   Invoke(cosGenDir, whichPDF, hrecs, generated_dir, seeds);
 
@@ -259,7 +259,9 @@ void generateRays(CornellBox &cb,
   quadGen.SetData(cb.coord, seeds, light_box_indices, whichPDF);
   quadGen.apply(rays);
 
-  Invoke(sphereGenDir, whichPDF, hrecs, generated_dir, seeds, light_sphere_pointids, light_sphere_indices, cb.coord, cb.SphereRadii);
+  SphereGenerateDir sphereGen(light_sphere_pointids, cb.SphereRadii);
+  sphereGen.SetData(cb.coord, seeds, light_sphere_indices, whichPDF);
+  sphereGen.apply(rays);
   }
 
 template<typename HitRecord, typename ScatterRecord,
