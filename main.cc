@@ -45,6 +45,8 @@
 #include "SpherePdf.h"
 #include "QuadGenerateDir.h"
 #include "SphereGenerateDir.h"
+#include "CosineGenerateDir.h"
+#include "WhichGenerateDir.h"
 
 using ArrayType = vtkm::cont::ArrayHandle<vec3>;
 
@@ -249,11 +251,13 @@ void generateRays(CornellBox &cb,
                   vtkm::cont::ArrayHandle<vtkm::Id> & light_sphere_indices
                   )
 {
-  vtkm::worklet::Invoker Invoke;
-  WorketletGenerateDir genDir(3);
-  CosineWorketletGenerateDir cosGenDir(1);
-  Invoke(genDir, seeds, whichPDF);
-  Invoke(cosGenDir, whichPDF, hrecs, generated_dir, seeds);
+  WhichGenerateDir whichGen;
+  whichGen.SetData(cb.coord, seeds, light_sphere_indices, whichPDF);
+  whichGen.apply(rays);
+
+  CosineGenerateDir cosGen;
+  cosGen.SetData(cb.coord, seeds, light_box_indices, whichPDF);
+  cosGen.apply(rays);
 
   QuadGenerateDir quadGen(light_box_pointids);
   quadGen.SetData(cb.coord, seeds, light_box_indices, whichPDF);
