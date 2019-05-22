@@ -31,22 +31,21 @@ class onb
         VTKM_EXEC_CONT
         vec3 local(const vec3& a) const { return a[0]*u() + a[1]*v() + a[2]*w(); }
         VTKM_EXEC_CONT
-        void build_from_w(const vec3&);
+        void build_from_w(const vec3&n)
+        {
+          axis[2] = unit_vector(n);
+          vec3 a;
+          if (fabs(w()[0]) > 0.9)
+              a = vec3(0, 1, 0);
+          else
+              a = vec3(1, 0, 0);
+          axis[1] = unit_vector( cross( w(), a ) );
+          axis[0] = cross(w(), v());
+
+        }
 
         vec3 axis[3];
 };
-
-VTKM_EXEC_CONT
-void onb::build_from_w(const vec3& n) {
-    axis[2] = unit_vector(n);
-    vec3 a;
-    if (fabs(w()[0]) > 0.9)
-        a = vec3(0, 1, 0);
-    else
-        a = vec3(1, 0, 0);
-    axis[1] = unit_vector( cross( w(), a ) );
-    axis[0] = cross(w(), v());
-}
 
 
 #endif

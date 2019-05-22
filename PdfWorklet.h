@@ -1,6 +1,7 @@
 #ifndef PDFWORKLET_H
 #define PDFWORKLET_H
 #include <float.h>
+#include "onb.h"
 #include "Surface.h"
 #include "Record.h"
 #include "wangXor.h"

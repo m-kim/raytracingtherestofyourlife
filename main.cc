@@ -41,6 +41,7 @@
 #include "AABBSurface.h"
 #include "QuadIntersector.h"
 #include "SphereIntersector.h"
+#include "QuadPdf.h"
 
 using ArrayType = vtkm::cont::ArrayHandle<vec3>;
 
@@ -275,14 +276,13 @@ void applyPDFs(CornellBox &cb,
               vtkm::Id depth
     )
 {
+  QuadPdf quadPdf(cb.QuadIds, light_box_pointids);
+  quadPdf.SetData(cb.coord, cb.matIdx[0], cb.texIdx[1],
+      seeds, light_box_indices, lightables);
+  quadPdf.apply(rays);
   vtkm::worklet::Invoker Invoke;
-  QuadPDFWorklet quadPDFWorklet(lightables);
   SpherePDFWorklet spherePDFWorklet(lightables);
   PDFCosineWorklet pdfWorklet(canvasSize, depth, canvasSize, lightables);
-  QuadExecWrapper quadSurf(cb.QuadIds, cb.matIdx[0], cb.texIdx[0]);
-  Invoke(quadPDFWorklet, rays.Origin, rays.Dir,hrecs,
-         rays.Status, sum_values, generated_dir, seeds,quadSurf,
-          light_box_pointids, light_box_indices, cb.coord);
   SphereExecWrapper surf(cb.SphereIds, cb.SphereRadii, cb.matIdx[1], cb.texIdx[1]);
 
 
