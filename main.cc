@@ -50,8 +50,9 @@
 
 using ArrayType = vtkm::cont::ArrayHandle<vec3>;
 
-inline vec3 de_nan(const vec3& c) {
-    vec3 temp = c;
+template<typename VecType>
+inline VecType de_nan(const VecType& c) {
+    auto temp = c;
     if (!(temp[0] == temp[0])) temp[0] = 0;
     if (!(temp[1] == temp[1])) temp[1] = 0;
     if (!(temp[2] == temp[2])) temp[2] = 0;
@@ -74,63 +75,24 @@ vtkm::rendering::raytracing::LinearBVH bvhSphere, bvhQuad;
 
 using RayType = vtkm::rendering::raytracing::Ray<float>;
 
-void buildBVH(
-              CornellBox &cb)
-{
-
-  vtkm::cont::CoordinateSystem coords = cb.coord;
-  vtkm::rendering::raytracing::AABBs aabbQuads;
-  vtkm::worklet::DispatcherMapField<::detail::FindQuadAABBs>(::detail::FindQuadAABBs())
-    .Invoke(cb.QuadIds,
-            aabbQuads.xmins,
-            aabbQuads.ymins,
-            aabbQuads.zmins,
-            aabbQuads.xmaxs,
-            aabbQuads.ymaxs,
-            aabbQuads.zmaxs,
-            cb.coord);
-
-  bvhQuad.SetData(aabbQuads);
-  bvhQuad.Construct();
-
-
-  vtkm::rendering::raytracing::AABBs aabbSpheres;
-  vtkm::worklet::DispatcherMapField<::detail::FindSphereAABBs>(::detail::FindSphereAABBs())
-    .Invoke(cb.SphereIds,
-            cb.SphereRadii,
-            aabbSpheres.xmins,
-            aabbSpheres.ymins,
-            aabbSpheres.zmins,
-            aabbSpheres.xmaxs,
-            aabbSpheres.ymaxs,
-            aabbSpheres.zmaxs,
-            cb.coord);
-
-  bvhSphere.SetData(aabbSpheres);
-  bvhSphere.Construct();
-
-
-  //ShapeBounds = bvh.TotalBounds;
-
-
-}
-template<typename HitRecord,
-         typename HitId,
-         typename emittedType,
+template<typename emittedType,
          typename attenType>
-void intersect(CornellBox &cb,
-               RayType &rays,
-               HitRecord &hrecs,
-               HitId &hids,
+void intersect(const vtkm::cont::CoordinateSystem &coord,
+               vtkm::rendering::raytracing::Ray<vtkm::Float32> &rays,
+               vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> &QuadIds,
+               vtkm::cont::ArrayHandle<vtkm::Id> &SphereIds,
+               vtkm::cont::ArrayHandle<vtkm::Float32> &SphereRadii,
                vtkm::cont::ArrayHandle<vtkm::Int32> &matIdArray,
                vtkm::cont::ArrayHandle<vtkm::Int32> &texIdArray,
+               vtkm::cont::ArrayHandle<vtkm::Id> *matIdx,
+               vtkm::cont::ArrayHandle<vtkm::Id> *texIdx,
                vtkm::cont::ArrayHandle<float> &tmin,
                emittedType &emitted,
                attenType &attenuation,
                const vtkm::Id depth)
 {
-  using MyAlgos = details::PathAlgorithms<vtkm::cont::DeviceAdapterAlgorithm<VTKM_DEFAULT_DEVICE_ADAPTER_TAG>, VTKM_DEFAULT_DEVICE_ADAPTER_TAG>;
   using StorageTag = vtkm::cont::StorageTagBasic;
+  using MyAlgos = ::details::PathAlgorithms<vtkm::cont::DeviceAdapterAlgorithm<VTKM_DEFAULT_DEVICE_ADAPTER_TAG>, VTKM_DEFAULT_DEVICE_ADAPTER_TAG>;
 
   MyAlgos::Copy<float, float, StorageTag>(std::numeric_limits<float>::max(), rays.Distance);
   MyAlgos::Copy<float, float, StorageTag>(0.001, tmin);
@@ -141,79 +103,31 @@ void intersect(CornellBox &cb,
 
 
   vtkm::cont::ArrayHandle<vtkm::Int32> nodes;
-  nodes.Allocate(rays.Dir.GetNumberOfValues());
-  for (int j=0; j<nodes.GetNumberOfValues(); j++){
-    nodes.GetPortalControl().Set(j, 0);
-  }
-
-#if 0
-   vtkm::cont::ArrayHandle<vtkm::Id> leafs;
-  leafs.Allocate(13);
-  leafs.GetPortalControl().Set(0, 12);
-  for (int i=0; i<12; i++){
-
-    leafs.GetPortalControl().Set(i+1, i);
-  }
-
-  Invoke(quad,
-         nodes,
-         rays.Origin,
-         rays.Dir,
-         hrecs,
-         hids,
-         tmin,
-         rays.Distance,
-         rays.Status,
-         quadIntersect,
-         cb.coord,
-         leafs);
-  vtkm::cont::ArrayHandle<vtkm::Id> sphereleafs;
-  sphereleafs.Allocate(2);
-  sphereleafs.GetPortalControl().Set(0, 1);
-  sphereleafs.GetPortalControl().Set(1, 0);
-
-  Invoke(sphereWorklet,
-         nodes,
-         rays.Origin,
-         rays.Dir,
-         hrecs,
-         hids,
-         tmin,
-         rays.Distance,
-         rays.Status,
-         surf,
-         cb.coord,
-         sphereleafs);
-#else
-
+  MyAlgos::Copy<vtkm::Int32, vtkm::Int32>(0, nodes);
 
   vtkm::rendering::pathtracing::QuadIntersector quadIntersector;
 
-  quadIntersector.SetData(cb.coord, cb.QuadIds, cb.matIdx[0], cb.texIdx[0], matIdArray, texIdArray);
+  quadIntersector.SetData(coord, QuadIds, matIdx[0], texIdx[0], matIdArray, texIdArray);
   quadIntersector.IntersectRays(rays);
 
   vtkm::rendering::pathtracing::SphereIntersector sphereIntersector;
 
-  sphereIntersector.SetData(cb.coord, cb.SphereIds, cb.SphereRadii, cb.matIdx[1], cb.texIdx[1], matIdArray, texIdArray);
+  sphereIntersector.SetData(coord, SphereIds, SphereRadii, matIdx[1], texIdx[1], matIdArray, texIdArray);
   sphereIntersector.IntersectRays(rays);
-
-
-#endif
-
-
 
   CollectIntersecttWorklet collectIntersect(canvasSize, depth);
   Invoke(collectIntersect, rays.Status, emitted, attenuation);
+
 
 }
 
 template<typename HitRecord, typename HitId, typename ScatterRecord,
          typename emittedType>
-void applyMaterials(RayType &rays,
+void applyMaterials(vtkm::rendering::raytracing::Ray<vtkm::Float32> &rays,
                     HitRecord &hrecs,
                     HitId &hids,
                     ScatterRecord &srecs,
-                    vtkm::cont::ArrayHandle<vec3> tex,
+                    vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32,3>> tex,
                     vtkm::cont::ArrayHandle<int> matType,
                     vtkm::cont::ArrayHandle<int> texType,
                     emittedType &emitted,
@@ -237,14 +151,12 @@ void applyMaterials(RayType &rays,
 
 }
 
-template<typename HitRecord,
-         typename GenDirType>
-void generateRays(CornellBox &cb,
+
+void generateRays(const vtkm::cont::CoordinateSystem &coord,
+                  vtkm::cont::ArrayHandle<vtkm::Float32> &SphereRadii,
                   vtkm::cont::ArrayHandle<int> &whichPDF,
-                  HitRecord &hrecs,
                   vtkm::rendering::raytracing::Ray<vtkm::Float32> &rays,
-                  GenDirType &generated_dir,
-                  vtkm::cont::ArrayHandle<unsigned int> &seeds,
+                  vtkm::cont::ArrayHandle<vtkm::UInt32> &seeds,
                   vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>>  light_box_pointids,
                   vtkm::cont::ArrayHandle<vtkm::Id> light_box_indices,
                   vtkm::cont::ArrayHandle<vtkm::Id> &light_sphere_pointids,
@@ -252,26 +164,32 @@ void generateRays(CornellBox &cb,
                   )
 {
   WhichGenerateDir whichGen;
-  whichGen.SetData(cb.coord, seeds, light_sphere_indices, whichPDF);
+  whichGen.SetData(coord, seeds, light_sphere_indices, whichPDF);
   whichGen.apply(rays);
 
   CosineGenerateDir cosGen;
-  cosGen.SetData(cb.coord, seeds, light_box_indices, whichPDF);
+  cosGen.SetData(coord, seeds, light_box_indices, whichPDF);
   cosGen.apply(rays);
 
   QuadGenerateDir quadGen(light_box_pointids);
-  quadGen.SetData(cb.coord, seeds, light_box_indices, whichPDF);
+  quadGen.SetData(coord, seeds, light_box_indices, whichPDF);
   quadGen.apply(rays);
 
-  SphereGenerateDir sphereGen(light_sphere_pointids, cb.SphereRadii);
-  sphereGen.SetData(cb.coord, seeds, light_sphere_indices, whichPDF);
+  SphereGenerateDir sphereGen(light_sphere_pointids, SphereRadii);
+  sphereGen.SetData(coord, seeds, light_sphere_indices, whichPDF);
   sphereGen.apply(rays);
   }
 
+
 template<typename HitRecord, typename ScatterRecord,
          typename attenType, typename GenDirType>
-void applyPDFs(CornellBox &cb,
-              RayType &rays,
+void applyPDFs(const vtkm::cont::CoordinateSystem &coord,
+               vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> QuadIds,
+               vtkm::cont::ArrayHandle<vtkm::Id> &SphereIds,
+               vtkm::cont::ArrayHandle<vtkm::Float32> &SphereRadii,
+               vtkm::cont::ArrayHandle<vtkm::Id> *matIdx,
+               vtkm::cont::ArrayHandle<vtkm::Id> *texIdx,
+              vtkm::rendering::raytracing::Ray<vtkm::Float32> &rays,
               HitRecord &hrecs,
               ScatterRecord srecs,
               vtkm::cont::ArrayHandle<vtkm::Float32> &sum_values,
@@ -288,35 +206,19 @@ void applyPDFs(CornellBox &cb,
     )
 {
   vtkm::worklet::Invoker Invoke;
-  QuadPdf quadPdf(cb.QuadIds, light_box_pointids);
-  quadPdf.SetData(cb.coord, cb.matIdx[0], cb.texIdx[0],
+  QuadPdf quadPdf(QuadIds, light_box_pointids);
+  quadPdf.SetData(coord, matIdx[0], texIdx[0],
       seeds, light_box_indices, lightables);
   quadPdf.apply(rays);
 
-  SpherePdf spherePdf(cb.SphereIds, light_sphere_pointids, cb.SphereRadii);
-  spherePdf.SetData(cb.coord, cb.matIdx[1], cb.texIdx[1],
+  SpherePdf spherePdf(SphereIds, light_sphere_pointids, SphereRadii);
+  spherePdf.SetData(coord, matIdx[1], texIdx[1],
       seeds, light_sphere_indices, lightables);
   spherePdf.apply(rays);
 
   PDFCosineWorklet pdfWorklet(canvasSize, depth, canvasSize, lightables);
   Invoke(pdfWorklet, rays.Origin, rays.Dir, hrecs, srecs, rays.Status, sum_values, generated_dir,  rays.Origin, rays.Dir, attenuation);
-
 }
-template <typename T, typename U, class CIn, class COut, class BinaryFunctor>
-VTKM_CONT static T MyScanInclusive(const vtkm::cont::ArrayHandle<T, CIn>& input,
-                                 vtkm::cont::ArrayHandle<U, COut>& output)
-{
-  vtkm::cont::detail::ScanInclusiveResultFunctor<U> functor;
-  vtkm::cont::TryExecute(functor, input, output);
-  return functor.result;
-}
-
-template<typename DeviceAdapterTag>
-void resizeRays(vtkm::rendering::raytracing::Ray<float> &rays, int canvasSize)
-{
-  rays.Resize(canvasSize);
-}
-
 const auto
 parse(int argc, char **argv){
   int x = 128;
@@ -473,7 +375,6 @@ ArrayType run(int nx, int ny, int samplecount, int depthcount,
   whichPDF.Allocate(nx*ny);
   vtkm::cont::ArrayHandle<unsigned int> seeds = rayCam.seeds;
 
-  buildBVH(cb);
   for (unsigned int i=0; i<canvasSize; i++){
 
     unsigned int idx = i;
@@ -502,12 +403,13 @@ ArrayType run(int nx, int ny, int samplecount, int depthcount,
       auto hrecs = vtkm::rendering::pathtracing::QuadIntersector::HitRecord(rays.U, rays.V, rays.Distance, rays.NormalX, rays.NormalY, rays.NormalZ, rays.IntersectionX, rays.IntersectionY, rays.IntersectionZ);
       auto hids = vtkm::rendering::pathtracing::QuadIntersector::HitId(matIdArray, texIdArray);
 
-      intersect(cb, rays, hrecs,hids, matIdArray, texIdArray, tmin, emitted, attenuation, depth);
+      intersect(cb.coord, rays, cb.QuadIds, cb.SphereIds, cb.SphereRadii, matIdArray, texIdArray, cb.matIdx, cb.texIdx, tmin, emitted, attenuation, depth);
 
       applyMaterials(rays, hrecs, hids, srecs, cb.tex, cb.matType, cb.texType, emitted, seeds, canvasSize, depth);
-      generateRays(cb, whichPDF, hrecs, rays, generated_dir, seeds, light_box_pointids,light_box_indices, light_sphere_pointids, light_sphere_indices);
+      generateRays(cb.coord, cb.SphereRadii, whichPDF, rays, seeds, light_box_pointids,light_box_indices, light_sphere_pointids, light_sphere_indices);
 
-      applyPDFs(cb, rays, hrecs, srecs, sum_values, generated_dir, attenuation, seeds,
+      applyPDFs(cb.coord, cb.QuadIds, cb.SphereIds, cb.SphereRadii,cb.matIdx, cb.texIdx,
+                rays, hrecs, srecs, sum_values, generated_dir, attenuation, seeds,
                 light_box_pointids, light_box_indices, light_sphere_pointids, light_sphere_indices, lightables, canvasSize, depth);
 
       vtkm::cont::ArrayHandleCast<vtkm::Int32, vtkm::cont::ArrayHandle<vtkm::UInt8>> castedStatus(rays.Status);
