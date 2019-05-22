@@ -26,6 +26,7 @@
 #include <vtkm/rendering/raytracing/Ray.h>
 #include <memory>
 #include "PathAlgorithms.h"
+#include "QuadIntersector.h"
 
 namespace vtkm
 {
@@ -136,6 +137,10 @@ public:
   vtkm::cont::ArrayHandle<int> whichPDF;
   vtkm::cont::ArrayHandle<int> MatType, TexType;
   vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32,3>> Tex;
+
+  vtkm::rendering::pathtracing::QuadIntersector::ScatterRecord srecs;
+  vtkm::rendering::pathtracing::QuadIntersector::HitRecord hrecs;
+  vtkm::rendering::pathtracing::QuadIntersector::HitId hids;
 
 private:
   struct InternalsType;

@@ -54,6 +54,26 @@ namespace vtkm
 namespace rendering
 {
 
+namespace details
+{
+struct WangInit
+{
+
+  VTKM_EXEC_CONT vtkm::UInt32 operator()(const vtkm::UInt32& x) const
+  {
+    vtkm::UInt32 idx = x;
+    auto val = xorshiftWang::getWang32(idx);
+    idx++;
+    val = xorshiftWang::getWang32(val);
+    idx++;
+    val = xorshiftWang::getWang32(val);
+    idx++;
+    val = xorshiftWang::getWang32(val);
+    return val;
+  }
+};
+
+}
 
 struct MapperPathTracer::InternalsType
 {
@@ -202,17 +222,6 @@ void MapperPathTracer::RenderCellsImpl(const vtkm::cont::DynamicCellSet& cellset
       (vtkm::Vec<vtkm::Float32,4>(0.0), cols);
 
 
-  auto srecs = vtkm::rendering::pathtracing::QuadIntersector::ScatterRecord(
-        rays.GetBuffer("specular_Ox").Buffer,
-         rays.GetBuffer("specular_Oy").Buffer,
-         rays.GetBuffer("specular_Oz").Buffer,
-         rays.GetBuffer("specular_Dx").Buffer,
-         rays.GetBuffer("specular_Dy").Buffer,
-         rays.GetBuffer("specular_Dz").Buffer,
-        rays.GetBuffer("specular_Ax").Buffer,
-        rays.GetBuffer("specular_Ay").Buffer,
-        rays.GetBuffer("specular_Az").Buffer
-        );
 
 
   auto attenuation = vec3CompositeType(
@@ -237,18 +246,24 @@ void MapperPathTracer::RenderCellsImpl(const vtkm::cont::DynamicCellSet& cellset
   whichPDF.Allocate(nx*ny);
   vtkm::cont::ArrayHandle<unsigned int> seeds = rayCam.seeds;
 
-  for (unsigned int i=0; i<canvasSize; i++){
+  auto srecs = vtkm::rendering::pathtracing::QuadIntersector::ScatterRecord(
+        rays.GetBuffer("specular_Ox").Buffer,
+         rays.GetBuffer("specular_Oy").Buffer,
+         rays.GetBuffer("specular_Oz").Buffer,
+         rays.GetBuffer("specular_Dx").Buffer,
+         rays.GetBuffer("specular_Dy").Buffer,
+         rays.GetBuffer("specular_Dz").Buffer,
+        rays.GetBuffer("specular_Ax").Buffer,
+        rays.GetBuffer("specular_Ay").Buffer,
+        rays.GetBuffer("specular_Az").Buffer
+        );
 
-    unsigned int idx = i;
-    auto val = xorshiftWang::getWang32(idx);
-    idx++;
-    val = xorshiftWang::getWang32(val);
-    idx++;
-    val = xorshiftWang::getWang32(val);
-    idx++;
-    val = xorshiftWang::getWang32(val);
-    seeds.GetPortalControl().Set(i, val);
-  }
+  auto hrecs = vtkm::rendering::pathtracing::QuadIntersector::HitRecord(rays.U, rays.V, rays.Distance, rays.NormalX, rays.NormalY, rays.NormalZ, rays.IntersectionX, rays.IntersectionY, rays.IntersectionZ);
+  auto hids = vtkm::rendering::pathtracing::QuadIntersector::HitId(matIdArray, texIdArray);
+
+  vtkm::cont::Algorithm::CopyIf(vtkm::cont::ArrayHandleCounting<vtkm::UInt32>(0,1, canvasSize),
+                                vtkm::cont::ArrayHandleConstant<vtkm::UInt32>(1, canvasSize),
+                                seeds, details::WangInit());
 
   auto tup = extract(cellset);
   vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> QuadIds = std::get<3>(tup);
@@ -267,8 +282,6 @@ void MapperPathTracer::RenderCellsImpl(const vtkm::cont::DynamicCellSet& cellset
 
     for (int depth=0; depth<depthcount; depth++){
       MyAlgos::Copy<float, float, StorageTag>(0, sum_values);
-      auto hrecs = vtkm::rendering::pathtracing::QuadIntersector::HitRecord(rays.U, rays.V, rays.Distance, rays.NormalX, rays.NormalY, rays.NormalZ, rays.IntersectionX, rays.IntersectionY, rays.IntersectionZ);
-      auto hids = vtkm::rendering::pathtracing::QuadIntersector::HitId(matIdArray, texIdArray);
 
       intersect(coords, rays,
                 QuadIds, SphereIds, SphereRadii,
