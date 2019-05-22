@@ -25,7 +25,7 @@ public:
 
   vtkm::cont::CoordinateSystem coordsHandle;
   virtual void apply(vtkm::rendering::raytracing::Ray<vtkm::Float32> &rays) = 0;
-  virtual void SetData(vtkm::cont::CoordinateSystem &coord,
+  virtual void SetData(const vtkm::cont::CoordinateSystem &coord,
                        vtkm::cont::ArrayHandle<vtkm::Id> matIdx,
                        vtkm::cont::ArrayHandle<vtkm::Id> texIdx,
                        vtkm::cont::ArrayHandle<vtkm::UInt32> &_seeds,

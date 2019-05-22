@@ -27,6 +27,7 @@
 #include <vtkm/rendering/raytracing/BoundingVolumeHierarchy.h>
 #include <vtkm/cont/ArrayHandleExtractComponent.h>
 
+#include "MapperPathTracer.h"
 #include "BVHTraverser.h"
 
 #include <fstream>
@@ -262,7 +263,7 @@ parse(int argc, char **argv){
   return std::make_tuple(x,y, s, depth, hemi);
 }
 
-ArrayType run(int nx, int ny, int samplecount, int depthcount,
+void run(int nx, int ny, int samplecount, int depthcount,
               vtkm::rendering::Canvas &canvas, vtkm::rendering::pathtracing::Camera &rayCam)
 {
   using MyAlgos = details::PathAlgorithms<vtkm::cont::DeviceAdapterAlgorithm<VTKM_DEFAULT_DEVICE_ADAPTER_TAG>, VTKM_DEFAULT_DEVICE_ADAPTER_TAG>;
@@ -306,9 +307,9 @@ ArrayType run(int nx, int ny, int samplecount, int depthcount,
   MyAlgos::Copy<vtkm::UInt8, vtkm::UInt8, StorageTag>((1UL << 3), rays.Status);
 
   vtkm::cont::ArrayHandleConstant<vec3> zero(vec3(0.0f), nx*ny);
-  vtkm::cont::ArrayHandle<vec3> cols;
-  cols.Allocate(nx*ny);
-  MyAlgos::Copy<vec3, vec3, StorageTag>(vec3(0.0f), cols);
+  auto cols = canvas.GetColorBuffer();
+  MyAlgos::Copy<vtkm::Vec<vtkm::Float32,4>, vtkm::Vec<vtkm::Float32,4>,vtkm::cont::StorageTagBasic>
+      (vtkm::Vec<vtkm::Float32,4>(0.0), cols);
 
   vtkm::cont::ArrayHandle<vtkm::Float32> sum_values;
 
@@ -349,6 +350,17 @@ ArrayType run(int nx, int ny, int samplecount, int depthcount,
   rays.AddBuffer(1, "sumtotly");
   rays.AddBuffer(1, "sumtotlz");
   rays.AddBuffer(1, "sum_values");
+  rays.AddBuffer(depthcount, "alphaChannelAE");
+  rays.AddBuffer(1, "alphaChannel");
+
+  vtkm::rendering::MapperPathTracer mapper(samplecount,
+                                           depthcount,
+                                           cb.matIdx,
+                                           cb.texIdx,
+                                           cb.matType,
+                                           cb.texType);
+
+  mapper.SetCanvas(&canvas);
   using vec3CompositeType = vtkm::cont::ArrayHandleCompositeVector<
     vtkm::cont::ArrayHandle<vtkm::Float32>,
     vtkm::cont::ArrayHandle<vtkm::Float32>,
@@ -403,12 +415,12 @@ ArrayType run(int nx, int ny, int samplecount, int depthcount,
       auto hrecs = vtkm::rendering::pathtracing::QuadIntersector::HitRecord(rays.U, rays.V, rays.Distance, rays.NormalX, rays.NormalY, rays.NormalZ, rays.IntersectionX, rays.IntersectionY, rays.IntersectionZ);
       auto hids = vtkm::rendering::pathtracing::QuadIntersector::HitId(matIdArray, texIdArray);
 
-      intersect(cb.coord, rays, cb.QuadIds, cb.SphereIds, cb.SphereRadii, matIdArray, texIdArray, cb.matIdx, cb.texIdx, tmin, emitted, attenuation, depth);
+      mapper.intersect(cb.coord, rays, cb.QuadIds, cb.SphereIds, cb.SphereRadii, matIdArray, texIdArray, cb.matIdx, cb.texIdx, tmin, emitted, attenuation, depth);
 
-      applyMaterials(rays, hrecs, hids, srecs, cb.tex, cb.matType, cb.texType, emitted, seeds, canvasSize, depth);
-      generateRays(cb.coord, cb.SphereRadii, whichPDF, rays, seeds, light_box_pointids,light_box_indices, light_sphere_pointids, light_sphere_indices);
+      mapper.applyMaterials(rays, hrecs, hids, srecs, cb.tex, cb.matType, cb.texType, emitted, seeds, canvasSize, depth);
+      mapper.generateRays(cb.coord, cb.SphereRadii, whichPDF, rays, seeds, light_box_pointids,light_box_indices, light_sphere_pointids, light_sphere_indices);
 
-      applyPDFs(cb.coord, cb.QuadIds, cb.SphereIds, cb.SphereRadii,cb.matIdx, cb.texIdx,
+      mapper.applyPDFs(cb.coord, cb.QuadIds, cb.SphereIds, cb.SphereRadii,cb.matIdx, cb.texIdx,
                 rays, hrecs, srecs, sum_values, generated_dir, attenuation, seeds,
                 light_box_pointids, light_box_indices, light_sphere_pointids, light_sphere_indices, lightables, canvasSize, depth);
 
@@ -418,50 +430,69 @@ ArrayType run(int nx, int ny, int samplecount, int depthcount,
 
     using CountType = vtkm::cont::ArrayHandleCounting<vtkm::Id>;
 
+    using vec4CompositeType = vtkm::cont::ArrayHandleCompositeVector<
+      vtkm::cont::ArrayHandle<vtkm::Float32>,
+      vtkm::cont::ArrayHandle<vtkm::Float32>,
+      vtkm::cont::ArrayHandle<vtkm::Float32>,
+      vtkm::cont::ArrayHandle<vtkm::Float32>>;
+
+    auto attenuation4 = vec4CompositeType(
+        rays.GetBuffer("attenuationX").Buffer, rays.GetBuffer("attenuationY").Buffer, rays.GetBuffer("attenuationZ").Buffer
+          ,rays.GetBuffer("alphaChannelAE").Buffer);
+    auto emitted4 = vec4CompositeType(
+          rays.GetBuffer("emittedX").Buffer,rays.GetBuffer("emittedY").Buffer,rays.GetBuffer("emittedZ").Buffer
+          ,rays.GetBuffer("alphaChannelAE").Buffer);
+
+    auto  sumtotl = vec4CompositeType(
+        rays.GetBuffer("sumtotlx").Buffer,rays.GetBuffer("sumtotly").Buffer,rays.GetBuffer("sumtotlz").Buffer
+        ,rays.GetBuffer("alphaChannel").Buffer);
+
+    vtkm::cont::ArrayHandleConstant<vtkm::Vec<vtkm::Float32,4>> zero(vtkm::Vec<vtkm::Float32,4>(0.0f), canvasSize);
 
     MyAlgos::SliceTransform<
-        decltype(emitted),
+        decltype(emitted4),
         decltype(zero),
         decltype(sumtotl),
         decltype(vtkm::Sum())>
-        (std::make_tuple((depthcount-1)*canvasSize, (depthcount-1)*canvasSize + canvasSize), emitted,
+        (std::make_tuple((depthcount-1)*canvasSize, (depthcount-1)*canvasSize + canvasSize), emitted4,
          std::make_tuple(0, canvasSize), zero,
          std::make_tuple(0, canvasSize), sumtotl, vtkm::Sum());
 
     for (int depth = depthcount-2; depth >=0; depth--){
       MyAlgos::SliceTransform<
-          decltype(attenuation),
+          decltype(attenuation4),
           decltype(sumtotl),
           decltype(sumtotl),
           decltype(vtkm::Multiply())>
-          (std::make_tuple(depth*canvasSize, depth*canvasSize + canvasSize), attenuation,
+          (std::make_tuple(depth*canvasSize, depth*canvasSize + canvasSize), attenuation4,
            std::make_tuple(0, canvasSize), sumtotl,
            std::make_tuple(0, canvasSize), sumtotl, vtkm::Multiply());
 
       MyAlgos::SliceTransform<
-          decltype(emitted),
+          decltype(emitted4),
           decltype(sumtotl),
           decltype(sumtotl),
           decltype(vtkm::Sum())>
-          (std::make_tuple(depth*canvasSize, depth*canvasSize + canvasSize), emitted,
+          (std::make_tuple(depth*canvasSize, depth*canvasSize + canvasSize), emitted4,
            std::make_tuple(0, canvasSize), sumtotl,
            std::make_tuple(0, canvasSize), sumtotl, vtkm::Sum());
 
 
+
     }
+    std::cout << vtkm::cont::Algorithm::Reduce( sumtotl, vtkm::Vec<vtkm::Float32,4>(0.0)) << std::endl;
 
     vtkm::cont::Algorithm::Transform(cols, sumtotl, cols, vtkm::Sum());
 
-    std::cout << "ns: " << s <<" " << vtkm::cont::Algorithm::Reduce(sumtotl, vec3(0.0)) << std::endl;
+    std::cout << "ns: " << s <<" " << vtkm::cont::Algorithm::Reduce(sumtotl, vtkm::Vec<vtkm::Float32,4>(0.0)) << std::endl;
 
   }
-
-  return cols;
 }
 
+template<typename ArrayType>
 void save(std::string fn,
           int nx, int ny, int samplecount,
-          vtkm::cont::ArrayHandle<vec3> &cols)
+          ArrayType &cols)
 {
   std::fstream fs;
   fs.open(fn.c_str(), std::fstream::out);
@@ -471,7 +502,9 @@ void save(std::string fn,
       auto col = cols.GetPortalConstControl().Get(i);
       col = de_nan(col);
       col = col / float(samplecount);
-      col = vec3( sqrt(col[0]), sqrt(col[1]), sqrt(col[2]) );
+      col[0] = sqrt(col[0]);
+      col[1] = sqrt(col[1]);
+      col[2] = sqrt(col[2]);
       int ir = int(255.99*col[0]);
       int ig = int(255.99*col[1]);
       int ib = int(255.99*col[2]);
@@ -510,10 +543,10 @@ void generateHemisphere(int nx, int ny, int samplecount, int depthcount)
 
       vec3 pos(x+278, y+278, z+278 );
       rayCam.SetPosition(pos);
-      auto cols = run(nx,ny, samplecount, depthcount, canvas, rayCam);
+      run(nx,ny, samplecount, depthcount, canvas, rayCam);
       std::stringstream sstr;
       sstr << "output-" << i*rTheta << "-" << j*rPhi << ".pnm";
-      save(sstr.str(), nx, ny, samplecount, cols);
+      save(sstr.str(), nx, ny, samplecount, canvas.GetColorBuffer());
     }
   }
 }
@@ -537,10 +570,10 @@ int main(int argc, char *argv[]) {
     rayCam.SetFieldOfView(40);
     rayCam.SetUp(vec3(0,1,0));
     rayCam.SetLookAt(vec3(278,278,278));
-    auto cols = run(nx,ny, samplecount, depthcount, canvas, rayCam);
+    run(nx,ny, samplecount, depthcount, canvas, rayCam);
     std::stringstream sstr;
     sstr << "output.pnm";
-    save(sstr.str(), nx, ny, samplecount, cols);
+    save(sstr.str(), nx, ny, samplecount, canvas.GetColorBuffer());
 
   }
 }

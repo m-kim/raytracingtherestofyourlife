@@ -602,6 +602,19 @@ Camera::Camera()
   this->IsViewDirty = true;
 
   this->seeds.Allocate(this->Height * this->Width);
+  for (unsigned int i=0; i<seeds.GetNumberOfValues(); i++){
+
+    unsigned int idx = i;
+    auto val = xorshiftWang::getWang32(idx);
+    idx++;
+    val = xorshiftWang::getWang32(val);
+    idx++;
+    val = xorshiftWang::getWang32(val);
+    idx++;
+    val = xorshiftWang::getWang32(val);
+    seeds.GetPortalControl().Set(i, val);
+  }
+
 }
 
 VTKM_CONT
@@ -872,7 +885,7 @@ VTKM_CONT void Camera::CreateRaysImpl(vtkm::rendering::raytracing::Ray<Precision
   logger->OpenLogEntry("ray_camera");
 
   bool ortho = this->CameraView.GetMode() == vtkm::rendering::Camera::MODE_2D;
-  //this->UpdateDimensions(rays, boundingBox, ortho);
+  this->UpdateDimensions(rays, boundingBox, ortho);
   this->WriteSettingsToLog();
   vtkm::cont::Timer<vtkm::cont::DeviceAdapterTagSerial> timer;
   //Set the origin of the ray back to the camera position
@@ -1051,7 +1064,7 @@ VTKM_CONT void Camera::UpdateDimensions(vtkm::rendering::raytracing::Ray<Precisi
                                         bool ortho2D)
 {
   // If bounds have been provided, only cast rays that could hit the data
-  bool imageSubsetModeOn = boundingBox.IsNonEmpty();
+  bool imageSubsetModeOn = false;//boundingBox.IsNonEmpty();
 
   //Find the pixel footprint
   if (imageSubsetModeOn && !ortho2D)
