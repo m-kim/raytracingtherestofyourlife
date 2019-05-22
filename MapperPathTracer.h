@@ -47,7 +47,8 @@ public:
                    vtkm::cont::ArrayHandle<vtkm::Id> *matIdx,
                    vtkm::cont::ArrayHandle<vtkm::Id> *texIdx,
                    vtkm::cont::ArrayHandle<int> &matType,
-                   vtkm::cont::ArrayHandle<int> &texType);
+                   vtkm::cont::ArrayHandle<int> &texType,
+                   vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32,3>> &tex);
 
   ~MapperPathTracer();
 
@@ -124,17 +125,17 @@ public:
                     vtkm::cont::ArrayHandle<vtkm::Id> &light_sphere_pointids,
                     vtkm::cont::ArrayHandle<vtkm::Id> & light_sphere_indices
                     ) const;
-  auto extract(const vtkm::cont::DynamicCellSet &cellset);
+  auto extract(const vtkm::cont::DynamicCellSet &cellset) const;
   virtual void StartScene() override;
   virtual void EndScene() override;
   void SetCompositeBackground(bool on);
   vtkm::rendering::Mapper* NewCopy() const override;
 
   const int depthcount, samplecount;
-  vtkm::cont::ArrayHandle<vtkm::Int32> TexIdArray, MatIdArray;
   vtkm::cont::ArrayHandle<vtkm::Id> *MatIdx, *TexIdx;
   vtkm::cont::ArrayHandle<int> whichPDF;
   vtkm::cont::ArrayHandle<int> MatType, TexType;
+  vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32,3>> Tex;
 
 private:
   struct InternalsType;
@@ -142,7 +143,10 @@ private:
 
   struct RenderFunctor;
 
-
+  void RenderCellsImpl(const vtkm::cont::DynamicCellSet& cellset,
+                       const vtkm::cont::CoordinateSystem& coords,
+                       const vtkm::cont::Field& scalarField,
+                       const vtkm::rendering::Camera& camera);
 
 };
 }

@@ -74,7 +74,8 @@ MapperPathTracer::MapperPathTracer(int sc, int dc,
                                    vtkm::cont::ArrayHandle<vtkm::Id> *matIdx,
                                    vtkm::cont::ArrayHandle<vtkm::Id> *texIdx,
                                    vtkm::cont::ArrayHandle<int> &matType,
-                                   vtkm::cont::ArrayHandle<int> &texType)
+                                   vtkm::cont::ArrayHandle<int> &texType,
+                                   vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32,3>> &tex)
   : Internals(new InternalsType)
   , samplecount(sc)
   , depthcount(dc)
@@ -82,38 +83,39 @@ MapperPathTracer::MapperPathTracer(int sc, int dc,
   , TexIdx(texIdx)
   , MatType(matType)
   , TexType(texType)
+  , Tex(tex)
 {
-  auto rays = &this->Internals->Rays;
+  auto &rays = this->Internals->Rays;
 
-  rays->EnableIntersectionData();
-  rays->AddBuffer(1, "specular_Ox");
-  rays->AddBuffer(1, "specular_Oy");
-  rays->AddBuffer(1, "specular_Oz");
-  rays->AddBuffer(1, "specular_Dx");
-  rays->AddBuffer(1, "specular_Dy");
-  rays->AddBuffer(1, "specular_Dz");
-  rays->AddBuffer(1, "specular_Ax");
-  rays->AddBuffer(1, "specular_Ay");
-  rays->AddBuffer(1, "specular_Az");
+  rays.EnableIntersectionData();
+  rays.AddBuffer(1, "specular_Ox");
+  rays.AddBuffer(1, "specular_Oy");
+  rays.AddBuffer(1, "specular_Oz");
+  rays.AddBuffer(1, "specular_Dx");
+  rays.AddBuffer(1, "specular_Dy");
+  rays.AddBuffer(1, "specular_Dz");
+  rays.AddBuffer(1, "specular_Ax");
+  rays.AddBuffer(1, "specular_Ay");
+  rays.AddBuffer(1, "specular_Az");
 
 
 
-  rays->AddBuffer(depthcount, "attenuationX");
-  rays->AddBuffer(depthcount, "attenuationY");
-  rays->AddBuffer(depthcount, "attenuationZ");
-  rays->AddBuffer(depthcount, "emittedX");
-  rays->AddBuffer(depthcount, "emittedY");
-  rays->AddBuffer(depthcount, "emittedZ");
-  rays->AddBuffer(1, "generated_dirX");
-  rays->AddBuffer(1, "generated_dirY");
-  rays->AddBuffer(1, "generated_dirZ");
-  rays->AddBuffer(1, "sumtotlx");
-  rays->AddBuffer(1, "sumtotly");
-  rays->AddBuffer(1, "sumtotlz");
-  rays->AddBuffer(1, "sum_values");
+  rays.AddBuffer(depthcount, "attenuationX");
+  rays.AddBuffer(depthcount, "attenuationY");
+  rays.AddBuffer(depthcount, "attenuationZ");
+  rays.AddBuffer(depthcount, "emittedX");
+  rays.AddBuffer(depthcount, "emittedY");
+  rays.AddBuffer(depthcount, "emittedZ");
+  rays.AddBuffer(1, "generated_dirX");
+  rays.AddBuffer(1, "generated_dirY");
+  rays.AddBuffer(1, "generated_dirZ");
+  rays.AddBuffer(1, "sumtotlx");
+  rays.AddBuffer(1, "sumtotly");
+  rays.AddBuffer(1, "sumtotlz");
+  rays.AddBuffer(1, "sum_values");
 
-  rays->AddBuffer(depthcount, "alphaChannelAE");
-  rays->AddBuffer(1, "alphaChannel");
+  rays.AddBuffer(depthcount, "alphaChannelAE");
+  rays.AddBuffer(1, "alphaChannel");
 }
 
 MapperPathTracer::~MapperPathTracer()
@@ -130,8 +132,6 @@ void MapperPathTracer::SetCanvas(vtkm::rendering::Canvas* canvas)
       throw vtkm::cont::ErrorBadValue("Ray Tracer: bad canvas type. Must be CanvasRayTracer");
     }
     auto canvasSize = canvas->GetWidth() * canvas->GetHeight();
-    MatIdArray.Allocate(canvasSize);
-    TexIdArray.Allocate(canvasSize);
     whichPDF.Allocate(canvasSize);
 
   }
@@ -145,7 +145,7 @@ vtkm::rendering::Canvas* MapperPathTracer::GetCanvas() const
 {
   return this->Internals->Canvas;
 }
-auto MapperPathTracer::extract(const vtkm::cont::DynamicCellSet &cellset)
+auto MapperPathTracer::extract(const vtkm::cont::DynamicCellSet &cellset) const
 {
 
   vtkm::rendering::raytracing::SphereExtractor sphereExtractor;
@@ -165,165 +165,138 @@ auto MapperPathTracer::extract(const vtkm::cont::DynamicCellSet &cellset)
   return std::make_tuple(SphereIds, SphereRadii, ShapeOffset, QuadIds);
 }
 
-void MapperPathTracer::RenderCells(const vtkm::cont::DynamicCellSet& cellset,
+void MapperPathTracer::RenderCellsImpl(const vtkm::cont::DynamicCellSet& cellset,
                              const vtkm::cont::CoordinateSystem& coords,
                              const vtkm::cont::Field& scalarField,
-                             const vtkm::cont::ColorTable& vtkmNotUsed(colorTable),
-                             const vtkm::rendering::Camera& camera,
-                             const vtkm::Range& vtkmNotUsed(scalarRange))
+                             const vtkm::rendering::Camera& camera)
 {
+  using StorageTag = vtkm::cont::StorageTagBasic;
+  using vec3CompositeType = vtkm::cont::ArrayHandleCompositeVector<
+    vtkm::cont::ArrayHandle<vtkm::Float32>,
+    vtkm::cont::ArrayHandle<vtkm::Float32>,
+    vtkm::cont::ArrayHandle<vtkm::Float32>>;
 
-  raytracing::Logger* logger = raytracing::Logger::GetInstance();
-  logger->OpenLogEntry("mapper_ray_tracer");
-  vtkm::cont::Timer<> tot_timer;
-  vtkm::cont::Timer<> timer;
+  vtkm::Bounds bounds(vtkm::Range(0,555), vtkm::Range(0,555), vtkm::Range(0,555));
 
-  auto canvasSize = this->Internals->Canvas->GetHeight() * this->Internals->Canvas->GetWidth();
+  auto ny = this->Internals->Canvas->GetHeight();
+  auto nx = this->Internals->Canvas->GetWidth();
+  auto canvasSize = nx *ny;
+  auto &rays = this->Internals->Rays;
+  auto &rayCam = this->Internals->RayCamera;
+  rayCam.CreateRays(rays, bounds);
 
-  //
-  // Add supported shapes
-  //
-  vtkm::Bounds shapeBounds(vtkm::Range(0,555), vtkm::Range(0,555), vtkm::Range(0,555));
+  constexpr int lightables = 2;
+  vtkm::Vec<vtkm::Id, 5> tmp[] = {vtkm::Vec<vtkm::Id,5>(0,8,9,10,11)};
+  auto light_box_pointids = vtkm::cont::make_ArrayHandle(tmp,1);
+  vtkm::Id tmp2[] = {0};
+  auto light_box_indices = vtkm::cont::make_ArrayHandle(tmp2,1);
+  vtkm::Id sphere_tmp[] = {vtkm::Id(4*12)};
+  auto light_sphere_pointids = vtkm::cont::make_ArrayHandle(sphere_tmp,1);
+  vtkm::Id sphere_tmp2[] = {0};
+  auto light_sphere_indices = vtkm::cont::make_ArrayHandle(sphere_tmp2,1);
+
+  MyAlgos::Copy<vtkm::UInt8, vtkm::UInt8, vtkm::cont::StorageTagBasic>((1UL << 3), rays.Status);
+
+  auto cols = this->Internals->Canvas->GetColorBuffer();
+  MyAlgos::Copy<vtkm::Vec<vtkm::Float32,4>, vtkm::Vec<vtkm::Float32,4>,vtkm::cont::StorageTagBasic>
+      (vtkm::Vec<vtkm::Float32,4>(0.0), cols);
+
+
+  auto srecs = vtkm::rendering::pathtracing::QuadIntersector::ScatterRecord(
+        rays.GetBuffer("specular_Ox").Buffer,
+         rays.GetBuffer("specular_Oy").Buffer,
+         rays.GetBuffer("specular_Oz").Buffer,
+         rays.GetBuffer("specular_Dx").Buffer,
+         rays.GetBuffer("specular_Dy").Buffer,
+         rays.GetBuffer("specular_Dz").Buffer,
+        rays.GetBuffer("specular_Ax").Buffer,
+        rays.GetBuffer("specular_Ay").Buffer,
+        rays.GetBuffer("specular_Az").Buffer
+        );
+
+
+  auto attenuation = vec3CompositeType(
+      rays.GetBuffer("attenuationX").Buffer, rays.GetBuffer("attenuationY").Buffer, rays.GetBuffer("attenuationZ").Buffer);
+  auto emitted = vec3CompositeType(
+        rays.GetBuffer("emittedX").Buffer,rays.GetBuffer("emittedY").Buffer,rays.GetBuffer("emittedZ").Buffer);
+
+  auto generated_dir = vec3CompositeType(
+        rays.GetBuffer("generated_dirX").Buffer,rays.GetBuffer("generated_dirY").Buffer,rays.GetBuffer("generated_dirZ").Buffer);
+  vtkm::cont::ArrayHandle<int> whichPDF;
+
+  auto  sumtotl = vec3CompositeType(
+      rays.GetBuffer("sumtotlx").Buffer,rays.GetBuffer("sumtotly").Buffer,rays.GetBuffer("sumtotlz").Buffer);
+
+  auto tmin = rays.MinDistance;
+  vtkm::cont::ArrayHandle<vtkm::Int32> matIdArray, texIdArray;
+  matIdArray.Allocate(canvasSize);
+  texIdArray.Allocate(canvasSize);
+
+  auto sum_values =rays.GetBuffer("sum_values").Buffer;
+
+  whichPDF.Allocate(nx*ny);
+  vtkm::cont::ArrayHandle<unsigned int> seeds = rayCam.seeds;
+
+  for (unsigned int i=0; i<canvasSize; i++){
+
+    unsigned int idx = i;
+    auto val = xorshiftWang::getWang32(idx);
+    idx++;
+    val = xorshiftWang::getWang32(val);
+    idx++;
+    val = xorshiftWang::getWang32(val);
+    idx++;
+    val = xorshiftWang::getWang32(val);
+    seeds.GetPortalControl().Set(i, val);
+  }
 
   auto tup = extract(cellset);
-
   vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> QuadIds = std::get<3>(tup);
   vtkm::cont::ArrayHandle<vtkm::Id> SphereIds = std::get<0>(tup);
   vtkm::cont::ArrayHandle<vtkm::Float32> SphereRadii = std::get<1>(tup);
   auto ShapeOffset = std::get<2>(tup);
 
-//  if (quadExtractor.GetNumberOfQuads() > 0)
-//  {
-//    raytracing::QuadIntersector* quadIntersector = new raytracing::QuadIntersector();
-//    quadIntersector->SetData(coords, quadExtractor.GetQuadIds());
-//    this->Internals->Tracer.AddShapeIntersector(quadIntersector);
-//    shapeBounds.Include(quadIntersector->GetShapeBounds());
-//  }
-
-  //
-  // Create rays
-  //
+  vtkm::worklet::Invoker Invoke;
   for (int s =0; s<samplecount; s++){
 //    UVGen uvgen(nx, ny, s);
 //    Invoke(uvgen, seeds, uvs);
 
-    vtkm::rendering::pathtracing::Camera& cam = this->Internals->Tracer.GetCamera();
-    cam.SetParameters(camera, *this->Internals->Canvas);
-    this->Internals->RayCamera.SetParameters(camera, *this->Internals->Canvas);
+    rayCam.CreateRays(rays, bounds);
+    MyAlgos::Copy<vtkm::UInt8, vtkm::UInt8, StorageTag>((1UL << 3), rays.Status);
 
-    this->Internals->RayCamera.CreateRays(this->Internals->Rays, shapeBounds);
-    auto rays = &this->Internals->Rays;
-
-    //static functions in other libraries are not exported
-    //so this is not callable
-  //  vtkm::rendering::raytracing::RayOperations::MapCanvasToRays(
-  //    this->Internals->Rays, camera, *this->Internals->Canvas);
-
-
-    auto sum_values = rays->GetBuffer("sum_values").Buffer;
-    auto hrecs = vtkm::rendering::pathtracing::QuadIntersector::HitRecord(rays->U, rays->V, rays->Distance, rays->NormalX, rays->NormalY, rays->NormalZ, rays->IntersectionX, rays->IntersectionY, rays->IntersectionZ);
-    auto srecs = vtkm::rendering::pathtracing::QuadIntersector::ScatterRecord(
-          rays->GetBuffer("specular_Ox").Buffer,
-           rays->GetBuffer("specular_Oy").Buffer,
-           rays->GetBuffer("specular_Oz").Buffer,
-           rays->GetBuffer("specular_Dx").Buffer,
-           rays->GetBuffer("specular_Dy").Buffer,
-           rays->GetBuffer("specular_Dz").Buffer,
-          rays->GetBuffer("specular_Ax").Buffer,
-          rays->GetBuffer("specular_Ay").Buffer,
-          rays->GetBuffer("specular_Az").Buffer
-          );
-    auto hids = vtkm::rendering::pathtracing::QuadIntersector::HitId(MatIdArray, TexIdArray);
-    auto tmin = rays->MinDistance;
-    using vec3CompositeType = vtkm::cont::ArrayHandleCompositeVector<
-      vtkm::cont::ArrayHandle<vtkm::Float32>,
-      vtkm::cont::ArrayHandle<vtkm::Float32>,
-      vtkm::cont::ArrayHandle<vtkm::Float32>>;
-
-    auto attenuation = vec3CompositeType(
-        rays->GetBuffer("attenuationX").Buffer, rays->GetBuffer("attenuationY").Buffer, rays->GetBuffer("attenuationZ").Buffer);
-    auto emitted = vec3CompositeType(
-          rays->GetBuffer("emittedX").Buffer,rays->GetBuffer("emittedY").Buffer,rays->GetBuffer("emittedZ").Buffer);
-
-    auto generated_dir = vec3CompositeType(
-          rays->GetBuffer("generated_dirX").Buffer,rays->GetBuffer("generated_dirY").Buffer,rays->GetBuffer("generated_dirZ").Buffer);
-    vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32,3>> tex = scalarField.GetData().Cast<vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32,3>>>();
-    constexpr int lightables = 2;
 
     for (int depth=0; depth<depthcount; depth++){
-      MyAlgos::Copy<float, float, vtkm::cont::StorageTagBasic>(0, sum_values);
+      MyAlgos::Copy<float, float, StorageTag>(0, sum_values);
+      auto hrecs = vtkm::rendering::pathtracing::QuadIntersector::HitRecord(rays.U, rays.V, rays.Distance, rays.NormalX, rays.NormalY, rays.NormalZ, rays.IntersectionX, rays.IntersectionY, rays.IntersectionZ);
+      auto hids = vtkm::rendering::pathtracing::QuadIntersector::HitId(matIdArray, texIdArray);
 
+      intersect(coords, rays,
+                QuadIds, SphereIds, SphereRadii,
+                matIdArray, texIdArray,
+                MatIdx, TexIdx,
+                tmin, emitted, attenuation, depth);
 
-      intersect(coords,
-                *rays,
-                QuadIds,
-                SphereIds,
-                SphereRadii,
-                MatIdArray,
-                TexIdArray,
-                MatIdx,
-                TexIdx,
-                tmin,
-                emitted,
-                attenuation,
-                depth);
+      applyMaterials(rays, hrecs, hids, srecs,
+                     Tex, MatType, TexType,
+                     emitted, seeds, canvasSize, depth);
+      generateRays(coords, SphereRadii,
+                   whichPDF, rays, seeds,
+                   light_box_pointids,light_box_indices,
+                   light_sphere_pointids, light_sphere_indices);
 
-      applyMaterials(*rays,
-                     hrecs,
-                     hids,
-                     srecs,
-                     tex,
-                     MatType,
-                     TexType,
-                     emitted,
-                     cam.seeds,
-                     canvasSize,
-                     depth);
-
-      vtkm::Vec<vtkm::Id, 5> tmp[] = {vtkm::Vec<vtkm::Id,5>(0,8,9,10,11)};
-      auto light_box_pointids = vtkm::cont::make_ArrayHandle(tmp,1);
-      vtkm::Id tmp2[] = {0};
-      auto light_box_indices = vtkm::cont::make_ArrayHandle(tmp2,1);
-      vtkm::Id sphere_tmp[] = {vtkm::Id(4*12)};
-      auto light_sphere_pointids = vtkm::cont::make_ArrayHandle(sphere_tmp,1);
-      vtkm::Id sphere_tmp2[] = {0};
-      auto light_sphere_indices = vtkm::cont::make_ArrayHandle(sphere_tmp2,1);
-
-      generateRays(coords,
-                   SphereRadii,
-                   whichPDF,
-                   *rays,
-                   this->Internals->RayCamera.seeds,
-                   light_box_pointids,
-                   light_box_indices,
-                   light_sphere_pointids,
-                   light_sphere_indices);
-
-      applyPDFs(coords,
-                QuadIds,
-                SphereIds,
-                SphereRadii,
-                MatIdx,
-                TexIdx,
-                *rays,
-                hrecs,
-                srecs,
-                sum_values,
-                generated_dir,
-                attenuation,
-                this->Internals->RayCamera.seeds,
-                light_box_pointids,
-                light_box_indices,
-                light_sphere_pointids,
-                light_sphere_indices,
+      applyPDFs(coords, QuadIds, SphereIds, SphereRadii,
+                MatIdx, TexIdx,
+                rays, hrecs, srecs,
+                sum_values, generated_dir, attenuation, seeds,
+                light_box_pointids, light_box_indices,
+                light_sphere_pointids, light_sphere_indices,
                 lightables, canvasSize, depth);
 
-      vtkm::cont::ArrayHandleCast<vtkm::Int32, vtkm::cont::ArrayHandle<vtkm::UInt8>> castedStatus(rays->Status);
+      vtkm::cont::ArrayHandleCast<vtkm::Int32, vtkm::cont::ArrayHandle<vtkm::UInt8>> castedStatus(rays.Status);
 
     }
 
     using CountType = vtkm::cont::ArrayHandleCounting<vtkm::Id>;
-
 
     using vec4CompositeType = vtkm::cont::ArrayHandleCompositeVector<
       vtkm::cont::ArrayHandle<vtkm::Float32>,
@@ -332,15 +305,15 @@ void MapperPathTracer::RenderCells(const vtkm::cont::DynamicCellSet& cellset,
       vtkm::cont::ArrayHandle<vtkm::Float32>>;
 
     auto attenuation4 = vec4CompositeType(
-        rays->GetBuffer("attenuationX").Buffer, rays->GetBuffer("attenuationY").Buffer, rays->GetBuffer("attenuationZ").Buffer
-          ,rays->GetBuffer("alphaChannelAE").Buffer);
+        rays.GetBuffer("attenuationX").Buffer, rays.GetBuffer("attenuationY").Buffer, rays.GetBuffer("attenuationZ").Buffer
+          ,rays.GetBuffer("alphaChannelAE").Buffer);
     auto emitted4 = vec4CompositeType(
-          rays->GetBuffer("emittedX").Buffer,rays->GetBuffer("emittedY").Buffer,rays->GetBuffer("emittedZ").Buffer
-          ,rays->GetBuffer("alphaChannelAE").Buffer);
+          rays.GetBuffer("emittedX").Buffer,rays.GetBuffer("emittedY").Buffer,rays.GetBuffer("emittedZ").Buffer
+          ,rays.GetBuffer("alphaChannelAE").Buffer);
 
     auto  sumtotl = vec4CompositeType(
-        rays->GetBuffer("sumtotlx").Buffer,rays->GetBuffer("sumtotly").Buffer,rays->GetBuffer("sumtotlz").Buffer
-        ,rays->GetBuffer("alphaChannel").Buffer);
+        rays.GetBuffer("sumtotlx").Buffer,rays.GetBuffer("sumtotly").Buffer,rays.GetBuffer("sumtotlz").Buffer
+        ,rays.GetBuffer("alphaChannel").Buffer);
 
     vtkm::cont::ArrayHandleConstant<vtkm::Vec<vtkm::Float32,4>> zero(vtkm::Vec<vtkm::Float32,4>(0.0f), canvasSize);
 
@@ -375,30 +348,31 @@ void MapperPathTracer::RenderCells(const vtkm::cont::DynamicCellSet& cellset,
 
 
     }
-    std::cout << vtkm::cont::Algorithm::Reduce( sumtotl, vtkm::Vec<vtkm::Float32,4>(0.0)) << std::endl;
-
-    auto cols = this->Internals->Canvas->GetColorBuffer();
-    MyAlgos::Copy<vtkm::Vec<vtkm::Float32,4>, vtkm::Vec<vtkm::Float32,4>,vtkm::cont::StorageTagBasic>
-        (vtkm::Vec<vtkm::Float32,4>(0.0), cols);
 
     vtkm::cont::Algorithm::Transform(cols, sumtotl, cols, vtkm::Sum());
 
-    //this->Internals->Tracer.SetField(scalarField, scalarRange);
-
-    //this->Internals->Tracer.SetColorMap(this->ColorMap);
-    //this->Internals->Tracer.Render(this->Internals->Rays);
-
-    timer.Reset();
-    this->Internals->Canvas->WriteToCanvas(
-      this->Internals->Rays, this->Internals->Rays.GetBuffer("default").Buffer, camera);
-
-    if (this->Internals->CompositeBackground)
-    {
-      this->Internals->Canvas->BlendBackground();
-    }
-
+    std::cout << "ns: " << s <<" " << vtkm::cont::Algorithm::Reduce(sumtotl, vtkm::Vec<vtkm::Float32,4>(0.0)) << std::endl;
 
   }
+}
+void MapperPathTracer::RenderCells(const vtkm::cont::DynamicCellSet& cellset,
+                             const vtkm::cont::CoordinateSystem& coords,
+                             const vtkm::cont::Field& scalarField,
+                             const vtkm::cont::ColorTable& vtkmNotUsed(colorTable),
+                             const vtkm::rendering::Camera& camera,
+                             const vtkm::Range& vtkmNotUsed(scalarRange))
+{
+
+  raytracing::Logger* logger = raytracing::Logger::GetInstance();
+  logger->OpenLogEntry("mapper_ray_tracer");
+  vtkm::cont::Timer<> tot_timer;
+  vtkm::cont::Timer<> timer;
+
+  vtkm::rendering::pathtracing::Camera *cam = &this->Internals->RayCamera;
+  cam->SetParameters(camera, *this->Internals->Canvas);
+
+  RenderCellsImpl(cellset, coords, scalarField, camera);
+
   vtkm::Float64 time = timer.GetElapsedTime();
   logger->AddLogData("write_to_canvas", time);
   time = tot_timer.GetElapsedTime();
@@ -414,8 +388,8 @@ void MapperPathTracer::SetCompositeBackground(bool on)
 void MapperPathTracer::StartScene()
 {
   // Nothing needs to be done.
-  auto rays = &this->Internals->Rays;
-  MyAlgos::Copy<vtkm::UInt8, vtkm::UInt8, vtkm::cont::StorageTagBasic>((1UL << 3), rays->Status);
+  auto &rays = this->Internals->Rays;
+  MyAlgos::Copy<vtkm::UInt8, vtkm::UInt8, vtkm::cont::StorageTagBasic>((1UL << 3), rays.Status);
 
 }
 
