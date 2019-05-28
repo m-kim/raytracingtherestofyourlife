@@ -11,7 +11,7 @@ set (PathTracingSrc main.cc CornellBox.cpp Camera.cxx PathTracer.cxx
   CosineGenerateDir.cxx WhichGenerateDir.cxx MapperPathTracer.cxx)
 set (PathTracingHdr Worklets.h AABBSurface.h BVHTraverser.h
   EmitWorklet.h ScatterWorklet.h SurfaceWorklets.h Surface.h PdfWorklet.h Record.h onb.h
-  CornellBox.h vec3.h wangXor.h GenerateDir.h)
+  CornellBox.h vec3.h wangXor.h GenerateDir.h QuadPdf.h)
 
 add_executable(CornellBox ${PathTracingSrc} ${PathTracingHdr})
 
