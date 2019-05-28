@@ -11,18 +11,12 @@ set (PathTracingHdr Worklets.h
 
 add_executable(CornellBox ${PathTracingSrc} ${PathTracingHdr})
 
-target_include_directories(CornellBox PUBLIC /home/mark/local/anaconda3/envs/cling/include/)
-target_include_directories(CornellBox PUBLIC /home/mark/local/vtk-m-1.3.0/include/vtkm-1.3/)
 
 set_target_properties(CornellBox PROPERTIES
   CXX_STANDARD 14)
 
 
-target_link_libraries(CornellBox PUBLIC
-  "/home/mark/local/vtk-m-1.3.0/lib/libvtkm_rendering-1.3.so"
-  "/home/mark/local/vtk-m-1.3.0/lib/libvtkm_cont-1.3.so"
-  "/home/mark/local/anaconda3/envs/cling/lib/libgomp.so"
-  "/home/mark/local/anaconda3/envs/cling/lib/liblodepng.so")
+target_link_libraries(CornellBox PUBLIC vtkm_cont vtkm_rendering)
 
 
 if(VTKm_ENABLE_CUDA)
@@ -30,14 +24,8 @@ if(VTKm_ENABLE_CUDA)
   add_executable(CornellBox_CUDA ${cudaSource} )
   target_compile_definitions(CornellBox_CUDA PRIVATE "VTKM_DEVICE_ADAPTER=VTKM_DEVICE_ADAPTER_CUDA")
 
-  target_include_directories(CornellBox_CUDA PUBLIC /home/mark/local/anaconda3/envs/cling/include/)
-  target_include_directories(CornellBox_CUDA PUBLIC /home/mark/local/vtk-m-1.3.0/include/vtkm-1.3/)
   set_target_properties(CornellBox_CUDA PROPERTIES
     CUDA_STANDARD 14)
-  target_link_libraries(CornellBox_CUDA PUBLIC
-    "/home/mark/local/vtk-m-1.3.0/lib/libvtkm_rendering-1.3.so"
-    "/home/mark/local/vtk-m-1.3.0/lib/libvtkm_cont-1.3.so"
-    "/home/mark/local/anaconda3/envs/cling/lib/libgomp.so"
-    "/home/mark/local/anaconda3/envs/cling/lib/liblodepng.so")
+  target_link_libraries(CornellBox_CUDA PUBLIC vtkm_cont vtkm_rendering)
 
 endif()
