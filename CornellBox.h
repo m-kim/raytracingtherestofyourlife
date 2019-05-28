@@ -83,19 +83,25 @@ void CornellBox::build()
     pts1[1].GetPortalControl().Set(0, vec3(213,554,227));
     pts2[1].GetPortalControl().Set(0, vec3(343,554,332));
     flipped[1].GetPortalControl().Set(0, 1);
+    translateOffset[1].GetPortalControl().Set(0, vec3(0));
+    angleArray[1].GetPortalControl().Set(0, 0.f);
 
     matIdx[1].GetPortalControl().Set(1, 1);
     texIdx[1].GetPortalControl().Set(1, 1);
     pts1[1].GetPortalControl().Set(1, vec3(0,555,0));
     pts2[1].GetPortalControl().Set(1, vec3(555,555,555));
     flipped[1].GetPortalControl().Set(1, 1);
-
+    translateOffset[1].GetPortalControl().Set(1, vec3(0));
+    angleArray[1].GetPortalControl().Set(1, 0.f);
+    
     matIdx[1].GetPortalControl().Set(2, 1);
     texIdx[1].GetPortalControl().Set(2, 1);
     pts1[1].GetPortalControl().Set(2, vec3(0,0,0));
     pts2[1].GetPortalControl().Set(2, vec3(555,0,555));
     flipped[1].GetPortalControl().Set(2, 0);
-
+    translateOffset[1].GetPortalControl().Set(2, vec3(0));
+    angleArray[1].GetPortalControl().Set(0, 0.f);
+    
     //xy_rect
     translateOffset[2].Allocate(3);
     angleArray[2].Allocate(3);
