@@ -21,7 +21,7 @@
 #define vtk_m_rendering_pathtracing_BVH_Traverser_h
 
 #include <vtkm/rendering/raytracing/BoundingVolumeHierarchy.h>
-#include <vtkm/rendering/raytracing/Ray.h>
+#include "raytracing/Ray.h"
 #include <vtkm/rendering/raytracing/RayTracingTypeDefs.h>
 
 namespace vtkm

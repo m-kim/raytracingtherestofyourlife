@@ -2,7 +2,8 @@
 #define QUADGENERATEDIR_H
 #include "GenerateDir.h"
 #include <vtkm/cont/ArrayHandle.h>
-#include <vtkm/rendering/raytracing/Ray.h>
+#include "raytracing/Ray.h"
+
 #include "PdfWorklet.h"
 #include <vtkm/worklet/Invoker.h>
 

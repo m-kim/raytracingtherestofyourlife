@@ -2,7 +2,8 @@
 #define QUADPDF_H
 #include "Pdf.h"
 #include <vtkm/cont/ArrayHandle.h>
-#include <vtkm/rendering/raytracing/Ray.h>
+#include "raytracing/Ray.h"
+
 #include "PdfWorklet.h"
 #include <vtkm/worklet/Invoker.h>
 

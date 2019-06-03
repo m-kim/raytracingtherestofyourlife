@@ -23,7 +23,8 @@
 #include <vtkm/cont/ColorTable.h>
 #include <vtkm/rendering/Camera.h>
 #include <vtkm/rendering/Mapper.h>
-#include <vtkm/rendering/raytracing/Ray.h>
+#include "raytracing/Ray.h"
+#include <vtkm/rendering/raytracing/ChannelBuffer.h>
 #include <memory>
 #include "pathtracing/PathAlgorithms.h"
 #include "pathtracing/QuadIntersector.h"

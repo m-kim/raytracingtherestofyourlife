@@ -3,7 +3,8 @@
 
 #include <vtkm/cont/ArrayHandle.h>
 #include <vtkm/cont/CoordinateSystem.h>
-#include <vtkm/rendering/raytracing/Ray.h>
+#include "raytracing/Ray.h"
+
 class Pdf
 {
 public:

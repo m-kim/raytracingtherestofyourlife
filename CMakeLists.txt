@@ -21,6 +21,7 @@ pathtracing/WhichGenerateDir.cxx
 MapperPathTracer.cxx 
 MapperQuad.cxx
 raytracing/OrigQuadIntersector.cxx
+raytracing/ChannelBuffer.cxx
 View3D.cxx )
 set (PathTracingHdr
 pathtracing/Camera.h
@@ -49,7 +50,9 @@ pathtracing/Record.h
 pathtracing/onb.h
 MapperPathTracer.h
 MapperQuad.h
-
+raytracing/ChannelBuffer.h
+raytracing/ChannelBufferOperations.h
+raytracing/Ray.h
 CornellBox.h 
 pathtracing/vec3.h 
 pathtracing/wangXor.h 
@@ -65,7 +68,9 @@ add_executable(CornellBox ${PathTracingSrc} ${PathTracingHdr})
 set_target_properties(CornellBox PROPERTIES
   CXX_STANDARD 17)
 
-
+target_include_directories(CornellBox
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+  )
 target_link_libraries(CornellBox PUBLIC vtkm_cont vtkm_rendering OpenMP::OpenMP_CXX)
 
 
@@ -73,6 +78,9 @@ if(VTKm_ENABLE_CUDA)
   vtkm_compile_as_cuda(cudaSource ${PathTracingSrc})
   add_executable(CornellBox_CUDA ${cudaSource} )
   target_compile_definitions(CornellBox_CUDA PRIVATE "VTKM_DEVICE_ADAPTER=VTKM_DEVICE_ADAPTER_CUDA")
+  target_include_directories(CornellBox_CUDA
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+    )
 
   set_target_properties(CornellBox_CUDA PROPERTIES
     CUDA_STANDARD 14)

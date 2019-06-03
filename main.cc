@@ -19,8 +19,6 @@
 #include <vtkm/cont/internal/DeviceAdapterAlgorithmGeneral.h>
 #include <vtkm/cont/ArrayHandle.h>
 #include <vtkm/cont/ArrayHandleCompositeVector.h>
-#include <vtkm/rendering/raytracing/Ray.h>
-#include <vtkm/rendering/raytracing/RayOperations.h>
 #include <omp.h>
 #include <vtkm/cont/Algorithm.h>
 #include <vtkm/worklet/Invoker.h>

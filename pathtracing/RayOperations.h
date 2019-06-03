@@ -23,8 +23,8 @@
 #include <vtkm/Matrix.h>
 #include <vtkm/rendering/Camera.h>
 #include <vtkm/rendering/CanvasRayTracer.h>
-#include <vtkm/rendering/raytracing/ChannelBufferOperations.h>
-#include <vtkm/rendering/raytracing/Ray.h>
+#include "raytracing/ChannelBufferOperations.h"
+#include "raytracing/Ray.h"
 #include <vtkm/rendering/raytracing/Worklets.h>
 
 namespace vtkm
