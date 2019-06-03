@@ -307,7 +307,6 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   vtkm::cont::Field pfield(
     "point_var",
     vtkm::cont::Field::Association::POINTS,
-    "cells",
     field);
 
   ds.AddField(pfield);
