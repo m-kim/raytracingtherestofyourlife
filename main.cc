@@ -35,7 +35,7 @@
 #include <vtkm/rendering/MapperRayTracer.h>
 #include <vtkm/rendering/MapperQuad.h>
 #include <vtkm/rendering/Scene.h>
-#include <vtkm/rendering/View3D.h>
+#include "View3D.h"
 
 using ArrayType = vtkm::cont::ArrayHandle<vec3>;
 
@@ -57,6 +57,7 @@ parse(int argc, char **argv){
   int depth = 5;
 
   bool hemi = false;
+  bool direct = false;
   for (int i=1; i<argc; i++){
     if (!strcmp(argv[i], "-x")){
       if (i+1 < argc){
@@ -87,9 +88,11 @@ parse(int argc, char **argv){
     {
       hemi = true;
     }
+    else if(!strcmp(argv[i], "-direct"))
+      direct = true;
   }
 
-  return std::make_tuple(x,y, s, depth, hemi);
+  return std::make_tuple(x,y, s, depth, hemi, direct);
 }
 void runRay(int nx, int ny, int samplecount, int depthcount,
               vtkm::rendering::Canvas &canvas, vtkm::rendering::Camera &cam)
@@ -100,19 +103,14 @@ void runRay(int nx, int ny, int samplecount, int depthcount,
   vtkm::rendering::Scene scene;
 
   scene.AddActor(vtkm::rendering::Actor(
-                   ds.GetCellSet(), ds.GetCoordinateSystem(), ds.GetField("point_var"), vtkm::cont::ColorTable{}));
-  vtkm::rendering::Color background(1.0f, 1.0f, 1.0f, 1.0f);
-  vtkm::rendering::Color foreground(0.0f, 0.0f, 0.0f, 1.0f);
+                   ds.GetCellSet(),
+                   ds.GetCoordinateSystem(),
+                   ds.GetField("point_var"),
+                   vtkm::cont::ColorTable{vtkm::cont::ColorTable::Preset::COOL_TO_WARM_EXTENDED}));
+  vtkm::rendering::Color background(0,0,0, 1.0f);
+  vtkm::rendering::Color foreground(1,1,1, 1.0f);
   vtkm::rendering::View3D view(scene, mapper, canvas, cam, background, foreground);
 
-//  // Print the title
-//  vtkm::rendering::TextAnnotationScreen* titleAnnotation =
-//    new vtkm::rendering::TextAnnotationScreen("Test Plot",
-//                                              vtkm::rendering::Color(1, 1, 1, 1),
-//                                              .075f,
-//                                              vtkm::Vec<vtkm::Float32, 2>(-.11f, .92f),
-//                                              0.f);
-//  view.AddAnnotation(titleAnnotation);
   view.Initialize();
   view.Paint();
   view.SaveAs("direct.pnm");
@@ -250,25 +248,28 @@ int main(int argc, char *argv[]) {
   const int samplecount = std::get<2>(tup);
   const int depthcount = std::get<3>(tup);
   const bool hemi = std::get<4>(tup);
+  const bool direct = std::get<5>(tup);
+
   if (hemi)
     generateHemisphere(nx,ny, samplecount, depthcount);
   else
   {
     vtkm::rendering::CanvasRayTracer canvas(nx,ny);
     vtkm::rendering::Camera cam;
+    cam.SetClippingRange(0.01f, 10000.f);
     cam.SetPosition(vec3(278,278,-800));
     cam.SetFieldOfView(40.);
     cam.SetViewUp(vec3(0,1,0));
     cam.SetLookAt(vec3(278,278,278));
-    runRay(nx,ny,samplecount,depthcount, canvas, cam);
-//    runPath(nx,ny, samplecount, depthcount, canvas, cam);
-//    std::stringstream sstr;
-//    sstr << "output.pnm";
-//    save(sstr.str(), nx, ny, samplecount, canvas.GetColorBuffer());
+    if (direct)
+      runRay(nx,ny,samplecount,depthcount, canvas, cam);
+    else{
+      runPath(nx,ny, samplecount, depthcount, canvas, cam);
+      std::stringstream sstr;
+      sstr << "output.pnm";
+      save(sstr.str(), nx, ny, samplecount, canvas.GetColorBuffer());
 
-//    sstr.str("depth.pnm");
-//    save(sstr.str(), nx, ny, 0, canvas.GetDepthBuffer());
-
+    }
   }
 }
 
