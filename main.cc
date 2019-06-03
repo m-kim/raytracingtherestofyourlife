@@ -32,6 +32,11 @@
 #include <fstream>
 #include "CornellBox.h"
 
+#include <vtkm/rendering/MapperRayTracer.h>
+#include <vtkm/rendering/MapperQuad.h>
+#include <vtkm/rendering/Scene.h>
+#include <vtkm/rendering/View3D.h>
+
 using ArrayType = vtkm::cont::ArrayHandle<vec3>;
 
 template<typename VecType>
@@ -86,8 +91,34 @@ parse(int argc, char **argv){
 
   return std::make_tuple(x,y, s, depth, hemi);
 }
+void runRay(int nx, int ny, int samplecount, int depthcount,
+              vtkm::rendering::Canvas &canvas, vtkm::rendering::Camera &cam)
+{
+  CornellBox cb;
+  vtkm::rendering::MapperQuad mapper;
+  auto ds = cb.buildDataSet();
+  vtkm::rendering::Scene scene;
 
-void run(int nx, int ny, int samplecount, int depthcount,
+  scene.AddActor(vtkm::rendering::Actor(
+                   ds.GetCellSet(), ds.GetCoordinateSystem(), ds.GetField("point_var"), vtkm::cont::ColorTable{}));
+  vtkm::rendering::Color background(1.0f, 1.0f, 1.0f, 1.0f);
+  vtkm::rendering::Color foreground(0.0f, 0.0f, 0.0f, 1.0f);
+  vtkm::rendering::View3D view(scene, mapper, canvas, cam, background, foreground);
+
+//  // Print the title
+//  vtkm::rendering::TextAnnotationScreen* titleAnnotation =
+//    new vtkm::rendering::TextAnnotationScreen("Test Plot",
+//                                              vtkm::rendering::Color(1, 1, 1, 1),
+//                                              .075f,
+//                                              vtkm::Vec<vtkm::Float32, 2>(-.11f, .92f),
+//                                              0.f);
+//  view.AddAnnotation(titleAnnotation);
+  view.Initialize();
+  view.Paint();
+  view.SaveAs("direct.pnm");
+
+}
+void runPath(int nx, int ny, int samplecount, int depthcount,
               vtkm::rendering::Canvas &canvas, vtkm::rendering::Camera &cam)
 {
   using MyAlgos = details::PathAlgorithms<vtkm::cont::DeviceAdapterAlgorithm<VTKM_DEFAULT_DEVICE_ADAPTER_TAG>, VTKM_DEFAULT_DEVICE_ADAPTER_TAG>;
@@ -126,6 +157,40 @@ void run(int nx, int ny, int samplecount, int depthcount,
 
 }
 
+template<typename ValueType>
+void save(std::fstream &fs,
+          int samplecount,
+          ValueType &col);
+
+template<>
+void save(std::fstream &fs,
+          int samplecount,
+          vtkm::Vec<vtkm::Float32,4> &col)
+{
+  col = de_nan(col);
+  col = col / float(samplecount);
+  col[0] = sqrt(col[0]);
+  col[1] = sqrt(col[1]);
+  col[2] = sqrt(col[2]);
+  int ir = int(255.99*col[0]);
+  int ig = int(255.99*col[1]);
+  int ib = int(255.99*col[2]);
+  fs << ir << " " << ig << " " << ib << std::endl;
+
+}
+template<>
+void save(std::fstream &fs,
+          int samplecount,
+          vtkm::Float32 &col)
+{
+  col = sqrt(col);
+  int ir = int(255.99*col);
+  int ig = int(255.99*col);
+  int ib = int(255.99*col);
+  fs << ir << " " << ig << " " << ib << std::endl;
+
+}
+
 template<typename ArrayType>
 void save(std::string fn,
           int nx, int ny, int samplecount,
@@ -137,15 +202,7 @@ void save(std::string fn,
     fs << "P3\n" << nx << " "  << ny << " 255" << std::endl;
     for (int i=0; i<cols.GetNumberOfValues(); i++){
       auto col = cols.GetPortalConstControl().Get(i);
-      col = de_nan(col);
-      col = col / float(samplecount);
-      col[0] = sqrt(col[0]);
-      col[1] = sqrt(col[1]);
-      col[2] = sqrt(col[2]);
-      int ir = int(255.99*col[0]);
-      int ig = int(255.99*col[1]);
-      int ib = int(255.99*col[2]);
-      fs << ir << " " << ig << " " << ib << std::endl;
+      save(fs, samplecount, col);
     }
     fs.close();
   }
@@ -178,7 +235,7 @@ void generateHemisphere(int nx, int ny, int samplecount, int depthcount)
 
       vec3 pos(x+278, y+278, z+278 );
       cam.SetPosition(pos);
-      run(nx,ny, samplecount, depthcount, canvas, cam);
+      runPath(nx,ny, samplecount, depthcount, canvas, cam);
       std::stringstream sstr;
       sstr << "output-" << i*rTheta << "-" << j*rPhi << ".pnm";
       save(sstr.str(), nx, ny, samplecount, canvas.GetColorBuffer());
@@ -203,10 +260,14 @@ int main(int argc, char *argv[]) {
     cam.SetFieldOfView(40.);
     cam.SetViewUp(vec3(0,1,0));
     cam.SetLookAt(vec3(278,278,278));
-    run(nx,ny, samplecount, depthcount, canvas, cam);
-    std::stringstream sstr;
-    sstr << "output.pnm";
-    save(sstr.str(), nx, ny, samplecount, canvas.GetColorBuffer());
+    runRay(nx,ny,samplecount,depthcount, canvas, cam);
+//    runPath(nx,ny, samplecount, depthcount, canvas, cam);
+//    std::stringstream sstr;
+//    sstr << "output.pnm";
+//    save(sstr.str(), nx, ny, samplecount, canvas.GetColorBuffer());
+
+//    sstr.str("depth.pnm");
+//    save(sstr.str(), nx, ny, 0, canvas.GetDepthBuffer());
 
   }
 }
