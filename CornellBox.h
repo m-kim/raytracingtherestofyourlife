@@ -4,6 +4,7 @@
 #include <vtkm/cont/DataSet.h>
 #include "vec3.h"
 #include <vtkm/cont/CoordinateSystem.h>
+#include <vtkm/io/writer/VTKDataSetWriter.h>
 
 class CornellBox
 {
@@ -27,6 +28,11 @@ public:
   vtkm::cont::DataSet buildDataSet();
 
   vtkm::cont::DataSet ds;
+
+  void saveDS(std::string fname){
+    vtkm::io::writer::VTKDataSetWriter writer1(fname);
+    writer1.WriteDataSet(ds);
+  }
 };
 
 #endif
