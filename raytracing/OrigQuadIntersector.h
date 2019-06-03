@@ -17,8 +17,8 @@
 //  Laboratory (LANL), the U.S. Government retains certain rights in
 //  this software.
 //============================================================================
-#ifndef vtk_m_rendering_raytracing_Quad_Intersector_h
-#define vtk_m_rendering_raytracing_Quad_Intersector_h
+#ifndef vtk_m_rendering_raytracing_Orig_Quad_Intersector_h
+#define vtk_m_rendering_raytracing_Orig_Quad_Intersector_h
 
 #include <vtkm/cont/Algorithm.h>
 #include <vtkm/rendering/raytracing/ShapeIntersector.h>
@@ -32,14 +32,14 @@ namespace raytracing
 namespace detail
 {
 }
-class QuadIntersector : public ShapeIntersector
+class OrigQuadIntersector : public ShapeIntersector
 {
 protected:
   vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id, 5>> QuadIds;
 
 public:
-  QuadIntersector();
-  virtual ~QuadIntersector() override;
+  OrigQuadIntersector();
+  virtual ~OrigQuadIntersector() override;
 
 
   void SetData(const vtkm::cont::CoordinateSystem& coords,

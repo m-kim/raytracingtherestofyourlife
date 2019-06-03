@@ -17,15 +17,13 @@ pathtracing/SphereExtractor.cxx
 pathtracing/QuadExtractor.cxx 
 pathtracing/QuadIntersector.cxx
 pathtracing/SphereIntersector.cxx 
-pathtracing/QuadPdf.cxx 
-pathtracing/SpherePdf.cxx 
 pathtracing/QuadGenerateDir.cxx 
 pathtracing/SphereGenerateDir.cxx
 pathtracing/CosineGenerateDir.cxx 
 pathtracing/WhichGenerateDir.cxx 
 MapperPathTracer.cxx 
 MapperQuad.cxx
-raytracing/QuadIntersector.cxx
+raytracing/OrigQuadIntersector.cxx
 View3D.cxx )
 set (PathTracingHdr 
 pathtracing/Worklets.h 
@@ -45,7 +43,8 @@ pathtracing/vec3.h
 pathtracing/wangXor.h 
 pathtracing/GenerateDir.h 
 pathtracing/QuadPdf.h 
-View3D.h 
+pathtracing/SpherePdf.h
+View3D.h
 pathtracing/RayOperations.h)
 
 add_executable(CornellBox ${PathTracingSrc} ${PathTracingHdr})

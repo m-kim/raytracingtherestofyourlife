@@ -21,7 +21,7 @@
 #include <vtkm/VectorAnalysis.h>
 #include <vtkm/cont/Algorithm.h>
 #include <vtkm/rendering/raytracing/BVHTraverser.h>
-#include <vtkm/rendering/raytracing/QuadIntersector.h>
+#include "OrigQuadIntersector.h"
 #include <vtkm/rendering/raytracing/RayOperations.h>
 #include <vtkm/worklet/DispatcherMapTopology.h>
 
@@ -411,28 +411,28 @@ public:
 
 } // namespace detail
 
-QuadIntersector::QuadIntersector()
+OrigQuadIntersector::OrigQuadIntersector()
   : ShapeIntersector()
 {
 }
 
-QuadIntersector::~QuadIntersector()
+OrigQuadIntersector::~OrigQuadIntersector()
 {
 }
 
 
-void QuadIntersector::IntersectRays(Ray<vtkm::Float32>& rays, bool returnCellIndex)
+void OrigQuadIntersector::IntersectRays(Ray<vtkm::Float32>& rays, bool returnCellIndex)
 {
   IntersectRaysImp(rays, returnCellIndex);
 }
 
-void QuadIntersector::IntersectRays(Ray<vtkm::Float64>& rays, bool returnCellIndex)
+void OrigQuadIntersector::IntersectRays(Ray<vtkm::Float64>& rays, bool returnCellIndex)
 {
   IntersectRaysImp(rays, returnCellIndex);
 }
 
 template <typename Precision>
-void QuadIntersector::IntersectRaysImp(Ray<Precision>& rays, bool vtkmNotUsed(returnCellIndex))
+void OrigQuadIntersector::IntersectRaysImp(Ray<Precision>& rays, bool vtkmNotUsed(returnCellIndex))
 {
 
   detail::QuadExecWrapper leafIntersector(this->QuadIds);
@@ -444,7 +444,7 @@ void QuadIntersector::IntersectRaysImp(Ray<Precision>& rays, bool vtkmNotUsed(re
 }
 
 template <typename Precision>
-void QuadIntersector::IntersectionDataImp(Ray<Precision>& rays,
+void OrigQuadIntersector::IntersectionDataImp(Ray<Precision>& rays,
                                           const vtkm::cont::Field* scalarField,
                                           const vtkm::Range& scalarRange)
 {
@@ -465,21 +465,21 @@ void QuadIntersector::IntersectionDataImp(Ray<Precision>& rays,
     .Invoke(rays.HitIdx, rays.Scalar, *scalarField, QuadIds);
 }
 
-void QuadIntersector::IntersectionData(Ray<vtkm::Float32>& rays,
+void OrigQuadIntersector::IntersectionData(Ray<vtkm::Float32>& rays,
                                        const vtkm::cont::Field* scalarField,
                                        const vtkm::Range& scalarRange)
 {
   IntersectionDataImp(rays, scalarField, scalarRange);
 }
 
-void QuadIntersector::IntersectionData(Ray<vtkm::Float64>& rays,
+void OrigQuadIntersector::IntersectionData(Ray<vtkm::Float64>& rays,
                                        const vtkm::cont::Field* scalarField,
                                        const vtkm::Range& scalarRange)
 {
   IntersectionDataImp(rays, scalarField, scalarRange);
 }
 
-void QuadIntersector::SetData(const vtkm::cont::CoordinateSystem& coords,
+void OrigQuadIntersector::SetData(const vtkm::cont::CoordinateSystem& coords,
                               vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id, 5>> quadIds)
 {
 
@@ -500,7 +500,7 @@ void QuadIntersector::SetData(const vtkm::cont::CoordinateSystem& coords,
   this->SetAABBs(AABB);
 }
 
-vtkm::Id QuadIntersector::GetNumberOfShapes() const
+vtkm::Id OrigQuadIntersector::GetNumberOfShapes() const
 {
   return QuadIds.GetNumberOfValues();
 }
