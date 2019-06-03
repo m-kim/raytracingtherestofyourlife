@@ -11,10 +11,10 @@ find_package(VTKm REQUIRED
 set (PathTracingSrc main.cc CornellBox.cpp Camera.cxx PathTracer.cxx
   SphereExtractor.cxx QuadExtractor.cxx QuadIntersector.cxx
   SphereIntersector.cxx QuadPdf.cxx SpherePdf.cxx QuadGenerateDir.cxx SphereGenerateDir.cxx
-  CosineGenerateDir.cxx WhichGenerateDir.cxx MapperPathTracer.cxx)
+  CosineGenerateDir.cxx WhichGenerateDir.cxx MapperPathTracer.cxx View3D.cxx )
 set (PathTracingHdr Worklets.h AABBSurface.h BVHTraverser.h
   EmitWorklet.h ScatterWorklet.h SurfaceWorklets.h Surface.h PdfWorklet.h Record.h onb.h
-  CornellBox.h vec3.h wangXor.h GenerateDir.h QuadPdf.h)
+  CornellBox.h vec3.h wangXor.h GenerateDir.h QuadPdf.h View3D.h RayOperations.h)
 
 add_executable(CornellBox ${PathTracingSrc} ${PathTracingHdr})
 
