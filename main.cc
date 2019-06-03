@@ -33,7 +33,7 @@
 #include "CornellBox.h"
 
 #include <vtkm/rendering/MapperRayTracer.h>
-#include <vtkm/rendering/MapperQuad.h>
+#include "MapperQuad.h"
 #include <vtkm/rendering/Scene.h>
 #include "View3D.h"
 
@@ -98,7 +98,7 @@ void runRay(int nx, int ny, int samplecount, int depthcount,
               vtkm::rendering::Canvas &canvas, vtkm::rendering::Camera &cam)
 {
   CornellBox cb;
-  vtkm::rendering::MapperQuad mapper;
+  path::rendering::MapperQuad mapper;
   auto ds = cb.buildDataSet();
   vtkm::rendering::Scene scene;
 

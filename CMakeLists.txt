@@ -24,9 +24,12 @@ pathtracing/SphereGenerateDir.cxx
 pathtracing/CosineGenerateDir.cxx 
 pathtracing/WhichGenerateDir.cxx 
 MapperPathTracer.cxx 
+MapperQuad.cxx
+raytracing/QuadIntersector.cxx
 View3D.cxx )
 set (PathTracingHdr 
 pathtracing/Worklets.h 
+pathtracing/QuadIntersector.h
 pathtracing/AABBSurface.h 
 pathtracing/BVHTraverser.h
 pathtracing/EmitWorklet.h 
@@ -36,7 +39,7 @@ pathtracing/Surface.h
 pathtracing/PdfWorklet.h 
 pathtracing/Record.h 
 pathtracing/onb.h
-  
+
 CornellBox.h 
 pathtracing/vec3.h 
 pathtracing/wangXor.h 
