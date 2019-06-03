@@ -65,7 +65,7 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   pts1.Allocate(12 * 4 + 1);
   numindices.Allocate(13);
   shapes.Allocate(13);
-  conn.Allocate(13);
+  conn.Allocate(12*4+1);
   QuadIds.Allocate(13);
   vtkm::cont::ArrayCopy(vtkm::cont::ArrayHandleCounting<vtkm::Id>(0,1, 12*4 + 1), conn);
 
