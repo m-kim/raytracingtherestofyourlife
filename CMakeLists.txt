@@ -3,7 +3,10 @@ cmake_minimum_required(VERSION 3.8)
 project(PathTracing VERSION 0.1 LANGUAGES CXX)
 
 find_package(VTKm REQUIRED
-  OPTIONAL_COMPONENTS CUDA OpenMP)
+  OPTIONAL_COMPONENTS CUDA)
+
+#VTKm requires OpenMP because pthreads is required in ColorTable(!!)
+  find_package(OpenMP REQUIRED)
 
 set (PathTracingSrc main.cc CornellBox.cpp Camera.cxx PathTracer.cxx
   SphereExtractor.cxx QuadExtractor.cxx QuadIntersector.cxx
@@ -20,7 +23,7 @@ set_target_properties(CornellBox PROPERTIES
   CXX_STANDARD 17)
 
 
-target_link_libraries(CornellBox PUBLIC vtkm_cont vtkm_rendering)
+target_link_libraries(CornellBox PUBLIC vtkm_cont vtkm_rendering OpenMP::OpenMP_CXX)
 
 
 if(VTKm_ENABLE_CUDA)
