@@ -17,15 +17,25 @@ pathtracing/SphereExtractor.cxx
 pathtracing/QuadExtractor.cxx 
 pathtracing/QuadIntersector.cxx
 pathtracing/SphereIntersector.cxx 
-pathtracing/QuadGenerateDir.cxx 
-pathtracing/SphereGenerateDir.cxx
-pathtracing/CosineGenerateDir.cxx 
 pathtracing/WhichGenerateDir.cxx 
 MapperPathTracer.cxx 
 MapperQuad.cxx
 raytracing/OrigQuadIntersector.cxx
 View3D.cxx )
-set (PathTracingHdr 
+set (PathTracingHdr
+pathtracing/Camera.h
+
+pathtracing/CosineGenerateDir.h
+pathtracing/PathAlgorithms.h
+pathtracing/PathTracer.h
+pathtracing/Pdf.h
+pathtracing/QuadExtractor.h
+pathtracing/QuadGenerateDir.h
+pathtracing/SphereExtractor.h
+pathtracing/SphereIntersector.h
+pathtracing/SphereGenerateDir.h
+pathtracing/SpherePdf.h
+pathtracing/WhichGenerateDir.h
 pathtracing/Worklets.h 
 pathtracing/QuadIntersector.h
 pathtracing/AABBSurface.h 
@@ -37,6 +47,8 @@ pathtracing/Surface.h
 pathtracing/PdfWorklet.h 
 pathtracing/Record.h 
 pathtracing/onb.h
+MapperPathTracer.h
+MapperQuad.h
 
 CornellBox.h 
 pathtracing/vec3.h 
