@@ -4,8 +4,8 @@
 #include <vtkm/cont/ArrayCopy.h>
 #include <vtkm/cont/ArrayHandleCounting.h>
 #include "vtkm/cont/DataSetBuilderExplicit.h"
-#include "SphereExtractor.h"
-#include "QuadExtractor.h"
+#include "pathtracing/SphereExtractor.h"
+#include "pathtracing/QuadExtractor.h"
 
 void CornellBox::invert(vtkm::Vec<vec3,4> &pts)
 {

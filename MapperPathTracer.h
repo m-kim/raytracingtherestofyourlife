@@ -25,8 +25,8 @@
 #include <vtkm/rendering/Mapper.h>
 #include <vtkm/rendering/raytracing/Ray.h>
 #include <memory>
-#include "PathAlgorithms.h"
-#include "QuadIntersector.h"
+#include "pathtracing/PathAlgorithms.h"
+#include "pathtracing/QuadIntersector.h"
 
 namespace vtkm
 {

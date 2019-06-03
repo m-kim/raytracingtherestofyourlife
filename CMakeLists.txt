@@ -8,13 +8,42 @@ find_package(VTKm REQUIRED
 #VTKm requires OpenMP because pthreads is required in ColorTable(!!)
   find_package(OpenMP REQUIRED)
 
-set (PathTracingSrc main.cc CornellBox.cpp Camera.cxx PathTracer.cxx
-  SphereExtractor.cxx QuadExtractor.cxx QuadIntersector.cxx
-  SphereIntersector.cxx QuadPdf.cxx SpherePdf.cxx QuadGenerateDir.cxx SphereGenerateDir.cxx
-  CosineGenerateDir.cxx WhichGenerateDir.cxx MapperPathTracer.cxx View3D.cxx )
-set (PathTracingHdr Worklets.h AABBSurface.h BVHTraverser.h
-  EmitWorklet.h ScatterWorklet.h SurfaceWorklets.h Surface.h PdfWorklet.h Record.h onb.h
-  CornellBox.h vec3.h wangXor.h GenerateDir.h QuadPdf.h View3D.h RayOperations.h)
+set (PathTracingSrc 
+main.cc 
+CornellBox.cpp 
+pathtracing/Camera.cxx 
+pathtracing/PathTracer.cxx
+pathtracing/SphereExtractor.cxx 
+pathtracing/QuadExtractor.cxx 
+pathtracing/QuadIntersector.cxx
+pathtracing/SphereIntersector.cxx 
+pathtracing/QuadPdf.cxx 
+pathtracing/SpherePdf.cxx 
+pathtracing/QuadGenerateDir.cxx 
+pathtracing/SphereGenerateDir.cxx
+pathtracing/CosineGenerateDir.cxx 
+pathtracing/WhichGenerateDir.cxx 
+MapperPathTracer.cxx 
+View3D.cxx )
+set (PathTracingHdr 
+pathtracing/Worklets.h 
+pathtracing/AABBSurface.h 
+pathtracing/BVHTraverser.h
+pathtracing/EmitWorklet.h 
+pathtracing/ScatterWorklet.h 
+pathtracing/SurfaceWorklets.h 
+pathtracing/Surface.h 
+pathtracing/PdfWorklet.h 
+pathtracing/Record.h 
+pathtracing/onb.h
+  
+CornellBox.h 
+pathtracing/vec3.h 
+pathtracing/wangXor.h 
+pathtracing/GenerateDir.h 
+pathtracing/QuadPdf.h 
+View3D.h 
+pathtracing/RayOperations.h)
 
 add_executable(CornellBox ${PathTracingSrc} ${PathTracingHdr})
 

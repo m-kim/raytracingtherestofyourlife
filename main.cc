@@ -15,7 +15,7 @@
 #include <tuple>
 #include <sstream>
 #include <vtkm/cont/ArrayHandleConstant.h>
-#include "Camera.h"
+#include "pathtracing/Camera.h"
 #include <vtkm/cont/internal/DeviceAdapterAlgorithmGeneral.h>
 #include <vtkm/cont/ArrayHandle.h>
 #include <vtkm/cont/ArrayHandleCompositeVector.h>

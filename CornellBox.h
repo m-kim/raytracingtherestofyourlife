@@ -2,7 +2,7 @@
 #define CORNELLBOX_H
 #include <vtkm/cont/ArrayHandle.h>
 #include <vtkm/cont/DataSet.h>
-#include "vec3.h"
+#include "pathtracing/vec3.h"
 #include <vtkm/cont/CoordinateSystem.h>
 #include <vtkm/io/writer/VTKDataSetWriter.h>
 
