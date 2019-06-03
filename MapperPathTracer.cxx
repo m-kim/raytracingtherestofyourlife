@@ -28,7 +28,7 @@
 #include "Camera.h"
 #include <vtkm/rendering/raytracing/Logger.h>
 #include <vtkm/worklet/Invoker.h>
-#include <vtkm/rendering/raytracing/RayOperations.h>
+#include "RayOperations.h"
 #include <vtkm/cont/Algorithm.h>
 #include <vtkm/cont/Storage.h>
 #include "PathTracer.h"
@@ -383,6 +383,8 @@ void MapperPathTracer::RenderCells(const vtkm::cont::DynamicCellSet& cellset,
 
   vtkm::rendering::pathtracing::Camera *cam = &this->Internals->RayCamera;
   cam->SetParameters(camera, *this->Internals->Canvas);
+  pathtracing::RayOperations::MapCanvasToRays(
+    this->Internals->Rays, camera, *this->Internals->Canvas);
 
   RenderCellsImpl(cellset, coords, scalarField, camera);
 
