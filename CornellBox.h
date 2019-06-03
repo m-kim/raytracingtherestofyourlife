@@ -13,7 +13,7 @@ public:
   vtkm::cont::ArrayHandle<vtkm::Id> texIdx[2];
   vtkm::cont::ArrayHandle<int> matType, texType;
   vtkm::cont::CoordinateSystem coord;
-
+  vtkm::cont::ArrayHandle<vtkm::Float32> field;
 
   vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> QuadIds;
   vtkm::cont::ArrayHandle<vtkm::Id> SphereIds;
