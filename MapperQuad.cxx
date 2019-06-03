@@ -29,8 +29,8 @@
 #include <vtkm/rendering/raytracing/Logger.h>
 #include <vtkm/rendering/raytracing/QuadExtractor.h>
 #include "raytracing/OrigQuadIntersector.h"
-#include <vtkm/rendering/raytracing/RayOperations.h>
 #include <vtkm/rendering/raytracing/RayTracer.h>
+#include <pathtracing/RayOperations.h>
 
 namespace path
 {
@@ -55,6 +55,7 @@ struct MapperQuad::InternalsType
 MapperQuad::MapperQuad()
   : Internals(new InternalsType)
 {
+  MapCanvas = false;
 }
 
 MapperQuad::~MapperQuad()
@@ -118,8 +119,9 @@ void MapperQuad::RenderCells(const vtkm::cont::DynamicCellSet& cellset,
 
   this->Internals->RayCamera.CreateRays(this->Internals->Rays, shapeBounds);
   this->Internals->Rays.Buffers.at(0).InitConst(0.f);
-//  raytracing::RayOperations::MapCanvasToRays(
-//    this->Internals->Rays, camera, *this->Internals->Canvas);
+  if (MapCanvas)
+    vtkm::rendering::pathtracing::RayOperations::MapCanvasToRays(
+      this->Internals->Rays, camera, *this->Internals->Canvas);
 
 
 

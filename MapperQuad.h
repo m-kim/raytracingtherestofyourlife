@@ -59,6 +59,7 @@ public:
   void SetCompositeBackground(bool on);
   vtkm::rendering::Mapper* NewCopy() const override;
 
+  bool MapCanvas;
 private:
   struct InternalsType;
   std::shared_ptr<InternalsType> Internals;

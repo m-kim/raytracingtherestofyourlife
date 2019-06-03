@@ -111,7 +111,6 @@ void runRay(int nx, int ny, int samplecount, int depthcount,
 
   view.Initialize();
   view.Paint();
-  view.SaveAs("direct.pnm");
 
 }
 void runPath(int nx, int ny, int samplecount, int depthcount,
@@ -198,6 +197,8 @@ void save(std::string fn,
     fs << "P3\n" << nx << " "  << ny << " 255" << std::endl;
     for (int i=0; i<cols.GetNumberOfValues(); i++){
       auto col = cols.GetPortalConstControl().Get(i);
+      if (col != col)
+        col = 0.0f;
       save(fs, samplecount, col);
     }
     fs.close();
@@ -207,7 +208,7 @@ void save(std::string fn,
 //  std::vector<std::uint8_t> PngBuffer;
 }
 
-void generateHemisphere(int nx, int ny, int samplecount, int depthcount)
+void generateHemisphere(int nx, int ny, int samplecount, int depthcount, bool direct)
 {
   vtkm::rendering::CanvasRayTracer canvas(nx,ny);
   vtkm::rendering::Camera cam;
@@ -231,9 +232,15 @@ void generateHemisphere(int nx, int ny, int samplecount, int depthcount)
 
       vec3 pos(x+278, y+278, z+278 );
       cam.SetPosition(pos);
-      runPath(nx,ny, samplecount, depthcount, canvas, cam);
       std::stringstream sstr;
-      sstr << "output-" << i*rTheta << "-" << j*rPhi << ".pnm";
+      if (direct){
+        sstr << "direct-" << i*rTheta << "-" << j*rPhi << ".pnm";
+        runRay(nx,ny,samplecount, depthcount, canvas, cam);
+      }
+      else{
+        sstr << "output-" << i*rTheta << "-" << j*rPhi << ".pnm";
+        runPath(nx,ny, samplecount, depthcount, canvas, cam);
+      }
       save(sstr.str(), nx, ny, samplecount, canvas.GetColorBuffer());
     }
   }
@@ -249,7 +256,7 @@ int main(int argc, char *argv[]) {
   const bool direct = std::get<5>(tup);
 
   if (hemi)
-    generateHemisphere(nx,ny, samplecount, depthcount);
+    generateHemisphere(nx,ny, samplecount, depthcount, direct);
   else
   {
     vtkm::rendering::CanvasRayTracer canvas(nx,ny);
@@ -259,8 +266,14 @@ int main(int argc, char *argv[]) {
     cam.SetFieldOfView(40.);
     cam.SetViewUp(vec3(0,1,0));
     cam.SetLookAt(vec3(278,278,278));
-    if (direct)
+    if (direct){
       runRay(nx,ny,samplecount,depthcount, canvas, cam);
+      std::stringstream sstr;
+      sstr << "direct.pnm";
+      save(sstr.str(), nx, ny, samplecount, canvas.GetColorBuffer());
+      sstr.str("depth.pnm");
+      save(sstr.str(), nx, ny, samplecount, canvas.GetDepthBuffer());
+    }
     else{
       runPath(nx,ny, samplecount, depthcount, canvas, cam);
       std::stringstream sstr;
