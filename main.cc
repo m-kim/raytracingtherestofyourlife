@@ -259,6 +259,15 @@ void generateHemisphere(int nx, int ny, int samplecount, int depthcount, bool di
       if (direct){
         sstr << "direct-" << i*rTheta << "-" << j*rPhi << ".pnm";
         runRay(nx,ny,samplecount, depthcount, canvas, cam);
+        save(sstr.str(), nx, ny, samplecount, canvas.GetColorBuffer());
+        sstr.str("");
+        sstr << "depth-" << i*rTheta << "-" << j*rPhi << ".pnm";
+        save(sstr.str(), nx, ny, samplecount, canvas.GetDepthBuffer());
+        runNorms(nx,ny,samplecount,depthcount, canvas, cam);
+        sstr.str("");
+        sstr << "normals-" << i*rTheta << "-" << j*rPhi << ".pnm";
+        save(sstr.str(), nx, ny, samplecount, canvas.GetColorBuffer());
+
       }
       else{
         sstr << "output-" << i*rTheta << "-" << j*rPhi << ".pnm";
