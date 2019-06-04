@@ -23,8 +23,8 @@
 #include <vtkm/cont/Timer.h>
 #include <vtkm/cont/TryExecute.h>
 
-#include <vtkm/rendering/raytracing/ChannelBuffer.h>
-#include <vtkm/rendering/CanvasRayTracer.h>
+#include "raytracing/ChannelBuffer.h"
+#include "CanvasRayTracer.h"
 #include <vtkm/rendering/Cylinderizer.h>
 #include "pathtracing/Camera.h"
 #include <vtkm/rendering/raytracing/Logger.h>

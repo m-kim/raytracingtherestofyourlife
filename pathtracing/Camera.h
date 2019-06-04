@@ -22,7 +22,7 @@
 
 #include <vtkm/cont/CoordinateSystem.h>
 #include <vtkm/rendering/Camera.h>
-#include <vtkm/rendering/CanvasRayTracer.h>
+#include "CanvasRayTracer.h"
 #include <raytracing/Ray.h>
 #include <vtkm/cont/ArrayHandle.h>
 

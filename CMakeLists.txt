@@ -18,10 +18,13 @@ pathtracing/QuadExtractor.cxx
 pathtracing/QuadIntersector.cxx
 pathtracing/SphereIntersector.cxx 
 pathtracing/WhichGenerateDir.cxx 
+CanvasRayTracer.cxx
 MapperPathTracer.cxx 
 MapperQuad.cxx
 raytracing/OrigQuadIntersector.cxx
 raytracing/ChannelBuffer.cxx
+raytracing/RayTracerNormals.cxx
+MapperQuadNormals.cxx
 View3D.cxx )
 set (PathTracingHdr
 pathtracing/Camera.h
@@ -53,6 +56,8 @@ MapperQuad.h
 raytracing/ChannelBuffer.h
 raytracing/ChannelBufferOperations.h
 raytracing/Ray.h
+raytracing/RayTracerNormals.h
+MapperQuadNormals.h
 CornellBox.h 
 pathtracing/vec3.h 
 pathtracing/wangXor.h 

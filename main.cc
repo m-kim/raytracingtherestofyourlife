@@ -25,6 +25,7 @@
 #include <vtkm/rendering/raytracing/BoundingVolumeHierarchy.h>
 #include <vtkm/cont/ArrayHandleExtractComponent.h>
 
+#include <raytracing/RayTracerNormals.h>
 #include "MapperPathTracer.h"
 
 #include <fstream>
@@ -32,6 +33,7 @@
 
 #include <vtkm/rendering/MapperRayTracer.h>
 #include "MapperQuad.h"
+#include "MapperQuadNormals.h"
 #include <vtkm/rendering/Scene.h>
 #include "View3D.h"
 
@@ -97,6 +99,27 @@ void runRay(int nx, int ny, int samplecount, int depthcount,
 {
   CornellBox cb;
   path::rendering::MapperQuad mapper;
+  auto ds = cb.buildDataSet();
+  vtkm::rendering::Scene scene;
+
+  scene.AddActor(vtkm::rendering::Actor(
+                   ds.GetCellSet(),
+                   ds.GetCoordinateSystem(),
+                   ds.GetField("point_var"),
+                   vtkm::cont::ColorTable{vtkm::cont::ColorTable::Preset::COOL_TO_WARM_EXTENDED}));
+  vtkm::rendering::Color background(0,0,0, 1.0f);
+  vtkm::rendering::Color foreground(1,1,1, 1.0f);
+  vtkm::rendering::View3D view(scene, mapper, canvas, cam, background, foreground);
+
+  view.Initialize();
+  view.Paint();
+
+}
+void runNorms(int nx, int ny, int samplecount, int depthcount,
+              vtkm::rendering::Canvas &canvas, vtkm::rendering::Camera &cam)
+{
+  CornellBox cb;
+  path::rendering::MapperQuadNormals mapper;
   auto ds = cb.buildDataSet();
   vtkm::rendering::Scene scene;
 
@@ -273,6 +296,9 @@ int main(int argc, char *argv[]) {
       save(sstr.str(), nx, ny, samplecount, canvas.GetColorBuffer());
       sstr.str("depth.pnm");
       save(sstr.str(), nx, ny, samplecount, canvas.GetDepthBuffer());
+      runNorms(nx,ny,samplecount,depthcount, canvas, cam);
+      sstr << "normals.pnm";
+      save(sstr.str(), nx, ny, samplecount, canvas.GetColorBuffer());
     }
     else{
       runPath(nx,ny, samplecount, depthcount, canvas, cam);
