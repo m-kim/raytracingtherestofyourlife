@@ -29,7 +29,6 @@
 #include <vtkm/rendering/raytracing/Logger.h>
 #include <vtkm/rendering/raytracing/RayOperations.h>
 #include <vtkm/rendering/raytracing/RayTracingTypeDefs.h>
-#include <vtkm/rendering/raytracing/Sampler.h>
 #include <vtkm/rendering/raytracing/Worklets.h>
 
 #include <vtkm/worklet/DispatcherMapField.h>
