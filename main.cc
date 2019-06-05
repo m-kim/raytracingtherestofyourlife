@@ -247,30 +247,30 @@ void generateHemisphere(int nx, int ny, int samplecount, int depthcount, bool di
   float rPhi = (M_PI/2.0)/float(numPhi);
 
   float r = -1078;
-  for (int i=0; i<numTheta; i++){
-    for (int j=0; j<numPhi; j++){
-      auto x = r * cos(i * rTheta) * sin(j * rPhi);
-      auto y = r * sin(i * rTheta) * sin(j * rPhi);
-      auto z = r * cos(i*rPhi);
+  for (float phi=0; phi<M_PI*0.5; phi += rPhi){
+    for (float theta=0; theta<2*M_PI; theta+=rTheta){
+      auto x = r * cos(theta) * sin(phi);
+      auto y = r * sin(theta) * sin(phi);
+      auto z = r * cos(phi);
 
       vec3 pos(x+278, y+278, z+278 );
       cam.SetPosition(pos);
       std::stringstream sstr;
       if (direct){
-        sstr << "direct-" << i*rTheta << "-" << j*rPhi << ".pnm";
+        sstr << "direct-" << theta << "-" << phi << ".pnm";
         runRay(nx,ny,samplecount, depthcount, canvas, cam);
         save(sstr.str(), nx, ny, samplecount, canvas.GetColorBuffer());
         sstr.str("");
-        sstr << "depth-" << i*rTheta << "-" << j*rPhi << ".pnm";
+        sstr << "depth-" << theta << "-" << phi << ".pnm";
         save(sstr.str(), nx, ny, samplecount, canvas.GetDepthBuffer());
         runNorms(nx,ny,samplecount,depthcount, canvas, cam);
         sstr.str("");
-        sstr << "normals-" << i*rTheta << "-" << j*rPhi << ".pnm";
+        sstr << "normals-" << theta << "-" << phi << ".pnm";
         save(sstr.str(), nx, ny, samplecount, canvas.GetColorBuffer());
 
       }
       else{
-        sstr << "output-" << i*rTheta << "-" << j*rPhi << ".pnm";
+        sstr << "output-" << theta << "-" << phi << ".pnm";
         runPath(nx,ny, samplecount, depthcount, canvas, cam);
       }
       save(sstr.str(), nx, ny, samplecount, canvas.GetColorBuffer());
