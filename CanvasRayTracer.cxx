@@ -26,7 +26,10 @@
 #include <vtkm/rendering/raytracing/Ray.h>
 #include <vtkm/worklet/DispatcherMapField.h>
 #include <vtkm/worklet/WorkletMapField.h>
+#include <vtkm/Math.h>
 
+
+#include <math.h>
 namespace vtkm
 {
 namespace rendering
@@ -66,7 +69,12 @@ public:
                             ColorBufferPortalType& colorBuffer,
                             const vtkm::Id& index) const
   {
-    vtkm::Vec<Precision, 3> intersection = origin + inDepth * dir;
+
+    vtkm::Vec<Precision, 3> intersection ;
+    if(isinf(inDepth) || isnan(inDepth))
+        intersection = origin;
+    else
+        intersection = origin + inDepth * dir;
     vtkm::Vec<vtkm::Float32, 4> point;
     point[0] = static_cast<vtkm::Float32>(intersection[0]);
     point[1] = static_cast<vtkm::Float32>(intersection[1]);
@@ -77,11 +85,27 @@ public:
     newpoint = vtkm::MatrixMultiply(this->ViewProjMat, point);
     newpoint[0] = newpoint[0] / newpoint[3];
     newpoint[1] = newpoint[1] / newpoint[3];
-    newpoint[2] = newpoint[2] / newpoint[3];
+
+     vtkm::Float32 nan_val = newpoint[2]; //set to 0 and depth 1 if nan or inf
+     bool was_nan =false;
+     if(newpoint[2] != newpoint[2] ||isinf(newpoint[2]) ){
+             newpoint[2] = 0.f;//1.f;//newpoint[3];
+             was_nan = true;
+     }
+     if( isinf(newpoint[3]) || newpoint[3] == 0 || newpoint[3] != newpoint[3]){
+         newpoint[3] = 1.f;
+     }
+     else
+         newpoint[2] = newpoint[2] / newpoint[3];
+
 
     vtkm::Float32 depth = newpoint[2];
 
-    depth = 0.5f * (depth) + 0.5f;
+     vtkm::Float32 re_scale = (555.f * vtkm::Abs(555.f - (961.3f*depth +555.f*depth - 961.3f)))/10.f;//785
+
+     depth = 0.5f*re_scale + .5f;// vtkm::Abs((depth - 0.99999f) / (.9999999f - 0.99999f)); //0.25f * vtkm::Exp(-0.5f * (depth) ) ;// 0.25f * vtkm::Exp((depth)/ (800.0f )) + 0.5f;//nonlinearly_scaled_depth(depth);//0.5f * (depth) + 0.5f;
+
+    //depth = 0.5f * (depth) + 0.5f;
     vtkm::Vec<vtkm::Float32, 4> color;
     color[0] = static_cast<vtkm::Float32>(colorBufferIn.Get(index * 4 + 0));
     color[1] = static_cast<vtkm::Float32>(colorBufferIn.Get(index * 4 + 1));
