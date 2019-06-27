@@ -71,7 +71,7 @@ public:
   {
 
     vtkm::Vec<Precision, 3> intersection ;
-    if(isinf(inDepth) || isnan(inDepth))
+    if(std::isinf(inDepth) || std::isnan(inDepth))
         intersection = origin;
     else
         intersection = origin + inDepth * dir;
@@ -88,11 +88,11 @@ public:
 
      vtkm::Float32 nan_val = newpoint[2]; //set to 0 and depth 1 if nan or inf
      bool was_nan =false;
-     if(newpoint[2] != newpoint[2] ||isinf(newpoint[2]) ){
+     if(newpoint[2] != newpoint[2] ||std::isinf(newpoint[2]) ){
              newpoint[2] = 0.f;//1.f;//newpoint[3];
              was_nan = true;
      }
-     if( isinf(newpoint[3]) || newpoint[3] == 0 || newpoint[3] != newpoint[3]){
+     if( std::isinf(newpoint[3]) || newpoint[3] == 0 || newpoint[3] != newpoint[3]){
          newpoint[3] = 1.f;
      }
      else
