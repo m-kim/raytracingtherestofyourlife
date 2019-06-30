@@ -1,0 +1,4 @@
+#ifndef TRAININGTRACER_H
+#define TRAININGTRACER_H
+
+#endif // TRAININGTRACER_H
