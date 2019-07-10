@@ -5,6 +5,8 @@ project(PathTracing VERSION 0.1 LANGUAGES CXX)
 find_package(VTKm REQUIRED
   OPTIONAL_COMPONENTS CUDA)
 
+find_package(adios2 REQUIRED)
+set(mpilib) #intentionally set mpilib blank
 #VTKm requires OpenMP because pthreads is required in ColorTable(!!)
   find_package(OpenMP REQUIRED)
 
@@ -76,7 +78,7 @@ set_target_properties(CornellBox PROPERTIES
 target_include_directories(CornellBox
   PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
   )
-target_link_libraries(CornellBox PUBLIC vtkm_cont vtkm_rendering OpenMP::OpenMP_CXX)
+target_link_libraries(CornellBox PUBLIC vtkm_cont vtkm_rendering OpenMP::OpenMP_CXX adios2::adios2 ${mpilib})
 
 
 if(VTKm_ENABLE_CUDA)
@@ -89,6 +91,6 @@ if(VTKm_ENABLE_CUDA)
 
   set_target_properties(CornellBox_CUDA PROPERTIES
     CUDA_STANDARD 14)
-  target_link_libraries(CornellBox_CUDA PUBLIC vtkm_cont vtkm_rendering)
+  target_link_libraries(CornellBox_CUDA PUBLIC vtkm_cont vtkm_rendering adios2::adios2 ${mpilib})
 
 endif()

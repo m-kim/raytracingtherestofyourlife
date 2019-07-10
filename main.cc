@@ -24,6 +24,7 @@
 #include <vtkm/worklet/Invoker.h>
 #include <vtkm/rendering/raytracing/BoundingVolumeHierarchy.h>
 #include <vtkm/cont/ArrayHandleExtractComponent.h>
+#include <adios2.h>
 
 #include <raytracing/RayTracerNormals.h>
 #include "MapperPathTracer.h"
@@ -231,6 +232,24 @@ void save(std::string fn,
 //  std::vector<std::uint8_t> PngBuffer;
 }
 
+template<typename ArrayType>
+void saveADIOS(std::string fn,
+               int nx, int ny, int samplecount,
+               ArrayType &cols)
+{
+  adios2::ADIOS adios(adios2::DebugON);
+  adios2::IO bpIO = adios.DeclareIO("BPFile_N2N");
+
+  adios2::Variable<vtkm::Float32> bpOut = bpIO.DefineVariable<vtkm::Float32>(
+        "pnms", {}, {}, {static_cast<std::size_t>(nx*ny)}, adios2::ConstantDims);
+
+  adios2::Engine writer = bpIO.Open(fn, adios2::Mode::Write);
+
+  auto *ptr = cols.GetStorage().GetArray();
+  writer.Put<vtkm::Float32>(bpOut, ptr );
+  writer.Close();
+
+}
 void generateHemisphere(int nx, int ny, int samplecount, int depthcount, bool direct)
 {
   vtkm::rendering::CanvasRayTracer canvas(nx,ny);
@@ -309,6 +328,8 @@ int main(int argc, char *argv[]) {
       runNorms(nx,ny,samplecount,depthcount, canvas, cam);
       sstr << "normals.pnm";
       save(sstr.str(), nx, ny, samplecount, canvas.GetColorBuffer());
+
+      saveADIOS("depth.bp", nx,ny, samplecount, canvas.GetDepthBuffer());
     }
     else{
       runPath(nx,ny, samplecount, depthcount, canvas, cam);
