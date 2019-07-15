@@ -42,11 +42,7 @@
 #include <algorithm>
 
 
-/*
-// to allow python binding
-#include "pybind11/include/pybind11/pybind11.h"
 
-namespace py = pybind11;
 
 
 using ArrayType = vtkm::cont::ArrayHandle<vec3>;
@@ -538,7 +534,7 @@ void generateHemisphere(int nx, int ny, int samplecount, int depthcount, bool di
         */
 
 
-/*
+
         sstr.str("");
         runAlbedo(nx,ny,samplecount,depthcount, canvas, cam);
         sstr << "albedo-" << phi << "-" << theta << ".ppm";
@@ -572,7 +568,7 @@ int trainingTracer(int argc,int nx, int ny,
   {
     vtkm::rendering::CanvasRayTracer canvas(nx,ny);
     vtkm::rendering::Camera cam;
-    cam.SetClippingRange(0.001f, 10000.f);
+    cam.SetClippingRange(500.f, 2000.f);
     cam.SetPosition(vec3(278,278,-800));
     cam.SetFieldOfView(40.);
     cam.SetViewUp(vec3(0,1,0));
@@ -596,11 +592,6 @@ int trainingTracer(int argc,int nx, int ny,
 
     }
   }
-}
-PYBIND11_MODULE(trainingTracer, m){ //called at import, module example, m denotes variable type py::module
-  m.doc() = "pybind11 example plugin";// optional module docstring
-
-  m.def("trainingTracer", &trainingTracer, "A super complex arithmatic");//, py::arg("i"), py::arg("j")); //method generating bianry code exposing add() to python, arg allows keyword arguments for function calls from within python.}
 }
 
 
@@ -620,7 +611,7 @@ int main(int argc, char *argv[]) {
   {
     vtkm::rendering::CanvasRayTracer canvas(nx,ny);
     vtkm::rendering::Camera cam;
-    cam.SetClippingRange(0.001f, 10000.f);
+    cam.SetClippingRange(500.f, 2000.f);
     cam.SetPosition(vec3(278,278,-800));
     cam.SetFieldOfView(40.);
     cam.SetViewUp(vec3(0,1,0));
@@ -646,8 +637,4 @@ int main(int argc, char *argv[]) {
   }
 }
 
-*/
-int main(int argc, char *argv[]) {
-    return argc;
-}
 
