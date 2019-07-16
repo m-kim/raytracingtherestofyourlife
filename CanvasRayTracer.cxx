@@ -66,6 +66,11 @@ public:
                             ColorBufferPortalType& colorBuffer,
                             const vtkm::Id& index) const
   {
+    if (vtkm::IsInf(inDepth)){
+      depthBuffer.Set(pixelIndex, 1.0);
+      colorBuffer.Set(pixelIndex, vtkm::Vec<vtkm::Float32,4>(0,0,0,0));
+      return;
+    }
     vtkm::Vec<Precision, 3> intersection = origin + inDepth * dir;
     vtkm::Vec<vtkm::Float32, 4> point;
     point[0] = static_cast<vtkm::Float32>(intersection[0]);
