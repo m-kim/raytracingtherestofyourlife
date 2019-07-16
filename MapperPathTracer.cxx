@@ -170,7 +170,7 @@ auto MapperPathTracer::extract(const vtkm::cont::DynamicCellSet &cellset) const
 {
 
   vtkm::rendering::raytracing::SphereExtractor sphereExtractor;
-  sphereExtractor.ExtractCells(cellset, 90);
+  sphereExtractor.ExtractCells(cellset, 90/555.0);
   auto SphereIds = sphereExtractor.GetPointIds();
   auto SphereRadii = sphereExtractor.GetRadii();
   auto ShapeOffset = cellset.Cast<vtkm::cont::CellSetExplicit<>>().GetIndexOffsetArray(vtkm::TopologyElementTagPoint(), vtkm::TopologyElementTagCell());

@@ -254,10 +254,11 @@ void generateHemisphere(int nx, int ny, int samplecount, int depthcount, bool di
 {
   vtkm::rendering::CanvasRayTracer canvas(nx,ny);
   vtkm::rendering::Camera cam;
-  cam.SetPosition(vec3(278,278,-800));
+  cam.SetClippingRange(01.f, 5.f);
+  cam.SetPosition(vec3(278/555.0,278/555.0,-800/555.0));
   cam.SetFieldOfView(40.f);
   cam.SetViewUp(vec3(0,1,0));
-  cam.SetLookAt(vec3(278,278,278));
+  cam.SetLookAt(vec3(278/555.0,278/555.0,278/555.0));
 
   int numPhi = 30;
   int numTheta = 30;
@@ -265,7 +266,7 @@ void generateHemisphere(int nx, int ny, int samplecount, int depthcount, bool di
   float rTheta = (2.0*M_PI)/float(numTheta);
   float rPhi = (M_PI/2.0)/float(numPhi);
 
-  float r = -1078;
+  float r = -1078/555.0;
   for (float phi=M_PI*0.25; phi<M_PI*0.5; phi += rPhi){
 	std::cout << "Phi: " << phi << std::endl;
     for (float theta=0; theta<2*M_PI; theta+=rTheta){
@@ -273,7 +274,7 @@ void generateHemisphere(int nx, int ny, int samplecount, int depthcount, bool di
       auto y = r * sin(theta) * sin(phi);
       auto z = r * cos(phi);
 
-      vec3 pos(x+278, y+278, z+278 );
+      vec3 pos(x+278/555.0, y+278/555.0, z+278/555.0 );
       cam.SetPosition(pos);
       std::stringstream sstr;
       if (direct){
@@ -313,11 +314,11 @@ int main(int argc, char *argv[]) {
   {
     vtkm::rendering::CanvasRayTracer canvas(nx,ny);
     vtkm::rendering::Camera cam;
-    cam.SetClippingRange(500.f, 2000.f);
-    cam.SetPosition(vec3(278,278,-800));
+    cam.SetClippingRange(0.1f, 5.f);
+    cam.SetPosition(vec3(278/555.0,278/555.0,-800/555.0));
     cam.SetFieldOfView(40.);
     cam.SetViewUp(vec3(0,1,0));
-    cam.SetLookAt(vec3(278,278,278));
+    cam.SetLookAt(vec3(278/555.0,278/555.0,278/555.0));
     if (direct){
       runRay(nx,ny,samplecount,depthcount, canvas, cam);
       std::stringstream sstr;
