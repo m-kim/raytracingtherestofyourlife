@@ -235,12 +235,18 @@ void save(std::string fn,
 template<typename ArrayType>
 void saveADIOS(std::string fn,
                int nx, int ny, int samplecount,
-               ArrayType &cols)
+               ArrayType &cols);
+
+template<>
+void saveADIOS(std::string fn,
+               int nx, int ny, int samplecount,
+               vtkm::cont::ArrayHandle<vtkm::Float32> &cols)
 {
+  using ArrayType = vtkm::Float32;
   adios2::ADIOS adios(adios2::DebugON);
   adios2::IO bpIO = adios.DeclareIO("BPFile_N2N");
 
-  adios2::Variable<vtkm::Float32> bpOut = bpIO.DefineVariable<vtkm::Float32>(
+  adios2::Variable<ArrayType> bpOut = bpIO.DefineVariable<ArrayType>(
         "pnms", {}, {}, {static_cast<std::size_t>(nx*ny)}, adios2::ConstantDims);
 
   adios2::Engine writer = bpIO.Open(fn, adios2::Mode::Write);
@@ -250,6 +256,33 @@ void saveADIOS(std::string fn,
   writer.Close();
 
 }
+template<>
+void saveADIOS(std::string fn,
+               int nx, int ny, int samplecount,
+               vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32,4>> &cols)
+{
+  using OutArrayType = vtkm::Float32;
+  adios2::ADIOS adios(adios2::DebugON);
+  adios2::IO bpIO = adios.DeclareIO("BPFile_N2N");
+
+  adios2::Variable<OutArrayType> bpOut = bpIO.DefineVariable<OutArrayType>(
+        "pnms", {}, {}, {static_cast<std::size_t>(nx*ny*4)}, adios2::ConstantDims);
+
+  adios2::Engine writer = bpIO.Open(fn, adios2::Mode::Write);
+
+  std::vector<vtkm::Float32> arrayOut(cols.GetNumberOfValues()*4);
+  for (int i=0; i<cols.GetNumberOfValues(); i++){
+    auto col = cols.GetPortalConstControl().Get(i);
+    arrayOut[i*4] = col[0];
+    arrayOut[i*4 + 1] = col[1];
+    arrayOut[i*4 + 2] = col[2];
+    arrayOut[i*4 + 3] = col[3];
+  }
+  writer.Put<OutArrayType>(bpOut, arrayOut.data() );
+  writer.Close();
+
+}
+
 void generateHemisphere(int nx, int ny, int samplecount, int depthcount, bool direct)
 {
   vtkm::rendering::CanvasRayTracer canvas(nx,ny);
@@ -324,6 +357,7 @@ int main(int argc, char *argv[]) {
       std::stringstream sstr;
       sstr << "direct.pnm";
       save(sstr.str(), nx, ny, samplecount, canvas.GetColorBuffer());
+      saveADIOS("direct.bp", nx,ny, samplecount, canvas.GetColorBuffer());
       sstr.str("depth.pnm");
       save(sstr.str(), nx, ny, samplecount, canvas.GetDepthBuffer());
       runNorms(nx,ny,samplecount,depthcount, canvas, cam);
