@@ -24,7 +24,6 @@
 #include <vtkm/worklet/Invoker.h>
 #include <vtkm/rendering/raytracing/BoundingVolumeHierarchy.h>
 #include <vtkm/cont/ArrayHandleExtractComponent.h>
-#include <adios2.h>
 
 #include <raytracing/RayTracerNormals.h>
 #include "MapperPathTracer.h"
@@ -37,6 +36,8 @@
 #include "MapperQuadNormals.h"
 #include <vtkm/rendering/Scene.h>
 #include "View3D.h"
+#include "PAVE.h"
+
 
 using ArrayType = vtkm::cont::ArrayHandle<vec3>;
 
@@ -211,10 +212,13 @@ void save(std::fstream &fs,
 }
 
 template<typename ArrayType>
-void save(std::string fn,
+void save(std::stringstream &fnstream,
           int nx, int ny, int samplecount,
           ArrayType &cols)
 {
+  auto orig = fnstream.str();
+  fnstream << ".pnm";
+  auto fn = fnstream.str();
   std::fstream fs;
   fs.open(fn.c_str(), std::fstream::out);
   if (fs.is_open()){
@@ -230,58 +234,10 @@ void save(std::string fn,
   else
     std::cout << "Couldn't save pnm." << std::endl;
 //  std::vector<std::uint8_t> PngBuffer;
+  fnstream.str(orig);
 }
 
-template<typename ArrayType>
-void saveADIOS(std::string fn,
-               int nx, int ny, int samplecount,
-               ArrayType &cols);
 
-template<>
-void saveADIOS(std::string fn,
-               int nx, int ny, int samplecount,
-               vtkm::cont::ArrayHandle<vtkm::Float32> &cols)
-{
-  using ArrayType = vtkm::Float32;
-  adios2::ADIOS adios(adios2::DebugON);
-  adios2::IO bpIO = adios.DeclareIO("BPFile_N2N");
-
-  adios2::Variable<ArrayType> bpOut = bpIO.DefineVariable<ArrayType>(
-        "pnms", {}, {}, {static_cast<std::size_t>(nx*ny)}, adios2::ConstantDims);
-
-  adios2::Engine writer = bpIO.Open(fn, adios2::Mode::Write);
-
-  auto *ptr = cols.GetStorage().GetArray();
-  writer.Put<vtkm::Float32>(bpOut, ptr );
-  writer.Close();
-
-}
-template<>
-void saveADIOS(std::string fn,
-               int nx, int ny, int samplecount,
-               vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32,4>> &cols)
-{
-  using OutArrayType = vtkm::Float32;
-  adios2::ADIOS adios(adios2::DebugON);
-  adios2::IO bpIO = adios.DeclareIO("BPFile_N2N");
-
-  adios2::Variable<OutArrayType> bpOut = bpIO.DefineVariable<OutArrayType>(
-        "pnms", {}, {}, {static_cast<std::size_t>(nx*ny*4)}, adios2::ConstantDims);
-
-  adios2::Engine writer = bpIO.Open(fn, adios2::Mode::Write);
-
-  std::vector<vtkm::Float32> arrayOut(cols.GetNumberOfValues()*4);
-  for (int i=0; i<cols.GetNumberOfValues(); i++){
-    auto col = cols.GetPortalConstControl().Get(i);
-    arrayOut[i*4] = col[0];
-    arrayOut[i*4 + 1] = col[1];
-    arrayOut[i*4 + 2] = col[2];
-    arrayOut[i*4 + 3] = col[3];
-  }
-  writer.Put<OutArrayType>(bpOut, arrayOut.data() );
-  writer.Close();
-
-}
 
 void generateHemisphere(int nx, int ny, int samplecount, int depthcount, bool direct)
 {
@@ -311,23 +267,23 @@ void generateHemisphere(int nx, int ny, int samplecount, int depthcount, bool di
       cam.SetPosition(pos);
       std::stringstream sstr;
       if (direct){
-        sstr << "direct-" << phi << "-" << theta << ".pnm";
+        sstr << "direct-" << phi << "-" << theta;
         runRay(nx,ny,samplecount, depthcount, canvas, cam);
-        save(sstr.str(), nx, ny, samplecount, canvas.GetColorBuffer());
+        save(sstr, nx, ny, samplecount, canvas.GetColorBuffer());
         sstr.str("");
-        sstr << "depth-" << phi << "-" << theta << ".pnm";
-        save(sstr.str(), nx, ny, samplecount, canvas.GetDepthBuffer());
+        sstr << "depth-" << phi << "-" << theta;
+        save(sstr, nx, ny, samplecount, canvas.GetDepthBuffer());
         runNorms(nx,ny,samplecount,depthcount, canvas, cam);
         sstr.str("");
-        sstr << "normals-" << phi << "-" << theta << ".pnm";
-        save(sstr.str(), nx, ny, samplecount, canvas.GetColorBuffer());
+        sstr << "normals-" << phi << "-" << theta;
+        save(sstr, nx, ny, samplecount, canvas.GetColorBuffer());
 
       }
       else{
-        sstr << "output-" << phi << "-" << theta << ".pnm";
+        sstr << "output-" << phi << "-" << theta;
         runPath(nx,ny, samplecount, depthcount, canvas, cam);
       }
-      save(sstr.str(), nx, ny, samplecount, canvas.GetColorBuffer());
+      save(sstr, nx, ny, samplecount, canvas.GetColorBuffer());
     }
   }
 }
@@ -352,25 +308,43 @@ int main(int argc, char *argv[]) {
     cam.SetFieldOfView(40.);
     cam.SetViewUp(vec3(0,1,0));
     cam.SetLookAt(vec3(278/555.0,278/555.0,278/555.0));
+    std::unique_ptr<PAVE> paver[3];
     if (direct){
+
+      paver[0] = std::unique_ptr<PAVE>(new PAVE("direct.bp"));
       runRay(nx,ny,samplecount,depthcount, canvas, cam);
       std::stringstream sstr;
-      sstr << "direct.pnm";
-      save(sstr.str(), nx, ny, samplecount, canvas.GetColorBuffer());
-      saveADIOS("direct.bp", nx,ny, samplecount, canvas.GetColorBuffer());
-      sstr.str("depth.pnm");
-      save(sstr.str(), nx, ny, samplecount, canvas.GetDepthBuffer());
-      runNorms(nx,ny,samplecount,depthcount, canvas, cam);
-      sstr << "normals.pnm";
-      save(sstr.str(), nx, ny, samplecount, canvas.GetColorBuffer());
+      sstr << "direct";
+      save(sstr, nx, ny, samplecount, canvas.GetColorBuffer());
+      sstr.str("");
+      sstr << "direct";
+      paver[0]->save(sstr,nx,ny, samplecount, canvas.GetColorBuffer());
 
-      saveADIOS("depth.bp", nx,ny, samplecount, canvas.GetDepthBuffer());
+      sstr.str("");
+      sstr << "depth";
+      save(sstr, nx, ny, samplecount, canvas.GetDepthBuffer());
+      sstr.str("");
+      sstr << "depth";
+      paver[1]  = std::unique_ptr<PAVE>(new PAVE("depth.bp"));
+      paver[1]->save(sstr, nx,ny, samplecount, canvas.GetDepthBuffer());
+      runNorms(nx,ny,samplecount,depthcount, canvas, cam);
+      sstr.str("");
+      sstr << "normals";
+      save(sstr, nx, ny, samplecount, canvas.GetColorBuffer());
+      sstr.str("");
+      sstr << "normals";
+      paver[2] = std::unique_ptr<PAVE>(new PAVE("normals.bp"));
+      paver[2]->save(sstr, nx, ny, samplecount, canvas.GetColorBuffer());
+
     }
     else{
       runPath(nx,ny, samplecount, depthcount, canvas, cam);
       std::stringstream sstr;
-      sstr << "output.pnm";
-      save(sstr.str(), nx, ny, samplecount, canvas.GetColorBuffer());
+      sstr << "output";
+      save(sstr, nx, ny, samplecount, canvas.GetColorBuffer());
+
+      PAVE paver("output.bp");
+      paver.save(sstr,  nx, ny, samplecount, canvas.GetColorBuffer());
 
     }
   }
