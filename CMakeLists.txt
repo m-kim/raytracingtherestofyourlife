@@ -23,9 +23,11 @@ pathtracing/WhichGenerateDir.cxx
 CanvasRayTracer.cxx
 MapperPathTracer.cxx 
 MapperQuad.cxx
+MapperQuadAlbedo.cxx
 raytracing/OrigQuadIntersector.cxx
 raytracing/ChannelBuffer.cxx
 raytracing/RayTracerNormals.cxx
+raytracing/RayTracerAlbedo.cxx
 MapperQuadNormals.cxx
 View3D.cxx )
 set (PathTracingHdr

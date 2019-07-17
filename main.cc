@@ -34,6 +34,7 @@
 #include <vtkm/rendering/MapperRayTracer.h>
 #include "MapperQuad.h"
 #include "MapperQuadNormals.h"
+#include "MapperQuadAlbedo.h"
 #include <vtkm/rendering/Scene.h>
 #include "View3D.h"
 #include "PAVE.h"
@@ -96,6 +97,12 @@ parse(int argc, char **argv){
 
   return std::make_tuple(x,y, s, depth, hemi, direct);
 }
+std::vector<double> norm_color_range( std::vector<double> color_vals){
+    std::vector<double> normalized_colors = color_vals;
+    for(int i=0; i<color_vals.size(); i++)
+        normalized_colors[i] = color_vals[i]/255.0;
+    return normalized_colors;
+}
 void runRay(int nx, int ny, int samplecount, int depthcount,
               vtkm::rendering::Canvas &canvas, vtkm::rendering::Camera &cam)
 {
@@ -104,11 +111,62 @@ void runRay(int nx, int ny, int samplecount, int depthcount,
   auto ds = cb.buildDataSet();
   vtkm::rendering::Scene scene;
 
+  std::vector<double> colors ={113, 31 ,30,
+                               84, 23, 23,
+                              132 ,128 ,126,
+                               48, 93 ,53,
+                              69 ,63 ,59,
+                              54 ,47 ,43,
+                              109,104, 102,
+                              251, 251, 251,
+                              1, 1, 1,
+                              35, 66 ,38,
+                              91 ,86, 84,
+                              25, 32, 21};
+  colors = norm_color_range(colors);
+
+
+  std::vector<double> red = {1, 0, 0};
+  std::vector<double> white = {1, 1, 1};
+  std::vector<double> green = {0, 0, 1};
+
+  std::vector<double> blue = {0, 0, 1};
+  //0,1,1 0,1,0 1,1,0
+  std::vector<double> lamb1 = {0, 1, 1};
+  std::vector<double> lamb2 = {0, 1, 0};
+  std::vector<double> lamb3 = {1, 1, 0};
+
+  std::vector<double> c1 = {0.65, 0.05, 0.05}; //red
+  std::vector<double> c2 = {0.73, 0.73, 0.73}; //white
+  std::vector<double> c3 = {0.12, 0.45, 0.15}; //green
+  std::vector<double> fill1 = {15, 15, 15};
+
+  std::vector<double> pallet;
+  int num_quads = 12;
+  int num_colors = 3;
+  pallet.reserve(num_quads*num_colors);
+
+
+  pallet.insert(pallet.end(), c3.begin(), c3.end()); //green
+  pallet.insert(pallet.end(), c1.begin(), c1.end()); //red
+  pallet.insert(pallet.end(), fill1.begin(), fill1.end()); //light
+  for (int i=0; i<num_quads - 3; i++)
+    pallet.insert(pallet.end(), c2.begin(), c2.end()); //white
+
+
+  std::vector<double> alpha(num_quads);
+  for (int i=0; i<alpha.size(); i++)
+      alpha[i] = 1.0;
+
+  vtkm::cont::ColorTable ct_12_quad("pallet_color_table",
+                            vtkm::cont::ColorSpace::RGB,
+                            vtkm::Vec<double,3>(0,0,0),
+                            pallet, alpha);
   scene.AddActor(vtkm::rendering::Actor(
                    ds.GetCellSet(),
                    ds.GetCoordinateSystem(),
                    ds.GetField("point_var"),
-                   vtkm::cont::ColorTable{vtkm::cont::ColorTable::Preset::COOL_TO_WARM_EXTENDED}));
+                   ct_12_quad));
   vtkm::rendering::Color background(0,0,0, 1.0f);
   vtkm::rendering::Color foreground(1,1,1, 1.0f);
   vtkm::rendering::View3D view(scene, mapper, canvas, cam, background, foreground);
@@ -130,6 +188,51 @@ void runNorms(int nx, int ny, int samplecount, int depthcount,
                    ds.GetCoordinateSystem(),
                    ds.GetField("point_var"),
                    vtkm::cont::ColorTable{vtkm::cont::ColorTable::Preset::COOL_TO_WARM_EXTENDED}));
+  vtkm::rendering::Color background(0,0,0, 1.0f);
+  vtkm::rendering::Color foreground(1,1,1, 1.0f);
+  vtkm::rendering::View3D view(scene, mapper, canvas, cam, background, foreground);
+
+  view.Initialize();
+  view.Paint();
+
+}
+
+void runAlbedo(int nx, int ny, int samplecount, int depthcount,
+              vtkm::rendering::Canvas &canvas, vtkm::rendering::Camera &cam)
+{
+  CornellBox cb;
+  path::rendering::MapperQuadAlbedo mapper;
+  auto ds = cb.buildDataSet();
+  vtkm::rendering::Scene scene;
+
+  std::vector<double> c1 = {0.65, 0.05, 0.05}; //red
+  std::vector<double> c2 = {0.73, 0.73, 0.73}; //white
+  std::vector<double> c3 = {0.12, 0.45, 0.15}; //green
+  std::vector<double> fill1 = {15, 15, 15};
+
+  std::vector<double> pallet;
+  int num_quads = 12;
+  int num_colors = 3;
+  pallet.reserve(num_quads*num_colors);
+  pallet.insert(pallet.end(), c3.begin(), c3.end()); //green
+  pallet.insert(pallet.end(), c1.begin(), c1.end()); //red
+  pallet.insert(pallet.end(), fill1.begin(), fill1.end()); //light
+  for (int i=0; i<num_quads - 3; i++)
+    pallet.insert(pallet.end(), c2.begin(), c2.end()); //white
+  std::vector<double> alpha(num_quads); //alpha
+  for (int i=0; i<alpha.size(); i++)
+      alpha[i] = 1.0;
+
+  vtkm::cont::ColorTable ct_12_quad("pallet_color_table",
+                            vtkm::cont::ColorSpace::RGB,
+                            vtkm::Vec<double,3>(0,0,0),
+                            pallet, alpha);
+
+  scene.AddActor(vtkm::rendering::Actor(
+                   ds.GetCellSet(),
+                   ds.GetCoordinateSystem(),
+                   ds.GetField("point_var"),
+                   ct_12_quad));
   vtkm::rendering::Color background(0,0,0, 1.0f);
   vtkm::rendering::Color foreground(1,1,1, 1.0f);
   vtkm::rendering::View3D view(scene, mapper, canvas, cam, background, foreground);
@@ -293,6 +396,11 @@ void generateHemisphere(int nx, int ny, int samplecount, int depthcount, bool di
         save(sstr, nx, ny, samplecount, canvas.GetColorBuffer());
         paver[2]->save(phiTheta,nx,ny, samplecount, canvas.GetColorBuffer());
 
+
+        sstr.str("");
+        runAlbedo(nx,ny,samplecount,depthcount, canvas, cam);
+        sstr << "albedo-" << phiTheta.str();
+        save(sstr, nx, ny, samplecount, canvas.GetColorBuffer());
       }
       else{
         sstr << "output-" << phiTheta.str();
@@ -351,6 +459,11 @@ int main(int argc, char *argv[]) {
       sstr << "normals";
       paver[2] = std::unique_ptr<PAVE>(new PAVE("normals.bp"));
       paver[2]->save(sstr, nx, ny, samplecount, canvas.GetColorBuffer());
+
+      sstr.str("");
+      runAlbedo(nx,ny,samplecount,depthcount, canvas, cam);
+      sstr << "albedo";
+      save(sstr, nx, ny, samplecount, canvas.GetColorBuffer());
 
     }
     else{
