@@ -43,7 +43,6 @@ pathtracing/WhichGenerateDir.cxx
 CanvasRayTracer.cxx
 MapperPathTracer.cxx
 MapperQuad.cxx
-MapperQuadAlbedo.cxx
 raytracing/OrigQuadIntersector.cxx
 raytracing/ChannelBuffer.cxx
 raytracing/RayTracerNormals.cxx
