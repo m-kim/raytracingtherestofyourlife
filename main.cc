@@ -256,6 +256,12 @@ void generateHemisphere(int nx, int ny, int samplecount, int depthcount, bool di
   float rPhi = (M_PI/2.0)/float(numPhi);
 
   float r = -1078/555.0;
+
+  std::unique_ptr<PAVE> paver[3];
+  paver[0] = std::unique_ptr<PAVE>(new PAVE("direct.bp"));
+  paver[1] = std::unique_ptr<PAVE>(new PAVE("depth.bp"));
+  paver[2] = std::unique_ptr<PAVE>(new PAVE("normals.bp"));
+
   for (float phi=M_PI*0.25; phi<M_PI*0.5; phi += rPhi){
 	std::cout << "Phi: " << phi << std::endl;
     for (float theta=0; theta<2*M_PI; theta+=rTheta){
@@ -265,22 +271,30 @@ void generateHemisphere(int nx, int ny, int samplecount, int depthcount, bool di
 
       vec3 pos(x+278/555.0, y+278/555.0, z+278/555.0 );
       cam.SetPosition(pos);
+      std::stringstream phiTheta;
+      phiTheta << phi << "-" << theta;
       std::stringstream sstr;
       if (direct){
-        sstr << "direct-" << phi << "-" << theta;
+        sstr << "direct-" << phiTheta.str();
         runRay(nx,ny,samplecount, depthcount, canvas, cam);
         save(sstr, nx, ny, samplecount, canvas.GetColorBuffer());
+        paver[0]->save(phiTheta,nx,ny, samplecount, canvas.GetColorBuffer());
+
         sstr.str("");
-        sstr << "depth-" << phi << "-" << theta;
+        sstr << "depth-" << phiTheta.str();
         save(sstr, nx, ny, samplecount, canvas.GetDepthBuffer());
+
+        paver[1]->save(phiTheta,nx,ny, samplecount, canvas.GetDepthBuffer());
+
         runNorms(nx,ny,samplecount,depthcount, canvas, cam);
         sstr.str("");
-        sstr << "normals-" << phi << "-" << theta;
+        sstr << "normals-" << phiTheta.str();
         save(sstr, nx, ny, samplecount, canvas.GetColorBuffer());
+        paver[2]->save(phiTheta,nx,ny, samplecount, canvas.GetColorBuffer());
 
       }
       else{
-        sstr << "output-" << phi << "-" << theta;
+        sstr << "output-" << phiTheta.str();
         runPath(nx,ny, samplecount, depthcount, canvas, cam);
       }
       save(sstr, nx, ny, samplecount, canvas.GetColorBuffer());
