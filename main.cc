@@ -360,11 +360,12 @@ void generateHemisphere(int nx, int ny, int samplecount, int depthcount, bool di
 
   float r = -1078/555.0;
 
-  std::unique_ptr<PAVE> paver[4];
+  std::unique_ptr<PAVE> paver[5];
   paver[0] = std::unique_ptr<PAVE>(new PAVE("direct.bp"));
   paver[1] = std::unique_ptr<PAVE>(new PAVE("depth.bp"));
   paver[2] = std::unique_ptr<PAVE>(new PAVE("normals.bp"));
-  paver[3] = std::unique_ptr<PAVE>(new PAVE("outputs.bp"));
+  paver[3] = std::unique_ptr<PAVE>(new PAVE("albedo.bp"));
+  paver[4] = std::unique_ptr<PAVE>(new PAVE("outputs.bp"));
 
   for (float phi=M_PI*0.25; phi<M_PI*0.5; phi += rPhi){
 	std::cout << "Phi: " << phi << std::endl;
@@ -401,12 +402,13 @@ void generateHemisphere(int nx, int ny, int samplecount, int depthcount, bool di
         runAlbedo(nx,ny,samplecount,depthcount, canvas, cam);
         sstr << "albedo-" << phiTheta.str();
         save(sstr, nx, ny, samplecount, canvas.GetColorBuffer());
+        paver[3]->save(phiTheta,nx,ny, samplecount, canvas.GetColorBuffer());
       }
       else{
         sstr << "output-" << phiTheta.str();
         runPath(nx,ny, samplecount, depthcount, canvas, cam);
         save(sstr, nx, ny, samplecount, canvas.GetColorBuffer());
-        paver[3]->save(phiTheta,nx,ny, samplecount, canvas.GetColorBuffer());
+        paver[4]->save(phiTheta,nx,ny, samplecount, canvas.GetColorBuffer());
       }
     }
   }
