@@ -38,6 +38,7 @@
 #include <vtkm/rendering/Scene.h>
 #include "View3D.h"
 #include "PAVE.h"
+#include <iomanip>
 
 
 using ArrayType = vtkm::cont::ArrayHandle<vec3>;
@@ -380,7 +381,8 @@ void generateHemisphere(int nx, int ny, int samplecount, int depthcount, bool di
       vec3 pos(x+278/555.0, y+278/555.0, z+278/555.0 );
       cam.SetPosition(pos);
       std::stringstream phiTheta;
-      phiTheta << phi << "-" << theta;
+      phiTheta << std::fixed << std::setw(4) << std::setprecision(4) << phi << "-";
+      phiTheta << std::fixed << std::setw(4) << std::setprecision(4) <<  theta;
       std::stringstream sstr;
       if (direct){
         sstr << "direct-" << phiTheta.str();
