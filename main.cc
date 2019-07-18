@@ -356,7 +356,10 @@ void generateHemisphere(int nx, int ny, int samplecount, int depthcount, bool di
   int numTheta = 30;
 
   float rTheta = (2.0*M_PI)/float(numTheta);
-  float rPhi = (M_PI/2.0)/float(numPhi);
+
+  float phiBegin = 0;
+  float phiEnd = 1.0; //(M_PI/2.0)
+  float rPhi = (phiEnd - phiBegin)/float(numPhi);
 
   float r = -1078/555.0;
 
@@ -367,7 +370,7 @@ void generateHemisphere(int nx, int ny, int samplecount, int depthcount, bool di
   paver[3] = std::unique_ptr<PAVE>(new PAVE("albedo.bp"));
   paver[4] = std::unique_ptr<PAVE>(new PAVE("outputs.bp"));
 
-  for (float phi=M_PI*0.25; phi<M_PI*0.5; phi += rPhi){
+  for (float phi=phiBegin; phi<phiEnd; phi += rPhi){
 	std::cout << "Phi: " << phi << std::endl;
     for (float theta=0; theta<2*M_PI; theta+=rTheta){
       auto x = r * cos(theta) * sin(phi);
