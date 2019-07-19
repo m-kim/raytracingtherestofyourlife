@@ -5,6 +5,7 @@
 
 #include <adios2.h>
 #include <vtkm/cont/ArrayHandle.h>
+#include <mpi.h>
 
 class PAVE
 {
@@ -12,6 +13,7 @@ public:
   PAVE(std::string _fn):
     fn(_fn)
   {
+    adios = adios2::ADIOS(MPI_COMM_WORLD);
     bpIO = adios.DeclareIO("BPFile_N2N");
     writer = bpIO.Open(fn, adios2::Mode::Write);
   }

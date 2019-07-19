@@ -39,6 +39,8 @@
 #include "View3D.h"
 #include "PAVE.h"
 #include <iomanip>
+#include <mpi.h>
+
 
 
 using ArrayType = vtkm::cont::ArrayHandle<vec3>;
@@ -343,7 +345,13 @@ void save(std::stringstream &fnstream,
 
 
 
-void generateHemisphere(int nx, int ny, int samplecount, int depthcount, bool direct)
+void generateHemisphere(int nx, int ny,
+                        int samplecount,
+                        int depthcount,
+                        bool direct,
+                        float phiBegin = 0,
+                        float phiEnd = 1.0 //(M_PI/2.0)
+                        )
 {
   vtkm::rendering::CanvasRayTracer canvas(nx,ny);
   vtkm::rendering::Camera cam;
@@ -353,13 +361,11 @@ void generateHemisphere(int nx, int ny, int samplecount, int depthcount, bool di
   cam.SetViewUp(vec3(0,1,0));
   cam.SetLookAt(vec3(278/555.0,278/555.0,278/555.0));
 
-  int numPhi = 30;
-  int numTheta = 30;
+  int numPhi = 15;
+  int numTheta = 15;
 
   float rTheta = (2.0*M_PI)/float(numTheta);
 
-  float phiBegin = 0;
-  float phiEnd = 1.0; //(M_PI/2.0)
   float rPhi = (phiEnd - phiBegin)/float(numPhi);
 
   float r = -1078/555.0;
@@ -372,7 +378,7 @@ void generateHemisphere(int nx, int ny, int samplecount, int depthcount, bool di
   paver[4] = std::unique_ptr<PAVE>(new PAVE("outputs.bp"));
 
   for (float phi=phiBegin; phi<phiEnd; phi += rPhi){
-	std::cout << "Phi: " << phi << std::endl;
+  std::cout << "Phi: " << phi << std::endl;
     for (float theta=0; theta<2*M_PI; theta+=rTheta){
       auto x = r * cos(theta) * sin(phi);
       auto y = r * sin(theta) * sin(phi);
@@ -428,8 +434,28 @@ int main(int argc, char *argv[]) {
   const bool hemi = std::get<4>(tup);
   const bool direct = std::get<5>(tup);
 
-  if (hemi)
-    generateHemisphere(nx,ny, samplecount, depthcount, direct);
+  MPI_Init(NULL, NULL);
+
+  int rank = 0;
+  int nprocs = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+
+  if (rank < 2){
+    setenv( "CUDA_VISIBLE_DEVICES", "1", 1 );
+  }
+  if (hemi){
+    float phiBegin, phiEnd, rPhi;
+    rPhi = 1.0/static_cast<float>(nprocs);
+    phiBegin = rPhi * static_cast<float>(rank);
+    phiEnd = rPhi * static_cast<float>(rank + 1);
+
+    std::cout << rank << " ";
+    std::cout << nprocs << " ";
+    std:: cout << "phiBegin " << phiBegin << " phiEnd: " << phiEnd << std::endl;
+
+    generateHemisphere(nx,ny, samplecount, depthcount, direct, phiBegin, phiEnd);
+  }
   else
   {
     vtkm::rendering::CanvasRayTracer canvas(nx,ny);
@@ -484,5 +510,7 @@ int main(int argc, char *argv[]) {
 
     }
   }
+
+  MPI_Finalize();
 }
 
