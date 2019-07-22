@@ -23,13 +23,11 @@ public:
   }
 
 
-  void save(std::stringstream &varname,
-                 int nx, int ny, int samplecount,
+  void save(std::string vn,
+                 int nx, int ny,
                  vtkm::cont::ArrayHandle<vtkm::Float32> &cols)
   {
     using ArrayType = vtkm::Float32;
-
-    auto vn = varname.str();
 
     adios2::Variable<ArrayType> bpOut = bpIO.DefineVariable<ArrayType>(
           vn, {}, {}, {static_cast<std::size_t>(nx*ny)}, adios2::ConstantDims);
@@ -40,13 +38,11 @@ public:
     writer.Put<vtkm::Float32>(bpOut, ptr, adios2::Mode::Sync );
   }
 
-  void save(std::stringstream &varname,
-                 int nx, int ny, int samplecount,
+  void save(std::string vn,
+                 int nx, int ny,
                  vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32,4>> &cols)
   {
     using OutArrayType = vtkm::Float32;
-
-    auto vn = varname.str();
 
     adios2::Variable<OutArrayType> bpOut = bpIO.DefineVariable<OutArrayType>(
           vn, {}, {}, {static_cast<std::size_t>(nx*ny*4)}, adios2::ConstantDims);
@@ -63,14 +59,14 @@ public:
     writer.Put<OutArrayType>(bpOut, arrayOut.data(), adios2::Mode::Sync );
   }
 
-  void save(std::stringstream &fn,
-                 int nx, int ny, int samplecount,
+  void save(std::string vn,
+                 int nx, int ny,
                  vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Int8,4>> &cols)
   {
     using OutArrayType = vtkm::Int8;
 
     adios2::Variable<OutArrayType> bpOut = bpIO.DefineVariable<OutArrayType>(
-          fn.str(), {}, {}, {static_cast<std::size_t>(nx*ny*4)}, adios2::ConstantDims);
+          vn, {}, {}, {static_cast<std::size_t>(nx*ny*4)}, adios2::ConstantDims);
 
 
     std::vector<OutArrayType> arrayOut(cols.GetNumberOfValues()*4);
