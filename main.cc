@@ -39,7 +39,11 @@
 #include "View3D.h"
 #include "PAVE.h"
 
-
+// EXAMPLE CALL
+// For buffers:
+// ./CornellBox_CUDA -x 256 -y 256 -samplecount 300 -raydepth 20 -hemisphere -direct
+// For path traced images:
+//./CornellBox_CUDA -x 256 -y 256 -samplecount 300 -raydepth 20 -hemisphere
 using ArrayType = vtkm::cont::ArrayHandle<vec3>;
 
 template<typename VecType>
@@ -139,10 +143,10 @@ void runRay(int nx, int ny, int samplecount, int depthcount,
   std::vector<double> c1 = {0.65, 0.05, 0.05}; //red
   std::vector<double> c2 = {0.73, 0.73, 0.73}; //white
   std::vector<double> c3 = {0.12, 0.45, 0.15}; //green
-  std::vector<double> fill1 = {15, 15, 15};
+  std::vector<double> fill1 = c2;//{.15, .15, .15};
 
   std::vector<double> pallet;
-  int num_quads = 12;
+  int num_quads = 12+6+6;
   int num_colors = 3;
   pallet.reserve(num_quads*num_colors);
 
@@ -208,10 +212,10 @@ void runAlbedo(int nx, int ny, int samplecount, int depthcount,
   std::vector<double> c1 = {0.65, 0.05, 0.05}; //red
   std::vector<double> c2 = {0.73, 0.73, 0.73}; //white
   std::vector<double> c3 = {0.12, 0.45, 0.15}; //green
-  std::vector<double> fill1 = {15, 15, 15};
+  std::vector<double> fill1 = c2;//{.15, .15, .15};
 
   std::vector<double> pallet;
-  int num_quads = 12;
+  int num_quads = 12+6+6;
   int num_colors = 3;
   pallet.reserve(num_quads*num_colors);
   pallet.insert(pallet.end(), c3.begin(), c3.end()); //green
@@ -306,6 +310,9 @@ void save(std::fstream &fs,
           int samplecount,
           vtkm::Float32 &col)
 {
+  //col = col / float(samplecount);
+  if(col != col)
+      col = 0.f;
   col = sqrt(col);
   int ir = int(255.99*col);
   int ig = int(255.99*col);

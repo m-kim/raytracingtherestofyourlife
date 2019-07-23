@@ -61,17 +61,17 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   vtkm::cont::ArrayHandle<vtkm::Id> conn;
   vtkm::cont::ArrayHandle<vec3> pts1;
 
-  field.Allocate(12*4+1);
-  pts1.Allocate(12 * 4 + 1);
-  numindices.Allocate(13);
-  shapes.Allocate(13);
-  conn.Allocate(12*4+1);
-  QuadIds.Allocate(13);
-  vtkm::cont::ArrayCopy(vtkm::cont::ArrayHandleCounting<vtkm::Id>(0,1, 12*4 + 1), conn);
+  field.Allocate((12+6+6)*4+1);
+  pts1.Allocate((12+6+6) * 4 + 1);
+  numindices.Allocate(13+6+6);
+  shapes.Allocate(13+6+6);
+  conn.Allocate((12+6+6)*4+1);
+  QuadIds.Allocate(13+6+6);
+  vtkm::cont::ArrayCopy(vtkm::cont::ArrayHandleCounting<vtkm::Id>(0,1, (12+6+6)*4 + 1), conn);
 
 
-  matIdx[0].Allocate(12);
-  texIdx[0].Allocate(12);
+  matIdx[0].Allocate(12+6+6);
+  texIdx[0].Allocate(12+6+6);
   matIdx[1].Allocate(1);
   texIdx[1].Allocate(1);
   int cell_cnt = 0;
@@ -101,10 +101,10 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   pts1.GetPortalControl().Set(pt_idx+1, vec3(0,555,0)/555.0);
   pts1.GetPortalControl().Set(pt_idx+2, vec3(0,555,555)/555.0);
   pts1.GetPortalControl().Set(pt_idx+3, vec3(0,0,555)/555.0);
-  field.GetPortalControl().Set(pt_idx, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/13.0);
+  field.GetPortalControl().Set(pt_idx, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/(13.0+6+6));
   close();
 
   //xz_rect
@@ -116,10 +116,10 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   pts1.GetPortalControl().Set(pt_idx+1, vec3(343,554,227)/555.0);
   pts1.GetPortalControl().Set(pt_idx+2, vec3(343,554,332)/555.0);
   pts1.GetPortalControl().Set(pt_idx+3, vec3(213,554,332)/555.0);
-  field.GetPortalControl().Set(pt_idx, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/13.0);
+  field.GetPortalControl().Set(pt_idx, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/(13.0+6+6));
   close();
 
   matIdx[0].GetPortalControl().Set(cell_cnt, 1);
@@ -130,10 +130,10 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   pts1.GetPortalControl().Set(pt_idx+1, vec3(555,555,0)/555.0);
   pts1.GetPortalControl().Set(pt_idx+2, vec3(555,555,555)/555.0);
   pts1.GetPortalControl().Set(pt_idx+3, vec3(0,555,555)/555.0);
-  field.GetPortalControl().Set(pt_idx, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/13.0);
+  field.GetPortalControl().Set(pt_idx, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/(13.0+6+6));
   close();
 
   matIdx[0].GetPortalControl().Set(cell_cnt, 1);
@@ -144,10 +144,10 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   pts1.GetPortalControl().Set(pt_idx+1, vec3(555,0,0)/555.0);
   pts1.GetPortalControl().Set(pt_idx+2, vec3(555,0,555)/555.0);
   pts1.GetPortalControl().Set(pt_idx+3, vec3(0,0,555)/555.0);
-  field.GetPortalControl().Set(pt_idx, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/13.0);
+  field.GetPortalControl().Set(pt_idx, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/(13.0+6+6));
   close();
 
   //xy_rect
@@ -159,10 +159,10 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   pts1.GetPortalControl().Set(pt_idx+1, vec3(555,0,555)/555.0);
   pts1.GetPortalControl().Set(pt_idx+2, vec3(555,555,555)/555.0);
   pts1.GetPortalControl().Set(pt_idx+3, vec3(0,555,555)/555.0);
-  field.GetPortalControl().Set(pt_idx, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/13.0);
+  field.GetPortalControl().Set(pt_idx, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/(13.0+6+6));
   close();
 
 
@@ -182,10 +182,10 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   pts1.GetPortalControl().Set(pt_idx+1, pts[1]/555.0);
   pts1.GetPortalControl().Set(pt_idx+2, pts[2]/555.0);
   pts1.GetPortalControl().Set(pt_idx+3, pts[3]/555.0);
-  field.GetPortalControl().Set(pt_idx, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/13.0);
+  field.GetPortalControl().Set(pt_idx, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/(13.0+6+6));
   close();
 
   pts[0] = vec3(0,0,0);
@@ -201,10 +201,10 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   pts1.GetPortalControl().Set(pt_idx+1, pts[1]/555.0);
   pts1.GetPortalControl().Set(pt_idx+2, pts[2]/555.0);
   pts1.GetPortalControl().Set(pt_idx+3, pts[3]/555.0);
-  field.GetPortalControl().Set(pt_idx, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/13.0);
+  field.GetPortalControl().Set(pt_idx, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/(13.0+6+6));
   close();
 
   //yz
@@ -221,10 +221,10 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   pts1.GetPortalControl().Set(pt_idx+1, pts[1]/555.0);
   pts1.GetPortalControl().Set(pt_idx+2, pts[2]/555.0);
   pts1.GetPortalControl().Set(pt_idx+3, pts[3]/555.0);
-  field.GetPortalControl().Set(pt_idx, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/13.0);
+  field.GetPortalControl().Set(pt_idx, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/(13.0+6+6));
   close();
 
   pts[0] = vec3(0,0,0);
@@ -240,15 +240,15 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   pts1.GetPortalControl().Set(pt_idx+1, pts[1]/555.0);
   pts1.GetPortalControl().Set(pt_idx+2, pts[2]/555.0);
   pts1.GetPortalControl().Set(pt_idx+3, pts[3]/555.0);
-  field.GetPortalControl().Set(pt_idx, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/13.0);
+  field.GetPortalControl().Set(pt_idx, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/(13.0+6+6));
   close();
 
 
   //xz_rect
-  pts[0] = vec3(0,333,0);
+  pts[0] = vec3(0,330,0);
   pts[1] = vec3(165,330,0);
   pts[2] = vec3(165,330,165);
   pts[3] = vec3(0, 330, 165);
@@ -261,10 +261,10 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   pts1.GetPortalControl().Set(pt_idx+1, pts[1]/555.0);
   pts1.GetPortalControl().Set(pt_idx+2, pts[2]/555.0);
   pts1.GetPortalControl().Set(pt_idx+3, pts[3]/555.0);
-  field.GetPortalControl().Set(pt_idx, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/13.0);
+  field.GetPortalControl().Set(pt_idx, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/(13.0+6+6));
   close();
 
   pts[0] = vec3(0,0,0);
@@ -280,11 +280,265 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   pts1.GetPortalControl().Set(pt_idx+1, pts[1]/555.0);
   pts1.GetPortalControl().Set(pt_idx+2, pts[2]/555.0);
   pts1.GetPortalControl().Set(pt_idx+3, pts[3]/555.0);
-  field.GetPortalControl().Set(pt_idx, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/13.0);
-  field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/13.0);
+  field.GetPortalControl().Set(pt_idx, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/(13.0+6+6));
+  field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/(13.0+6+6));
   close();
+
+  // ################################3
+  // Small(er) box
+
+    //xy
+    //vtkm::Vec<vec3,4> pts;
+    pts[0] = vec3(-80,0,-80);
+    pts[1] = vec3(200,0,-80);
+    pts[2] = vec3(200,330/5,-80);
+    pts[3] = vec3(-80,330/5,-80);
+    invert(pts);
+    matIdx[0].GetPortalControl().Set(cell_cnt, 1);
+    texIdx[0].GetPortalControl().Set(cell_cnt, 1);
+    shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
+    numindices.GetPortalControl().Set(cell_cnt, 4);
+    pts1.GetPortalControl().Set(pt_idx, pts[0]/555.0);
+    pts1.GetPortalControl().Set(pt_idx+1, pts[1]/555.0);
+    pts1.GetPortalControl().Set(pt_idx+2, pts[2]/555.0);
+    pts1.GetPortalControl().Set(pt_idx+3, pts[3]/555.0);
+    field.GetPortalControl().Set(pt_idx, float(cell_cnt)/(13.0+6+6));
+    field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/(13.0+6+6));
+    field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/(13.0+6+6));
+    field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/(13.0+6+6));
+    close();
+
+    pts[0] = vec3(-80,0,100);
+    pts[1] = vec3(200,0,100);
+    pts[2] = vec3(200,330/5,100);
+    pts[3] = vec3(-80,330/5,100);
+    invert(pts);
+    matIdx[0].GetPortalControl().Set(cell_cnt, 1);
+    texIdx[0].GetPortalControl().Set(cell_cnt, 1);
+    shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
+    numindices.GetPortalControl().Set(cell_cnt, 4);
+    pts1.GetPortalControl().Set(pt_idx, pts[0]/555.0);
+    pts1.GetPortalControl().Set(pt_idx+1, pts[1]/555.0);
+    pts1.GetPortalControl().Set(pt_idx+2, pts[2]/555.0);
+    pts1.GetPortalControl().Set(pt_idx+3, pts[3]/555.0);
+    field.GetPortalControl().Set(pt_idx, float(cell_cnt)/(13.0+6+6));
+    field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/(13.0+6+6));
+    field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/(13.0+6+6));
+    field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/(13.0+6+6));
+    close();
+
+    //yz
+    pts[0] = vec3(200,0,-80);
+    pts[1] = vec3(200,330/5,-80);
+    pts[2] = vec3(200,330/5,100);
+    pts[3] = vec3(200, 0, 100);
+    invert(pts);
+    matIdx[0].GetPortalControl().Set(cell_cnt, 1);
+    texIdx[0].GetPortalControl().Set(cell_cnt, 1);
+    shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
+    numindices.GetPortalControl().Set(cell_cnt, 4);
+    pts1.GetPortalControl().Set(pt_idx, pts[0]/555.0);
+    pts1.GetPortalControl().Set(pt_idx+1, pts[1]/555.0);
+    pts1.GetPortalControl().Set(pt_idx+2, pts[2]/555.0);
+    pts1.GetPortalControl().Set(pt_idx+3, pts[3]/555.0);
+    field.GetPortalControl().Set(pt_idx, float(cell_cnt)/(13.0+6+6));
+    field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/(13.0+6+6));
+    field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/(13.0+6+6));
+    field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/(13.0+6+6));
+    close();
+
+    pts[0] = vec3(-80,0,-80);
+    pts[1] = vec3(-80,330/5,-80);
+    pts[2] = vec3(-80,330/5,100);
+    pts[3] = vec3(-80, 0, 100);
+    invert(pts);
+    matIdx[0].GetPortalControl().Set(cell_cnt, 1);
+    texIdx[0].GetPortalControl().Set(cell_cnt, 1);
+    shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
+    numindices.GetPortalControl().Set(cell_cnt, 4);
+    pts1.GetPortalControl().Set(pt_idx, pts[0]/555.0);
+    pts1.GetPortalControl().Set(pt_idx+1, pts[1]/555.0);
+    pts1.GetPortalControl().Set(pt_idx+2, pts[2]/555.0);
+    pts1.GetPortalControl().Set(pt_idx+3, pts[3]/555.0);
+    field.GetPortalControl().Set(pt_idx, float(cell_cnt)/(13.0+6+6));
+    field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/(13.0+6+6));
+    field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/(13.0+6+6));
+    field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/(13.0+6+6));
+    close();
+
+
+    //xz_rect
+    pts[0] = vec3(-80,330/5,-80);
+    pts[1] = vec3(200,330/5,-80);
+    pts[2] = vec3(200,330/5,100);
+    pts[3] = vec3(-80, 330/5, 100);
+    invert(pts);
+    matIdx[0].GetPortalControl().Set(cell_cnt, 1);
+    texIdx[0].GetPortalControl().Set(cell_cnt, 1);
+    shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
+    numindices.GetPortalControl().Set(cell_cnt, 4);
+    pts1.GetPortalControl().Set(pt_idx, pts[0]/555.0);
+    pts1.GetPortalControl().Set(pt_idx+1, pts[1]/555.0);
+    pts1.GetPortalControl().Set(pt_idx+2, pts[2]/555.0);
+    pts1.GetPortalControl().Set(pt_idx+3, pts[3]/555.0);
+    field.GetPortalControl().Set(pt_idx, float(cell_cnt)/(13.0+6+6));
+    field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/(13.0+6+6));
+    field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/(13.0+6+6));
+    field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/(13.0+6+6));
+    close();
+
+    pts[0] = vec3(-80,0,-80);
+    pts[1] = vec3(200,0,-80);
+    pts[2] = vec3(200,0,100);
+    pts[3] = vec3(-80, 0, 100);
+    invert(pts);
+    matIdx[0].GetPortalControl().Set(cell_cnt, 1);
+    texIdx[0].GetPortalControl().Set(cell_cnt, 1);
+    shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
+    numindices.GetPortalControl().Set(cell_cnt, 4);
+    pts1.GetPortalControl().Set(pt_idx, pts[0]/555.0);
+    pts1.GetPortalControl().Set(pt_idx+1, pts[1]/555.0);
+    pts1.GetPortalControl().Set(pt_idx+2, pts[2]/555.0);
+    pts1.GetPortalControl().Set(pt_idx+3, pts[3]/555.0);
+    field.GetPortalControl().Set(pt_idx, float(cell_cnt)/(13.0+6+6));
+    field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/(13.0+6+6));
+    field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/(13.0+6+6));
+    field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/(13.0+6+6));
+    close();
+
+
+
+  // ##############################
+
+    // ################################3
+    // BOXES EVERYWHERE!!
+
+      //xy
+      //vtkm::Vec<vec3,4> pts;
+      pts[0] = vec3(-200,0,-200); //near face bottom left
+      pts[1] = vec3(10,0,-200);
+      pts[2] = vec3(10,200,-200);
+      pts[3] = vec3(-200,200,-200);
+      invert(pts);
+      matIdx[0].GetPortalControl().Set(cell_cnt, 1);
+      texIdx[0].GetPortalControl().Set(cell_cnt, 1);
+      shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
+      numindices.GetPortalControl().Set(cell_cnt, 4);
+      pts1.GetPortalControl().Set(pt_idx, pts[0]/555.0);
+      pts1.GetPortalControl().Set(pt_idx+1, pts[1]/555.0);
+      pts1.GetPortalControl().Set(pt_idx+2, pts[2]/555.0);
+      pts1.GetPortalControl().Set(pt_idx+3, pts[3]/555.0);
+      field.GetPortalControl().Set(pt_idx, float(cell_cnt)/(13.0+6+6));
+      field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/(13.0+6+6));
+      field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/(13.0+6+6));
+      field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/(13.0+6+6));
+      close();
+
+      pts[0] = vec3(-200,0,-50);
+      pts[1] = vec3(10,0,-50);
+      pts[2] = vec3(10,200,-50);
+      pts[3] = vec3(-200,200,-50);
+      invert(pts);
+      matIdx[0].GetPortalControl().Set(cell_cnt, 1);
+      texIdx[0].GetPortalControl().Set(cell_cnt, 1);
+      shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
+      numindices.GetPortalControl().Set(cell_cnt, 4);
+      pts1.GetPortalControl().Set(pt_idx, pts[0]/555.0);
+      pts1.GetPortalControl().Set(pt_idx+1, pts[1]/555.0);
+      pts1.GetPortalControl().Set(pt_idx+2, pts[2]/555.0);
+      pts1.GetPortalControl().Set(pt_idx+3, pts[3]/555.0);
+      field.GetPortalControl().Set(pt_idx, float(cell_cnt)/(13.0+6+6));
+      field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/(13.0+6+6));
+      field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/(13.0+6+6));
+      field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/(13.0+6+6));
+      close();
+
+      //yz
+      pts[0] = vec3(10,0,-200);
+      pts[1] = vec3(10,200,-200);
+      pts[2] = vec3(10,200,-50);
+      pts[3] = vec3(10, 0, -50);
+      invert(pts);
+      matIdx[0].GetPortalControl().Set(cell_cnt, 1);
+      texIdx[0].GetPortalControl().Set(cell_cnt, 1);
+      shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
+      numindices.GetPortalControl().Set(cell_cnt, 4);
+      pts1.GetPortalControl().Set(pt_idx, pts[0]/555.0);
+      pts1.GetPortalControl().Set(pt_idx+1, pts[1]/555.0);
+      pts1.GetPortalControl().Set(pt_idx+2, pts[2]/555.0);
+      pts1.GetPortalControl().Set(pt_idx+3, pts[3]/555.0);
+      field.GetPortalControl().Set(pt_idx, float(cell_cnt)/(13.0+6+6));
+      field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/(13.0+6+6));
+      field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/(13.0+6+6));
+      field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/(13.0+6+6));
+      close();
+
+      pts[0] = vec3(-200,0,-200);
+      pts[1] = vec3(-200,200,-200);
+      pts[2] = vec3(-200,200,-50);
+      pts[3] = vec3(-200, 0, -50);
+      invert(pts);
+      matIdx[0].GetPortalControl().Set(cell_cnt, 1);
+      texIdx[0].GetPortalControl().Set(cell_cnt, 1);
+      shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
+      numindices.GetPortalControl().Set(cell_cnt, 4);
+      pts1.GetPortalControl().Set(pt_idx, pts[0]/555.0);
+      pts1.GetPortalControl().Set(pt_idx+1, pts[1]/555.0);
+      pts1.GetPortalControl().Set(pt_idx+2, pts[2]/555.0);
+      pts1.GetPortalControl().Set(pt_idx+3, pts[3]/555.0);
+      field.GetPortalControl().Set(pt_idx, float(cell_cnt)/(13.0+6+6));
+      field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/(13.0+6+6));
+      field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/(13.0+6+6));
+      field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/(13.0+6+6));
+      close();
+
+
+      //xz_rect
+      pts[0] = vec3(-200,200,-200);
+      pts[1] = vec3(10,200,-200);
+      pts[2] = vec3(10,200,-50);
+      pts[3] = vec3(-200, 200, -50);
+      invert(pts);
+      matIdx[0].GetPortalControl().Set(cell_cnt, 1);
+      texIdx[0].GetPortalControl().Set(cell_cnt, 1);
+      shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
+      numindices.GetPortalControl().Set(cell_cnt, 4);
+      pts1.GetPortalControl().Set(pt_idx, pts[0]/555.0);
+      pts1.GetPortalControl().Set(pt_idx+1, pts[1]/555.0);
+      pts1.GetPortalControl().Set(pt_idx+2, pts[2]/555.0);
+      pts1.GetPortalControl().Set(pt_idx+3, pts[3]/555.0);
+      field.GetPortalControl().Set(pt_idx, float(cell_cnt)/(13.0+6+6));
+      field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/(13.0+6+6));
+      field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/(13.0+6+6));
+      field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/(13.0+6+6));
+      close();
+
+      pts[0] = vec3(-200,0,-200);
+      pts[1] = vec3(10,0,-200);
+      pts[2] = vec3(10,0,-50);
+      pts[3] = vec3(-200, 0, -50);
+      invert(pts);
+      matIdx[0].GetPortalControl().Set(cell_cnt, 1);
+      texIdx[0].GetPortalControl().Set(cell_cnt, 1);
+      shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_QUAD);
+      numindices.GetPortalControl().Set(cell_cnt, 4);
+      pts1.GetPortalControl().Set(pt_idx, pts[0]/555.0);
+      pts1.GetPortalControl().Set(pt_idx+1, pts[1]/555.0);
+      pts1.GetPortalControl().Set(pt_idx+2, pts[2]/555.0);
+      pts1.GetPortalControl().Set(pt_idx+3, pts[3]/555.0);
+      field.GetPortalControl().Set(pt_idx, float(cell_cnt)/(13.0+6+6));
+      field.GetPortalControl().Set(pt_idx+1, float(cell_cnt)/(13.0+6+6));
+      field.GetPortalControl().Set(pt_idx+2, float(cell_cnt)/(13.0+6+6));
+      field.GetPortalControl().Set(pt_idx+3, float(cell_cnt)/(13.0+6+6));
+      close();
+
+
+
+    // ##############################
+
+
 
   //    //sphere
 
@@ -292,8 +546,11 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   texIdx[1].GetPortalControl().Set(0, 0);
   shapes.GetPortalControl().Set(cell_cnt, vtkm::CELL_SHAPE_VERTEX);
   numindices.GetPortalControl().Set(cell_cnt, 1);
-  pts1.GetPortalControl().Set(pt_idx, vec3(190,90,190)/555.0);
-  field.GetPortalControl().Set(pt_idx, float(cell_cnt)/13.0);
+  pts1.GetPortalControl().Set(pt_idx, vec3(-1000,10,-100)/555.0);  // !! A very ugly hack bc
+                                                                  // I'm lazy and didn't
+                                                                  // want to find every instance the sphere
+                                                                  // is referenced :(
+  field.GetPortalControl().Set(pt_idx, float(cell_cnt)/(13.0+6+6));
   cell_cnt++;
   pt_idx++;
 
@@ -317,7 +574,7 @@ void CornellBox::extract()
 {
 
   vtkm::rendering::raytracing::SphereExtractor sphereExtractor;
-  sphereExtractor.ExtractCells(ds.GetCellSet(0), 90.0/555.0);
+  sphereExtractor.ExtractCells(ds.GetCellSet(0), 10.0/555.0);   // Follow up on ugly-hack
   SphereIds = sphereExtractor.GetPointIds();
   SphereRadii = sphereExtractor.GetRadii();
   ShapeOffset = ds.GetCellSet(0).Cast<vtkm::cont::CellSetExplicit<>>().GetIndexOffsetArray(vtkm::TopologyElementTagPoint(), vtkm::TopologyElementTagCell());
