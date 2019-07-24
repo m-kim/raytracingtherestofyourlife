@@ -59,6 +59,85 @@ void CornellBox::buildQuad(vtkm::Vec<vec3,4> &pts,
   vecField.push_back( float(numindices.size()-1));
 
 }
+
+void CornellBox::buildBox(const vec3 &near,
+              const vec3 &far,
+              std::vector<vtkm::UInt8> &shapes,
+              std::vector<vtkm::IdComponent> &numindices,
+              std::vector<vec3> &pts1,
+              std::vector<vtkm::Float32> &vecField,
+              std::vector<vtkm::Id> &vecMatIdx,
+              std::vector<vtkm::Id> &vecTexIdx,
+                                     int midx,
+                                     int tidx)
+{
+  vtkm::Vec<vec3,4> pts;
+  pts[0] = vec3(near[0], near[1], near[2]);
+  pts[1] = vec3(far[0], near[1], near[2]);
+  pts[2] = vec3(far[0], far[1], near[2]);
+  pts[3] = vec3(near[0], far[1], near[2]);
+  buildQuad(pts,
+            shapes,
+            numindices,
+            pts1,
+            vecField,
+            vecMatIdx,
+            vecTexIdx,
+      midx, tidx);
+
+  pts[0] = vec3(near[0], near[1], far[2]);
+  pts[1] = vec3(far[0], near[1], far[2]);
+  pts[2] = vec3(far[0], far[1], far[2]);
+  pts[3] = vec3(near[0], far[1], far[2]);
+  buildQuad(pts,
+            shapes,
+            numindices,
+            pts1,
+            vecField,
+            vecMatIdx,
+            vecTexIdx,
+      midx,tidx);
+
+
+  pts[0] = vec3(near[0], far[1], near[2]);
+  pts[1] = vec3(far[0], far[1], near[2]);
+  pts[2] = vec3(far[0], far[1], far[2]);
+  pts[3] = vec3(near[0], far[1], far[2]);
+  buildQuad(pts,
+            shapes,
+            numindices,
+            pts1,
+            vecField,
+            vecMatIdx,
+            vecTexIdx,
+      midx,tidx);
+  pts[0] = vec3(near[0], near[1], near[2]);
+  pts[1] = vec3(far[0], near[1], near[2]);
+  pts[2] = vec3(far[0], far[1], near[2]);
+  pts[3] = vec3(near[0], far[1], near[2]);
+  buildQuad(pts,
+            shapes,
+            numindices,
+            pts1,
+            vecField,
+            vecMatIdx,
+            vecTexIdx,
+      midx,tidx);
+  pts[0] = vec3(near[0], near[1], far[2]);
+  pts[1] = vec3(far[0], near[1], far[2]);
+  pts[2] = vec3(far[0], far[1], far[2]);
+  pts[3] = vec3(near[0], far[1], far[2]);
+  buildQuad(pts,
+            shapes,
+            numindices,
+            pts1,
+            vecField,
+            vecMatIdx,
+            vecTexIdx,
+      midx,tidx);
+
+}
+
 vtkm::cont::DataSet CornellBox::buildDataSet()
 {
   tex.Allocate(4);
@@ -286,139 +365,24 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   vecField.push_back( float(numindices.size()-1));
 
 
-  pts[0] = vec3(sphere_center[0] - sphere_radii,180,sphere_center[2] - sphere_radii);
-  pts[1] = vec3(sphere_center[0] + sphere_radii,180,sphere_center[2] - sphere_radii);
-  pts[2] = vec3(sphere_center[0] + sphere_radii,180,sphere_center[2] + sphere_radii);
-  pts[3] = vec3(sphere_center[0] - sphere_radii,180,sphere_center[2] + sphere_radii);
-  buildQuad(pts,
-            shapes,
-            numindices,
-            pts1,
-            vecField,
-            vecMatIdx[0],
-            vecTexIdx[0],
-      1,1);
-
-  pts[0] = vec3(sphere_center[0] - sphere_radii,180,sphere_center[2] + sphere_radii);
-  pts[1] = vec3(sphere_center[0] + sphere_radii,180,sphere_center[2] + sphere_radii);
-  pts[2] = vec3(sphere_center[0] + sphere_radii,0,sphere_center[2] + sphere_radii);
-  pts[3] = vec3(sphere_center[0] - sphere_radii,0,sphere_center[2] + sphere_radii);
-  buildQuad(pts,
-            shapes,
-            numindices,
-            pts1,
-            vecField,
-            vecMatIdx[0],
-            vecTexIdx[0],
-      1,1);
-
-  pts[0] = vec3(sphere_center[0] - sphere_radii,180,sphere_center[2] - sphere_radii);
-  pts[1] = vec3(sphere_center[0] + sphere_radii,180,sphere_center[2] - sphere_radii);
-  pts[2] = vec3(sphere_center[0] + sphere_radii,0,sphere_center[2] - sphere_radii);
-  pts[3] = vec3(sphere_center[0] - sphere_radii,0,sphere_center[2] - sphere_radii);
-  buildQuad(pts,
-            shapes,
-            numindices,
-            pts1,
-            vecField,
-            vecMatIdx[0],
-            vecTexIdx[0],
-      1,1);
-
-  pts[0] = vec3(sphere_center[0] - sphere_radii,180,sphere_center[2] - sphere_radii);
-  pts[1] = vec3(sphere_center[0] - sphere_radii,180,sphere_center[2] + sphere_radii);
-  pts[2] = vec3(sphere_center[0] - sphere_radii,0,sphere_center[2] + sphere_radii);
-  pts[3] = vec3(sphere_center[0] - sphere_radii,0,sphere_center[2] - sphere_radii);
-  buildQuad(pts,
-            shapes,
-            numindices,
-            pts1,
-            vecField,
-            vecMatIdx[0],
-            vecTexIdx[0],
-      1,1);
-
-  pts[0] = vec3(sphere_center[0] - sphere_radii,180,sphere_center[2] - sphere_radii);
-  pts[1] = vec3(sphere_center[0] - sphere_radii,180,sphere_center[2] + sphere_radii);
-  pts[2] = vec3(sphere_center[0] - sphere_radii,0,sphere_center[2] + sphere_radii);
-  pts[3] = vec3(sphere_center[0] - sphere_radii,0,sphere_center[2] - sphere_radii);
-  buildQuad(pts,
-            shapes,
-            numindices,
-            pts1,
-            vecField,
-            vecMatIdx[0],
-            vecTexIdx[0],
-      1,1);
+  vec3 near(sphere_center[0] - sphere_radii, 0, sphere_center[2] - sphere_radii);
+  vec3 far(sphere_center[0] + sphere_radii, 180,sphere_center[2] + sphere_radii);
+  buildBox(near,far,
+           shapes, numindices,
+           pts1, vecField,
+           vecMatIdx[0], vecTexIdx[0],
+           1,1);
 
   //------------------------------------------------------------------------
 
-  vec3 near(50, 0, 50);
-  vec3 far(450, 100, 100);
-  pts[0] = vec3(near[0], near[1], near[2]);
-  pts[1] = vec3(far[0], near[1], near[2]);
-  pts[2] = vec3(far[0], far[1], near[2]);
-  pts[3] = vec3(near[0], far[1], near[2]);
-  buildQuad(pts,
-            shapes,
-            numindices,
-            pts1,
-            vecField,
-            vecMatIdx[0],
-            vecTexIdx[0],
-      1,1);
+  near = vec3(50, 0, 50);
+  far = vec3(450, 100, 100);
 
-  pts[0] = vec3(near[0], near[1], far[2]);
-  pts[1] = vec3(far[0], near[1], far[2]);
-  pts[2] = vec3(far[0], far[1], far[2]);
-  pts[3] = vec3(near[0], far[1], far[2]);
-  buildQuad(pts,
-            shapes,
-            numindices,
-            pts1,
-            vecField,
-            vecMatIdx[0],
-            vecTexIdx[0],
-      1,1);
-
-
-  pts[0] = vec3(near[0], far[1], near[2]);
-  pts[1] = vec3(far[0], far[1], near[2]);
-  pts[2] = vec3(far[0], far[1], far[2]);
-  pts[3] = vec3(near[0], far[1], far[2]);
-  buildQuad(pts,
-            shapes,
-            numindices,
-            pts1,
-            vecField,
-            vecMatIdx[0],
-            vecTexIdx[0],
-      1,1);
-  pts[0] = vec3(near[0], near[1], near[2]);
-  pts[1] = vec3(far[0], near[1], near[2]);
-  pts[2] = vec3(far[0], far[1], near[2]);
-  pts[3] = vec3(near[0], far[1], near[2]);
-  buildQuad(pts,
-            shapes,
-            numindices,
-            pts1,
-            vecField,
-            vecMatIdx[0],
-            vecTexIdx[0],
-      1,1);
-  pts[0] = vec3(near[0], near[1], far[2]);
-  pts[1] = vec3(far[0], near[1], far[2]);
-  pts[2] = vec3(far[0], far[1], far[2]);
-  pts[3] = vec3(near[0], far[1], far[2]);
-  buildQuad(pts,
-            shapes,
-            numindices,
-            pts1,
-            vecField,
-            vecMatIdx[0],
-            vecTexIdx[0],
-      1,1);
-
+  buildBox(near,far,
+           shapes, numindices,
+           pts1, vecField,
+           vecMatIdx[0], vecTexIdx[0],
+           1,1);
 
 
 

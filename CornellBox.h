@@ -36,6 +36,16 @@ public:
                              int midx,
                              int tidx);
 
+  void buildBox(const vec3 &near,
+                const vec3 &far,
+                std::vector<vtkm::UInt8> &shapes,
+                std::vector<vtkm::IdComponent> &numindices,
+                std::vector<vec3> &pts1,
+                std::vector<vtkm::Float32> &vecField,
+                std::vector<vtkm::Id> &vecMatIdx,
+                std::vector<vtkm::Id> &vecTexIdx,
+                                       int midx,
+                                       int tidx);
   vtkm::cont::DataSet ds;
 
   void saveDS(std::string fname){
