@@ -275,13 +275,81 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
 
 
   //    //sphere
+  vec3 sphere_center(135,90, 290);
+  vtkm::Float32 sphere_radii = 90;
+
   vecMatIdx[1].push_back(4);
   vecTexIdx[1].push_back(0);
   shapes.push_back( vtkm::CELL_SHAPE_VERTEX);
   numindices.push_back( 1);
-  pts1.push_back( vec3(190,90,190)/555.0);
+  pts1.push_back( sphere_center/555.0);
   vecField.push_back( float(numindices.size()-1));
 
+
+  pts[0] = vec3(sphere_center[0] - sphere_radii,180,sphere_center[2] - sphere_radii);
+  pts[1] = vec3(sphere_center[0] + sphere_radii,180,sphere_center[2] - sphere_radii);
+  pts[2] = vec3(sphere_center[0] + sphere_radii,180,sphere_center[2] + sphere_radii);
+  pts[3] = vec3(sphere_center[0] - sphere_radii,180,sphere_center[2] + sphere_radii);
+  buildQuad(pts,
+            shapes,
+            numindices,
+            pts1,
+            vecField,
+            vecMatIdx[0],
+            vecTexIdx[0],
+      1,1);
+
+  pts[0] = vec3(sphere_center[0] - sphere_radii,180,sphere_center[2] + sphere_radii);
+  pts[1] = vec3(sphere_center[0] + sphere_radii,180,sphere_center[2] + sphere_radii);
+  pts[2] = vec3(sphere_center[0] + sphere_radii,0,sphere_center[2] + sphere_radii);
+  pts[3] = vec3(sphere_center[0] - sphere_radii,0,sphere_center[2] + sphere_radii);
+  buildQuad(pts,
+            shapes,
+            numindices,
+            pts1,
+            vecField,
+            vecMatIdx[0],
+            vecTexIdx[0],
+      1,1);
+
+  pts[0] = vec3(sphere_center[0] - sphere_radii,180,sphere_center[2] - sphere_radii);
+  pts[1] = vec3(sphere_center[0] + sphere_radii,180,sphere_center[2] - sphere_radii);
+  pts[2] = vec3(sphere_center[0] + sphere_radii,0,sphere_center[2] - sphere_radii);
+  pts[3] = vec3(sphere_center[0] - sphere_radii,0,sphere_center[2] - sphere_radii);
+  buildQuad(pts,
+            shapes,
+            numindices,
+            pts1,
+            vecField,
+            vecMatIdx[0],
+            vecTexIdx[0],
+      1,1);
+
+  pts[0] = vec3(sphere_center[0] - sphere_radii,180,sphere_center[2] - sphere_radii);
+  pts[1] = vec3(sphere_center[0] - sphere_radii,180,sphere_center[2] + sphere_radii);
+  pts[2] = vec3(sphere_center[0] - sphere_radii,0,sphere_center[2] + sphere_radii);
+  pts[3] = vec3(sphere_center[0] - sphere_radii,0,sphere_center[2] - sphere_radii);
+  buildQuad(pts,
+            shapes,
+            numindices,
+            pts1,
+            vecField,
+            vecMatIdx[0],
+            vecTexIdx[0],
+      1,1);
+
+  pts[0] = vec3(sphere_center[0] - sphere_radii,180,sphere_center[2] - sphere_radii);
+  pts[1] = vec3(sphere_center[0] - sphere_radii,180,sphere_center[2] + sphere_radii);
+  pts[2] = vec3(sphere_center[0] - sphere_radii,0,sphere_center[2] + sphere_radii);
+  pts[3] = vec3(sphere_center[0] - sphere_radii,0,sphere_center[2] - sphere_radii);
+  buildQuad(pts,
+            shapes,
+            numindices,
+            pts1,
+            vecField,
+            vecMatIdx[0],
+            vecTexIdx[0],
+      1,1);
 
 
 
