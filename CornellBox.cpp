@@ -33,6 +33,32 @@ void CornellBox::invert(vtkm::Vec<vec3,4> &pts)
   pt = vec3ToVec4(pts[3]);
   pts[3] = vec4ToVec3(MatrixMultiply(mat, pt));
 }
+
+void CornellBox::buildQuad(vtkm::Vec<vec3,4> &pts,
+    std::vector<vtkm::UInt8> &shapes,
+    std::vector<vtkm::IdComponent> &numindices,
+    std::vector<vec3> &pts1,
+    std::vector<vtkm::Float32> &vecField,
+    std::vector<vtkm::Id> &vecMatIdx,
+    std::vector<vtkm::Id> &vecTexIdx,
+                           int midx,
+                           int tidx)
+
+{
+  vecMatIdx.push_back(midx);
+  vecTexIdx.push_back(tidx);
+  shapes.push_back( vtkm::CELL_SHAPE_QUAD);
+  numindices.push_back( 4);
+  pts1.push_back( pts[0]/555.0);
+  pts1.push_back( pts[1]/555.0);
+  pts1.push_back( pts[2]/555.0);
+  pts1.push_back( pts[3]/555.0);
+  vecField.push_back( float(numindices.size()-1));
+  vecField.push_back( float(numindices.size()-1));
+  vecField.push_back( float(numindices.size()-1));
+  vecField.push_back( float(numindices.size()-1));
+
+}
 vtkm::cont::DataSet CornellBox::buildDataSet()
 {
   tex.Allocate(4);
@@ -162,37 +188,28 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   pts[2] = vec3(165,330,165);
   pts[3] = vec3(0,330,165);
   invert(pts);
-  vecMatIdx[0].push_back(1);
-  vecTexIdx[0].push_back(1);
-  shapes.push_back( vtkm::CELL_SHAPE_QUAD);
-  numindices.push_back( 4);
-  pts1.push_back( pts[0]/555.0);
-  pts1.push_back( pts[1]/555.0);
-  pts1.push_back( pts[2]/555.0);
-  pts1.push_back( pts[3]/555.0);
-  vecField.push_back( float(numindices.size()-1));
-  vecField.push_back( float(numindices.size()-1));
-  vecField.push_back( float(numindices.size()-1));
-  vecField.push_back( float(numindices.size()-1));
-
+  buildQuad(pts,
+            shapes,
+            numindices,
+            pts1,
+            vecField,
+            vecMatIdx[0],
+            vecTexIdx[0],
+      1,1);
 
   pts[0] = vec3(0,0,0);
   pts[1] = vec3(165,0,0);
   pts[2] = vec3(165,330,0);
   pts[3] = vec3(0,330,0);
   invert(pts);
-  vecMatIdx[0].push_back(1);
-  vecTexIdx[0].push_back(1);
-  shapes.push_back( vtkm::CELL_SHAPE_QUAD);
-  numindices.push_back( 4);
-  pts1.push_back( pts[0]/555.0);
-  pts1.push_back( pts[1]/555.0);
-  pts1.push_back( pts[2]/555.0);
-  pts1.push_back( pts[3]/555.0);
-  vecField.push_back( float(numindices.size()-1));
-  vecField.push_back( float(numindices.size()-1));
-  vecField.push_back( float(numindices.size()-1));
-  vecField.push_back( float(numindices.size()-1));
+  buildQuad(pts,
+            shapes,
+            numindices,
+            pts1,
+            vecField,
+            vecMatIdx[0],
+            vecTexIdx[0],
+      1,1);
 
 
   //yz
@@ -201,18 +218,14 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   pts[2] = vec3(165,330,165);
   pts[3] = vec3(165, 0, 165);
   invert(pts);
-  vecMatIdx[0].push_back(1);
-  vecTexIdx[0].push_back(1);
-  shapes.push_back( vtkm::CELL_SHAPE_QUAD);
-  numindices.push_back( 4);
-  pts1.push_back( pts[0]/555.0);
-  pts1.push_back( pts[1]/555.0);
-  pts1.push_back( pts[2]/555.0);
-  pts1.push_back( pts[3]/555.0);
-  vecField.push_back( float(numindices.size()-1));
-  vecField.push_back( float(numindices.size()-1));
-  vecField.push_back( float(numindices.size()-1));
-  vecField.push_back( float(numindices.size()-1));
+  buildQuad(pts,
+            shapes,
+            numindices,
+            pts1,
+            vecField,
+            vecMatIdx[0],
+            vecTexIdx[0],
+      1,1);
 
 
   pts[0] = vec3(0,0,0);
@@ -220,18 +233,14 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   pts[2] = vec3(0,330,165);
   pts[3] = vec3(0, 0, 165);
   invert(pts);
-  vecMatIdx[0].push_back(1);
-  vecTexIdx[0].push_back(1);
-  shapes.push_back( vtkm::CELL_SHAPE_QUAD);
-  numindices.push_back( 4);
-  pts1.push_back( pts[0]/555.0);
-  pts1.push_back( pts[1]/555.0);
-  pts1.push_back( pts[2]/555.0);
-  pts1.push_back( pts[3]/555.0);
-  vecField.push_back( float(numindices.size()-1));
-  vecField.push_back( float(numindices.size()-1));
-  vecField.push_back( float(numindices.size()-1));
-  vecField.push_back( float(numindices.size()-1));
+  buildQuad(pts,
+            shapes,
+            numindices,
+            pts1,
+            vecField,
+            vecMatIdx[0],
+            vecTexIdx[0],
+      1,1);
 
 
 
@@ -241,37 +250,28 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   pts[2] = vec3(165,330,165);
   pts[3] = vec3(0, 330, 165);
   invert(pts);
-  vecMatIdx[0].push_back(1);
-  vecTexIdx[0].push_back(1);
-  shapes.push_back( vtkm::CELL_SHAPE_QUAD);
-  numindices.push_back( 4);
-  pts1.push_back( pts[0]/555.0);
-  pts1.push_back( pts[1]/555.0);
-  pts1.push_back( pts[2]/555.0);
-  pts1.push_back( pts[3]/555.0);
-  vecField.push_back( float(numindices.size()-1));
-  vecField.push_back( float(numindices.size()-1));
-  vecField.push_back( float(numindices.size()-1));
-  vecField.push_back( float(numindices.size()-1));
-
+  buildQuad(pts,
+            shapes,
+            numindices,
+            pts1,
+            vecField,
+            vecMatIdx[0],
+            vecTexIdx[0],
+      1,1);
 
   pts[0] = vec3(0,0,0);
   pts[1] = vec3(165,0,0);
   pts[2] = vec3(165,0,165);
   pts[3] = vec3(0, 0, 165);
   invert(pts);
-  vecMatIdx[0].push_back(1);
-  vecTexIdx[0].push_back(1);
-  shapes.push_back( vtkm::CELL_SHAPE_QUAD);
-  numindices.push_back( 4);
-  pts1.push_back( pts[0]/555.0);
-  pts1.push_back( pts[1]/555.0);
-  pts1.push_back( pts[2]/555.0);
-  pts1.push_back( pts[3]/555.0);
-  vecField.push_back( float(numindices.size()-1));
-  vecField.push_back( float(numindices.size()-1));
-  vecField.push_back( float(numindices.size()-1));
-  vecField.push_back( float(numindices.size()-1));
+  buildQuad(pts,
+            shapes,
+            numindices,
+            pts1,
+            vecField,
+            vecMatIdx[0],
+            vecTexIdx[0],
+      1,1);
 
 
   //    //sphere
@@ -281,6 +281,9 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   numindices.push_back( 1);
   pts1.push_back( vec3(190,90,190)/555.0);
   vecField.push_back( float(numindices.size()-1));
+
+
+
 
 
   for (auto &val: vecField)
