@@ -351,6 +351,74 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
             vecTexIdx[0],
       1,1);
 
+  //------------------------------------------------------------------------
+
+  vec3 near(50, 0, 50);
+  vec3 far(450, 100, 100);
+  pts[0] = vec3(near[0], near[1], near[2]);
+  pts[1] = vec3(far[0], near[1], near[2]);
+  pts[2] = vec3(far[0], far[1], near[2]);
+  pts[3] = vec3(near[0], far[1], near[2]);
+  buildQuad(pts,
+            shapes,
+            numindices,
+            pts1,
+            vecField,
+            vecMatIdx[0],
+            vecTexIdx[0],
+      1,1);
+
+  pts[0] = vec3(near[0], near[1], far[2]);
+  pts[1] = vec3(far[0], near[1], far[2]);
+  pts[2] = vec3(far[0], far[1], far[2]);
+  pts[3] = vec3(near[0], far[1], far[2]);
+  buildQuad(pts,
+            shapes,
+            numindices,
+            pts1,
+            vecField,
+            vecMatIdx[0],
+            vecTexIdx[0],
+      1,1);
+
+
+  pts[0] = vec3(near[0], far[1], near[2]);
+  pts[1] = vec3(far[0], far[1], near[2]);
+  pts[2] = vec3(far[0], far[1], far[2]);
+  pts[3] = vec3(near[0], far[1], far[2]);
+  buildQuad(pts,
+            shapes,
+            numindices,
+            pts1,
+            vecField,
+            vecMatIdx[0],
+            vecTexIdx[0],
+      1,1);
+  pts[0] = vec3(near[0], near[1], near[2]);
+  pts[1] = vec3(far[0], near[1], near[2]);
+  pts[2] = vec3(far[0], far[1], near[2]);
+  pts[3] = vec3(near[0], far[1], near[2]);
+  buildQuad(pts,
+            shapes,
+            numindices,
+            pts1,
+            vecField,
+            vecMatIdx[0],
+            vecTexIdx[0],
+      1,1);
+  pts[0] = vec3(near[0], near[1], far[2]);
+  pts[1] = vec3(far[0], near[1], far[2]);
+  pts[2] = vec3(far[0], far[1], far[2]);
+  pts[3] = vec3(near[0], far[1], far[2]);
+  buildQuad(pts,
+            shapes,
+            numindices,
+            pts1,
+            vecField,
+            vecMatIdx[0],
+            vecTexIdx[0],
+      1,1);
+
 
 
 
