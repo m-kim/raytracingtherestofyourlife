@@ -492,7 +492,7 @@ int main(int argc, char *argv[]) {
     phiBegin = rPhi * static_cast<float>(rank);
     phiEnd = rPhi * static_cast<float>(rank + 1);
 
-    int numPhi = 15;
+    int numPhi = 15 / nprocs;
     int numTheta = 15;
 
 
