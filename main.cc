@@ -381,6 +381,138 @@ void savePathTraced(std::unique_ptr<PAVE> &paver,
   paver->save(fn, nx,ny, cols);
 }
 
+void generate(vtkm::rendering::Camera &cam,
+              vtkm::rendering::CanvasRayTracer &canvas,
+              std::unique_ptr<PAVE> paver[5],
+              int nx, int ny,
+              int samplecount,
+              int depthcount,
+              bool direct,
+              float phi, float theta)
+{
+  std::stringstream phiTheta;
+//  phiTheta << std::fixed << std::setw(4) << std::setprecision(4) << x << "-";
+//  phiTheta << std::fixed << std::setw(4) << std::setprecision(4) <<  y <<"-";
+//  phiTheta << std::fixed << std::setw(4) << std::setprecision(4) <<  z;
+    phiTheta << std::fixed << std::setw(4) << std::setprecision(4) << phi << "-";
+    phiTheta << std::fixed << std::setw(4) << std::setprecision(4) <<  theta;
+  std::stringstream sstr;
+  if (direct){
+    sstr << "direct-" << phiTheta.str();
+    runRay(nx,ny,samplecount, depthcount, canvas, cam);
+    save(sstr, nx, ny, samplecount, canvas.GetColorBuffer());
+    paver[0]->save(phiTheta.str(),nx,ny, canvas.GetColorBuffer());
+
+    sstr.str("");
+    sstr << "depth-" << phiTheta.str();
+    save(sstr, nx, ny, samplecount, canvas.GetDepthBuffer());
+
+    paver[1]->save(phiTheta.str(),nx,ny, canvas.GetDepthBuffer());
+
+    runNorms(nx,ny,samplecount,depthcount, canvas, cam);
+    sstr.str("");
+    sstr << "normals-" << phiTheta.str();
+    save(sstr, nx, ny, samplecount, canvas.GetColorBuffer());
+    paver[2]->save(phiTheta.str(),nx,ny, canvas.GetColorBuffer());
+
+
+    sstr.str("");
+    runAlbedo(nx,ny,samplecount,depthcount, canvas, cam);
+    sstr << "albedo-" << phiTheta.str();
+    save(sstr, nx, ny, samplecount, canvas.GetColorBuffer());
+    paver[3]->save(phiTheta.str(),nx,ny, canvas.GetColorBuffer());
+  }
+  else{
+    sstr << "output-" << phiTheta.str();
+    runPath(nx,ny, samplecount, depthcount, canvas, cam);
+    save(sstr, nx, ny, samplecount, canvas.GetColorBuffer());
+    paver[4]->save(phiTheta.str(),nx,ny, canvas.GetColorBuffer());
+  }
+}
+void fibonacciHemisphere(int sampleCount,
+                         int nx, int ny,
+                         int samplecount,
+                         int depthcount,
+                         bool direct)
+{
+//  def fibonacci_sphere(samples=1,randomize=True):
+//      rnd = 1.
+//      if randomize:
+//          rnd = random.random() * samples
+
+//      points = []
+//      offset = 2./samples
+//      increment = math.pi * (3. - math.sqrt(5.));
+
+//      #for i in range(samples):
+//      #    y = ((i * offset) - 1) + (offset / 2);
+//      for i in range(samples / 2, samples):
+//          y = ((i * offset) - 1) + (offset / 2)
+//          r = math.sqrt(1 - pow(y,2))
+
+//          phi = ((i + rnd) % samples) * increment
+
+//          x = math.cos(phi) * r
+//          z = math.sin(phi) * r
+
+//          points.append([x,y,z])
+
+//      return points
+
+  vtkm::rendering::CanvasRayTracer canvas(nx,ny);
+  vtkm::rendering::Camera cam;
+  cam.SetClippingRange(01.f, 5.f);
+  cam.SetPosition(vec3(278/555.0,278/555.0,-800/555.0));
+  cam.SetFieldOfView(40.f);
+  cam.SetViewUp(vec3(0,1,0));
+  cam.SetLookAt(vec3(278/555.0,278/555.0,278/555.0));
+
+  std::unique_ptr<PAVE> paver[5];
+  if (direct){
+    paver[0] = std::unique_ptr<PAVE>(new PAVE("direct.bp"));
+    paver[1] = std::unique_ptr<PAVE>(new PAVE("depth.bp"));
+    paver[2] = std::unique_ptr<PAVE>(new PAVE("normals.bp"));
+    paver[3] = std::unique_ptr<PAVE>(new PAVE("albedo.bp"));
+  }
+  else{
+    paver[4] = std::unique_ptr<PAVE>(new PAVE("outputs.bp"));
+  }
+
+
+
+
+  int rnd = rand() % sampleCount;
+  vtkm::Float32 offset = 2./sampleCount;
+  auto increment = vtkm::Pi() * (3. - vtkm::Sqrt(5.0));
+  float zdepth = -1078/555.0;
+
+  //for (int i=0; i<sampleCount ;i++){
+  for (int i=0; i<sampleCount ;i++){
+    vtkm::Float32  z = ((i * offset) - 1) + (offset /2);
+    vtkm::Float32 r = vtkm::Sqrt(1 - pow(z,2));
+    auto phi = ((i + rnd) %sampleCount) * increment;
+    vtkm::Float32 x = vtkm::Cos(phi) * r;
+    vtkm::Float32 y = vtkm::Sin(phi) * r;
+    std::cout << x << " " << y << " " << z << std::endl;
+    if (z < 0){
+      vec3 pos(x+278/555.0, y+278/555.0, z+278/555.0 );
+      cam.SetPosition(pos);
+      generate(cam,
+               canvas,
+               paver,
+               nx, ny,
+               samplecount,
+               depthcount,
+               direct,
+               0,i);
+
+    }
+
+
+  }
+
+}
+
 void generateHemisphere(int nx, int ny,
                         int samplecount,
                         int depthcount,
@@ -410,11 +542,15 @@ void generateHemisphere(int nx, int ny,
   float r = -1078/555.0;
 
   std::unique_ptr<PAVE> paver[5];
-  paver[0] = std::unique_ptr<PAVE>(new PAVE("direct.bp"));
-  paver[1] = std::unique_ptr<PAVE>(new PAVE("depth.bp"));
-  paver[2] = std::unique_ptr<PAVE>(new PAVE("normals.bp"));
-  paver[3] = std::unique_ptr<PAVE>(new PAVE("albedo.bp"));
-  paver[4] = std::unique_ptr<PAVE>(new PAVE("outputs.bp"));
+  if (direct){
+    paver[0] = std::unique_ptr<PAVE>(new PAVE("direct.bp"));
+    paver[1] = std::unique_ptr<PAVE>(new PAVE("depth.bp"));
+    paver[2] = std::unique_ptr<PAVE>(new PAVE("normals.bp"));
+    paver[3] = std::unique_ptr<PAVE>(new PAVE("albedo.bp"));
+  }
+  else{
+    paver[4] = std::unique_ptr<PAVE>(new PAVE("outputs.bp"));
+  }
 
   if (fabs(phiBegin) < 1e-6)
     phiBegin += rPhi;
@@ -428,41 +564,14 @@ void generateHemisphere(int nx, int ny,
 
       vec3 pos(x+278/555.0, y+278/555.0, z+278/555.0 );
       cam.SetPosition(pos);
-      std::stringstream phiTheta;
-      phiTheta << std::fixed << std::setw(4) << std::setprecision(4) << phi << "-";
-      phiTheta << std::fixed << std::setw(4) << std::setprecision(4) <<  theta;
-      std::stringstream sstr;
-      if (direct){
-        sstr << "direct-" << phiTheta.str();
-        runRay(nx,ny,samplecount, depthcount, canvas, cam);
-        save(sstr, nx, ny, samplecount, canvas.GetColorBuffer());
-        paver[0]->save(phiTheta.str(),nx,ny, canvas.GetColorBuffer());
-
-        sstr.str("");
-        sstr << "depth-" << phiTheta.str();
-        save(sstr, nx, ny, samplecount, canvas.GetDepthBuffer());
-
-        paver[1]->save(phiTheta.str(),nx,ny, canvas.GetDepthBuffer());
-
-        runNorms(nx,ny,samplecount,depthcount, canvas, cam);
-        sstr.str("");
-        sstr << "normals-" << phiTheta.str();
-        save(sstr, nx, ny, samplecount, canvas.GetColorBuffer());
-        paver[2]->save(phiTheta.str(),nx,ny, canvas.GetColorBuffer());
-
-
-        sstr.str("");
-        runAlbedo(nx,ny,samplecount,depthcount, canvas, cam);
-        sstr << "albedo-" << phiTheta.str();
-        save(sstr, nx, ny, samplecount, canvas.GetColorBuffer());
-        paver[3]->save(phiTheta.str(),nx,ny, canvas.GetColorBuffer());
-      }
-      else{
-        sstr << "output-" << phiTheta.str();
-        runPath(nx,ny, samplecount, depthcount, canvas, cam);
-        save(sstr, nx, ny, samplecount, canvas.GetColorBuffer());
-        paver[4]->save(phiTheta.str(),nx,ny, canvas.GetColorBuffer());
-      }
+      generate(cam,
+               canvas,
+               paver,
+               nx, ny,
+               samplecount,
+               depthcount,
+               direct,
+               phi,theta);
     }
   }
 }
@@ -506,11 +615,12 @@ int main(int argc, char *argv[]) {
     std::cout << " thetaBegin " << thetaBegin;
     std::cout << " thetaEnd " << thetaEnd << std::endl;
 
-    generateHemisphere(nx,ny, samplecount, depthcount,
-                       direct, phiBegin, phiEnd, numPhi,
-                       thetaBegin,
-                       thetaEnd,
-                       numTheta);
+//    generateHemisphere(nx,ny, samplecount, depthcount,
+//                       direct, phiBegin, phiEnd, numPhi,
+//                       thetaBegin,
+//                       thetaEnd,
+//                       numTheta);
+    fibonacciHemisphere(10000, nx,ny, samplecount, depthcount,direct);
   }
   else
   {
