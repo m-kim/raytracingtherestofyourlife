@@ -354,7 +354,7 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
 
 
   //    //sphere
-  vec3 sphere_center(135,90, 290);
+  vec3 sphere_center(-335,90, 290);
   vtkm::Float32 sphere_radii = 90;
 
   vecMatIdx[1].push_back(4);
@@ -365,8 +365,9 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   vecField.push_back( float(numindices.size()-1));
 
 
-  vec3 near(sphere_center[0] - sphere_radii, 0, sphere_center[2] - sphere_radii);
-  vec3 far(sphere_center[0] + sphere_radii, 180,sphere_center[2] + sphere_radii);
+  vec3 box_center(135,90, 290);
+  vec3 near(box_center[0] - sphere_radii, 0, box_center[2] - sphere_radii);
+  vec3 far(box_center[0] + sphere_radii, 180,box_center[2] + sphere_radii);
   buildBox(near,far,
            shapes, numindices,
            pts1, vecField,

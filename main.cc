@@ -40,7 +40,8 @@
 #include "PAVE.h"
 #include <iomanip>
 #include <mpi.h>
-
+#include <signal.h>
+#include <vtkm/cont/Timer.h>
 
 
 using ArrayType = vtkm::cont::ArrayHandle<vec3>;
@@ -513,7 +514,12 @@ void fibonacciHemisphere(int sampleCount,
 
 }
 
-void generateHemisphere(int nx, int ny,
+volatile sig_atomic_t flag = 0;
+void my_function(int sig){ // can be called asynchronously
+  flag = 1; // set flag
+}
+
+bool generateHemisphere(int nx, int ny,
                         int samplecount,
                         int depthcount,
                         bool direct,
@@ -556,7 +562,20 @@ void generateHemisphere(int nx, int ny,
     phiBegin += rPhi;
 
   for (float phi=phiBegin; phi<phiEnd; phi += rPhi){
-  std::cout << "Phi: " << phi << std::endl;
+    if (flag){
+      flag = 0;
+      if (direct){
+        paver[0].reset();
+        paver[1].reset();
+        paver[2].reset();
+        paver[3].reset();
+      }
+      else
+        paver[4].reset();
+      std::cout << "release" << std::endl;
+      return 1;
+    }
+    std::cout << "Phi: " << phi << std::endl;
     for (float theta=thetaBegin; theta<thetaEnd; theta+=rTheta){
       auto x = r * cos(theta) * sin(phi);
       auto y = r * sin(theta) * sin(phi);
@@ -574,6 +593,7 @@ void generateHemisphere(int nx, int ny,
                phi,theta);
     }
   }
+  return 0;
 }
 int main(int argc, char *argv[]) {
 
@@ -587,6 +607,7 @@ int main(int argc, char *argv[]) {
 
   MPI_Init(NULL, NULL);
 
+  signal(SIGUSR1, my_function);
   int rank = 0;
   int nprocs = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -595,14 +616,21 @@ int main(int argc, char *argv[]) {
   if (rank < 2){
     setenv( "CUDA_VISIBLE_DEVICES", "1", 1 );
   }
+
+  vtkm::Float64 computationTime = 0.0;
+  vtkm::Float64 elapsedTime1, elapsedTime2, elapsedTime3;
+
+  // Decompose
+  vtkm::cont::Timer<> timer;
+
   if (hemi){
     float phiBegin, phiEnd, rPhi;
     rPhi = 1.0/static_cast<float>(nprocs);
     phiBegin = rPhi * static_cast<float>(rank);
     phiEnd = rPhi * static_cast<float>(rank + 1);
 
-    int numPhi = 15 / nprocs;
-    int numTheta = 15;
+    int numPhi = 55 / nprocs;
+    int numTheta = 55;
 
 
     float rTheta = 1.0/(static_cast<float>(nprocs));
@@ -615,12 +643,12 @@ int main(int argc, char *argv[]) {
     std::cout << " thetaBegin " << thetaBegin;
     std::cout << " thetaEnd " << thetaEnd << std::endl;
 
-//    generateHemisphere(nx,ny, samplecount, depthcount,
-//                       direct, phiBegin, phiEnd, numPhi,
-//                       thetaBegin,
-//                       thetaEnd,
-//                       numTheta);
-    fibonacciHemisphere(10000, nx,ny, samplecount, depthcount,direct);
+    generateHemisphere(nx,ny, samplecount, depthcount,
+                       direct, phiBegin, phiEnd, numPhi,
+                       thetaBegin,
+                       thetaEnd,
+                       numTheta);
+//    fibonacciHemisphere(10000, nx,ny, samplecount, depthcount,direct);
   }
   else
   {
@@ -682,5 +710,7 @@ int main(int argc, char *argv[]) {
   }
 
   MPI_Finalize();
+  elapsedTime1 = timer.GetElapsedTime();
+  std::cout << "Rank: " << rank << " Elapsed time         = " << elapsedTime1 << std::endl;
 }
 
