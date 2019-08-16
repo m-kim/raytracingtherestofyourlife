@@ -558,8 +558,8 @@ bool generateHemisphere(int nx, int ny,
     paver[4] = std::unique_ptr<PAVE>(new PAVE("outputs.bp"));
   }
 
-  if (fabs(phiBegin) < 1e-6)
-    phiBegin += rPhi;
+  //if (fabs(phiBegin) < 1e-6)
+  //  phiBegin += rPhi;
 
   for (float phi=phiBegin; phi<phiEnd; phi += rPhi){
     if (flag){
