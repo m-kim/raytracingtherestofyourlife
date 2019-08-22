@@ -25,7 +25,7 @@ public:
 
   void save(std::string vn,
                  int nx, int ny,
-                 vtkm::cont::ArrayHandle<vtkm::Float32> &cols)
+                 const vtkm::cont::ArrayHandle<vtkm::Float32> &cols)
   {
     using ArrayType = vtkm::Float32;
 
@@ -40,7 +40,7 @@ public:
 
   void save(std::string vn,
                  int nx, int ny,
-                 vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32,4>> &cols)
+                 const vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32,4>> &cols)
   {
     using OutArrayType = vtkm::Float32;
 
@@ -80,6 +80,10 @@ public:
     writer.Put<OutArrayType>(bpOut, arrayOut.data(), adios2::Mode::Sync );
   }
 
+  void flush()
+  {
+    writer.Flush();
+  }
   adios2::ADIOS adios;
   adios2::IO bpIO;
   adios2::Engine writer;
