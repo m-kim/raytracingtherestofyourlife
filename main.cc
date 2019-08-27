@@ -54,6 +54,9 @@ parse(int argc, char **argv){
   int x = 128;
   int y = 128;
   int s = 10;
+  int phiCount = 15;
+  int thetaCount = 15;
+
   int depth = 5;
 
   bool hemi = false;
@@ -90,9 +93,21 @@ parse(int argc, char **argv){
     }
     else if(!strcmp(argv[i], "-direct"))
       direct = true;
+    else if(!strcmp(argv[i], "-phicount")){
+      if (i+1 < argc){
+        phiCount = atoi(argv[i+1]);
+        i += 1;
+      }
+    }
+    else if(!strcmp(argv[i], "-thetacount")){
+      if (i+1 < argc){
+        thetaCount = atoi(argv[i+1]);
+        i += 1;
+      }
+    }
   }
 
-  return std::make_tuple(x,y, s, depth, hemi, direct);
+  return std::make_tuple(x,y, s, depth, hemi, direct, phiCount, thetaCount);
 }
 std::vector<double> norm_color_range( std::vector<double> color_vals){
     std::vector<double> normalized_colors = color_vals;
@@ -516,10 +531,10 @@ bool generateHemisphere(int nx, int ny,
                         float phiBegin = 0,
                         float phiEnd = 1.0, //(M_PI/2.0)
                         int numPhi = 15,
-
+                        float rPhi = 1.0/15.0,
                         float thetaBegin = 0,
                         float thetaEnd = 2*M_PI,
-                        int numTheta = 15
+                        float rTheta = 1.0/15.0
                         )
 {
   vtkm::rendering::CanvasRayTracer canvas(nx,ny);
@@ -531,9 +546,6 @@ bool generateHemisphere(int nx, int ny,
   cam.SetLookAt(vec3(278/555.0,278/555.0,278/555.0));
 
 
-  float rTheta = (2.0*M_PI)/float(numTheta);
-
-  float rPhi = (phiEnd - phiBegin)/float(numPhi);
 
   float r = -1078/555.0;
 
@@ -607,6 +619,9 @@ int main(int argc, char *argv[]) {
     setenv( "CUDA_VISIBLE_DEVICES", "1", 1 );
   }
 
+  const int phiCount = std::get<6>(tup);
+  const int thetaCount = std::get<7>(tup);
+
   vtkm::Float64 computationTime = 0.0;
   vtkm::Float64 elapsedTime1, elapsedTime2, elapsedTime3;
 
@@ -615,30 +630,33 @@ int main(int argc, char *argv[]) {
 
    ds = cb.buildDataSet();
   if (hemi){
-    float phiBegin, phiEnd, rPhi;
-    rPhi = 1.0/static_cast<float>(nprocs);
-    phiBegin = rPhi * static_cast<float>(rank);
-    phiEnd = rPhi * static_cast<float>(rank + 1);
+    float phiBegin, phiEnd;
+    phiBegin = 0.0;//rPhi * static_cast<float>(rank);
+    phiEnd = 1.0;//rPhi * static_cast<float>(rank + 1);
 
-    int numPhi = 55 / nprocs;
-    int numTheta = 55;
+    const float thetaEnd = 2*M_PI;//rTheta * static_cast<float>(rank+1) * 2*M_PI;
+    float rTheta = thetaEnd/(static_cast<float>(thetaCount));
+    float thetaBegin = rTheta * float(rank);//rTheta * static_cast<float>(rank) * 2*M_PI;
 
+    rTheta *= nprocs;
 
-    float rTheta = 1.0/(static_cast<float>(nprocs));
-    float thetaBegin = 0;//rTheta * static_cast<float>(rank) * 2*M_PI;
-    float thetaEnd = 2*M_PI;//rTheta * static_cast<float>(rank+1) * 2*M_PI;
+    float rPhi = (phiEnd - phiBegin)/float(phiCount);
 
     std::cout << rank << " ";
     std::cout << nprocs << " ";
-    std:: cout << "phiBegin " << phiBegin << " phiEnd: " << phiEnd;
+    std::cout << " rPhi: " << rPhi;
+    std::cout << " rTheta: " << rTheta;
+    std::cout << " countTheta: " << thetaCount;
+    std::cout << " countPhi: " << phiCount;
+    std:: cout << " phiBegin " << phiBegin << " phiEnd: " << phiEnd;
     std::cout << " thetaBegin " << thetaBegin;
     std::cout << " thetaEnd " << thetaEnd << std::endl;
 
     generateHemisphere(nx,ny, samplecount, depthcount,
-                       direct, phiBegin, phiEnd, numPhi,
+                       direct, phiBegin, phiEnd, phiCount, rPhi,
                        thetaBegin,
                        thetaEnd,
-                       numTheta);
+                       rTheta);
 //    fibonacciHemisphere(10000, nx,ny, samplecount, depthcount,direct);
   }
   else
