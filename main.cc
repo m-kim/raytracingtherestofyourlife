@@ -45,6 +45,8 @@
 
 
 using ArrayType = vtkm::cont::ArrayHandle<vec3>;
+CornellBox cb;
+vtkm::cont::DataSet ds;
 
 
 const auto
@@ -101,9 +103,7 @@ std::vector<double> norm_color_range( std::vector<double> color_vals){
 void runRay(int nx, int ny, int samplecount, int depthcount,
               vtkm::rendering::Canvas &canvas, vtkm::rendering::Camera &cam)
 {
-  CornellBox cb;
   path::rendering::MapperQuad mapper;
-  auto ds = cb.buildDataSet();
   vtkm::rendering::Scene scene;
 
   std::vector<double> colors ={113, 31 ,30,
@@ -173,9 +173,7 @@ void runRay(int nx, int ny, int samplecount, int depthcount,
 void runNorms(int nx, int ny, int samplecount, int depthcount,
               vtkm::rendering::Canvas &canvas, vtkm::rendering::Camera &cam)
 {
-  CornellBox cb;
   path::rendering::MapperQuadNormals mapper;
-  auto ds = cb.buildDataSet();
   vtkm::rendering::Scene scene;
 
   scene.AddActor(vtkm::rendering::Actor(
@@ -195,9 +193,7 @@ void runNorms(int nx, int ny, int samplecount, int depthcount,
 void runAlbedo(int nx, int ny, int samplecount, int depthcount,
               vtkm::rendering::Canvas &canvas, vtkm::rendering::Camera &cam)
 {
-  CornellBox cb;
   path::rendering::MapperQuadAlbedo mapper;
-  auto ds = cb.buildDataSet();
   vtkm::rendering::Scene scene;
 
   std::vector<double> c1 = {0.65, 0.05, 0.05}; //red
@@ -280,12 +276,6 @@ void runPath(int nx, int ny, int samplecount, int depthcount,
   using StorageTag = vtkm::cont::StorageTagBasic;
   using Device = VTKM_DEFAULT_DEVICE_ADAPTER_TAG;
 
-  CornellBox cb;
-
-  auto ds = cb.buildDataSet();
-
-  vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32, 2>> uvs;
-  uvs.Allocate(nx*ny);
 
   vtkm::rendering::MapperPathTracer mapper(samplecount,
                                            depthcount,
@@ -623,6 +613,7 @@ int main(int argc, char *argv[]) {
   // Decompose
   vtkm::cont::Timer<> timer;
 
+   ds = cb.buildDataSet();
   if (hemi){
     float phiBegin, phiEnd, rPhi;
     rPhi = 1.0/static_cast<float>(nprocs);
