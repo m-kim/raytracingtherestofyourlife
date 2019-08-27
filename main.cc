@@ -563,22 +563,21 @@ bool generateHemisphere(int nx, int ny,
   //if (fabs(phiBegin) < 1e-6)
   //  phiBegin += rPhi;
 
-  for (float phi=phiBegin; phi<phiEnd; phi += rPhi){
-    if (flag){
-      flag = 0;
-      if (direct){
-        paver[0].reset();
-        paver[1].reset();
-        paver[2].reset();
-        paver[3].reset();
-      }
-      else
-        paver[4].reset();
-      std::cout << "release" << std::endl;
-      return 1;
-    }
-    std::cout << "Phi: " << phi << std::endl;
+  for (float phi=phiBegin; phi<(phiEnd - 0.5*rPhi); phi += rPhi){
     for (float theta=thetaBegin; theta<thetaEnd; theta+=rTheta){
+      if (flag){
+        flag = 0;
+        if (direct){
+          paver[0].reset();
+          paver[1].reset();
+          paver[2].reset();
+          paver[3].reset();
+        }
+        else
+          paver[4].reset();
+        std::cout << "release" << std::endl;
+        return 1;
+      }
       auto x = r * cos(theta) * sin(phi);
       auto y = r * sin(theta) * sin(phi);
       auto z = r * cos(phi);
@@ -594,7 +593,31 @@ bool generateHemisphere(int nx, int ny,
                direct,
                phi,theta);
     }
+
+
+    if (direct){
+      paver[0]->flush();
+      paver[1]->flush();
+      paver[2]->flush();
+      paver[3]->flush();
+    }
+    else{
+      paver[4]->flush();
+    }
   }
+  if (direct){
+    paver[0]->close();
+    paver[1]->close();
+    paver[2]->close();
+    paver[3]->close();
+  }
+  else{
+    paver[4]->close();
+  }
+
+
+
+  MPI_Barrier(MPI_COMM_WORLD);
   return 0;
 }
 int main(int argc, char *argv[]) {
