@@ -28,6 +28,7 @@
 #include <memory>
 #include "pathtracing/PathAlgorithms.h"
 #include "pathtracing/QuadIntersector.h"
+#include "pathtracing/SphereIntersector.h"
 
 namespace vtkm
 {
@@ -66,19 +67,22 @@ public:
 
   template<typename emittedType,
            typename attenType>
-  void intersect(const vtkm::cont::CoordinateSystem &coord,
+  void intersect(
                  vtkm::rendering::raytracing::Ray<vtkm::Float32> &rays,
-                 vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> &QuadIds,
-                 vtkm::cont::ArrayHandle<vtkm::Id> &SphereIds,
-                 vtkm::cont::ArrayHandle<vtkm::Float32> &SphereRadii,
-                 vtkm::cont::ArrayHandle<vtkm::Int32> &matIdArray,
-                 vtkm::cont::ArrayHandle<vtkm::Int32> &texIdArray,
-                 vtkm::cont::ArrayHandle<vtkm::Id> *matIdx,
-                 vtkm::cont::ArrayHandle<vtkm::Id> *texIdx,
                  vtkm::cont::ArrayHandle<float> &tmin,
                  emittedType &emitted,
                  attenType &attenuation,
-                 const vtkm::Id depth) const;
+                 const vtkm::Id depth);
+
+  void buildBVH(const vtkm::cont::CoordinateSystem &coord,
+               vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> &QuadIds,
+               vtkm::cont::ArrayHandle<vtkm::Id> &SphereIds,
+               vtkm::cont::ArrayHandle<vtkm::Float32> &SphereRadii,
+               vtkm::cont::ArrayHandle<vtkm::Int32> &matIdArray,
+               vtkm::cont::ArrayHandle<vtkm::Int32> &texIdArray,
+               vtkm::cont::ArrayHandle<vtkm::Id> *matIdx,
+               vtkm::cont::ArrayHandle<vtkm::Id> *texIdx);
+
 
   template<typename HitRecord, typename HitId, typename ScatterRecord,
            typename emittedType>
@@ -86,47 +90,39 @@ public:
                       HitRecord &hrecs,
                       HitId &hids,
                       ScatterRecord &srecs,
-                      vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32,3>> tex,
-                      vtkm::cont::ArrayHandle<int> matType,
-                      vtkm::cont::ArrayHandle<int> texType,
+                      vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32,3>> &tex,
+                      vtkm::cont::ArrayHandle<int> &matType,
+                      vtkm::cont::ArrayHandle<int> &texType,
                       emittedType &emitted,
                       vtkm::cont::ArrayHandle<unsigned int> &seeds,
                       vtkm::Id canvasSize,
-                      vtkm::Id depth) const;
+                      vtkm::Id depth);
 
   template<typename HitRecord, typename ScatterRecord,
            typename attenType, typename GenDirType>
   void applyPDFs(const vtkm::cont::CoordinateSystem &coord,
-                 vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> QuadIds,
+                 vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> &QuadIds,
                  vtkm::cont::ArrayHandle<vtkm::Id> &SphereIds,
                  vtkm::cont::ArrayHandle<vtkm::Float32> &SphereRadii,
                  vtkm::cont::ArrayHandle<vtkm::Id> *matIdx,
                  vtkm::cont::ArrayHandle<vtkm::Id> *texIdx,
                  vtkm::rendering::raytracing::Ray<vtkm::Float32> &rays,
                  HitRecord &hrecs,
-                 ScatterRecord srecs,
+                 ScatterRecord &srecs,
                  vtkm::cont::ArrayHandle<vtkm::Float32> &sum_values,
                  GenDirType generated_dir,
                  attenType &attenuation,
                  vtkm::cont::ArrayHandle<unsigned int> &seeds,
-                 vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>>  light_box_pointids,
-                 vtkm::cont::ArrayHandle<vtkm::Id> light_box_indices,
-                 vtkm::cont::ArrayHandle<vtkm::Id> &light_sphere_pointids,
-                 vtkm::cont::ArrayHandle<vtkm::Id> & light_sphere_indices,
                  int lightables,
                  vtkm::Id canvasSize,
                  vtkm::Id depth
-                 ) const;
+                 );
   void generateRays(const vtkm::cont::CoordinateSystem &coord,
                     vtkm::cont::ArrayHandle<vtkm::Float32> &SphereRadii,
                     vtkm::cont::ArrayHandle<int> &whichPDF,
                     vtkm::rendering::raytracing::Ray<vtkm::Float32> &rays,
-                    vtkm::cont::ArrayHandle<vtkm::UInt32> &seeds,
-                    vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>>  light_box_pointids,
-                    vtkm::cont::ArrayHandle<vtkm::Id> light_box_indices,
-                    vtkm::cont::ArrayHandle<vtkm::Id> &light_sphere_pointids,
-                    vtkm::cont::ArrayHandle<vtkm::Id> & light_sphere_indices
-                    ) const;
+                    vtkm::cont::ArrayHandle<vtkm::UInt32> &seeds
+                    );
   auto extract(const vtkm::cont::DynamicCellSet &cellset) const;
   virtual void StartScene() override;
   virtual void EndScene() override;
@@ -153,6 +149,12 @@ private:
                        const vtkm::cont::CoordinateSystem& coords,
                        const vtkm::cont::Field& scalarField,
                        const vtkm::rendering::Camera& camera);
+
+  vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id, 5>> light_box_pointids;
+  vtkm::cont::ArrayHandle<vtkm::Id> light_box_indices,light_sphere_pointids,light_sphere_indices;
+
+  vtkm::rendering::pathtracing::QuadIntersector quadIntersector;
+  vtkm::rendering::pathtracing::SphereIntersector sphereIntersector;
 
 };
 }

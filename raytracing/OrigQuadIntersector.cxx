@@ -480,7 +480,7 @@ void OrigQuadIntersector::IntersectionData(Ray<vtkm::Float64>& rays,
 }
 
 void OrigQuadIntersector::SetData(const vtkm::cont::CoordinateSystem& coords,
-                              vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id, 5>> quadIds)
+                              vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id, 5>> &quadIds)
 {
 
   this->QuadIds = quadIds;

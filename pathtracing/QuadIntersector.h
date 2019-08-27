@@ -66,7 +66,7 @@ public:
 
 
   void SetData(const vtkm::cont::CoordinateSystem& coords,
-               vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id, 5>> quadIds,
+               vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id, 5>> &quadIds,
                vtkm::cont::ArrayHandle<vtkm::Id> &matIdx,
                vtkm::cont::ArrayHandle<vtkm::Id> &texIdx,
                IdArray &matIdArray,

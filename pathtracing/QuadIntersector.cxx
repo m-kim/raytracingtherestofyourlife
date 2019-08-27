@@ -107,7 +107,7 @@ void QuadIntersector::IntersectRaysImp(vtkm::rendering::raytracing::Ray<Precisio
 //}
 
 void QuadIntersector::SetData(const vtkm::cont::CoordinateSystem& coords,
-                              vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id, 5>> quadIds,
+                              vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id, 5>> &quadIds,
                               vtkm::cont::ArrayHandle<vtkm::Id> &matIdx,
                               vtkm::cont::ArrayHandle<vtkm::Id> &texIdx,
                               IdArray &matIdArray,

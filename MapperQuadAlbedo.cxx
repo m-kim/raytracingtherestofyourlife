@@ -105,7 +105,8 @@ void MapperQuadAlbedo::RenderCells(const vtkm::cont::DynamicCellSet& cellset,
   if (quadExtractor.GetNumberOfQuads() > 0)
   {
     vtkm::rendering::raytracing::OrigQuadIntersector* quadIntersector = new vtkm::rendering::raytracing::OrigQuadIntersector();
-    quadIntersector->SetData(coords, quadExtractor.GetQuadIds());
+    auto qid = quadExtractor.GetQuadIds();
+    quadIntersector->SetData(coords, qid);
     this->Internals->Tracer.AddShapeIntersector(quadIntersector);
     shapeBounds.Include(quadIntersector->GetShapeBounds());
   }

@@ -43,7 +43,7 @@ public:
 
 
   void SetData(const vtkm::cont::CoordinateSystem& coords,
-               vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id, 5>> quadIds);
+               vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id, 5>> &quadIds);
 
   void IntersectRays(Ray<vtkm::Float32>& rays, bool returnCellIndex = false) override;
 

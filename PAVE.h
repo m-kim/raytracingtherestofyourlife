@@ -56,7 +56,7 @@ public:
       arrayOut[i*4 + 2] = col[2];
       arrayOut[i*4 + 3] = col[3];
     }
-    writer.Put<OutArrayType>(bpOut, arrayOut.data(), adios2::Mode::Sync );
+    writer.Put<OutArrayType>(bpOut, arrayOut.data());
   }
 
   void save(std::string vn,
@@ -82,7 +82,13 @@ public:
 
   void flush()
   {
+    writer.PerformPuts();
     writer.Flush();
+  }
+
+  void close()
+  {
+    writer.Close();
   }
   adios2::ADIOS adios;
   adios2::IO bpIO;

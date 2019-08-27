@@ -63,8 +63,8 @@ public:
   virtual ~SphereIntersector() override;
 
   void SetData(const vtkm::cont::CoordinateSystem& coords,
-               vtkm::cont::ArrayHandle<vtkm::Id> pointIds,
-               vtkm::cont::ArrayHandle<vtkm::Float32> radii,
+               vtkm::cont::ArrayHandle<vtkm::Id> &pointIds,
+               vtkm::cont::ArrayHandle<vtkm::Float32> &SphereIntersectorradii,
                vtkm::cont::ArrayHandle<vtkm::Id> &matIdx,
                vtkm::cont::ArrayHandle<vtkm::Id> &texIdx,
                IdArray &matIdArray,
