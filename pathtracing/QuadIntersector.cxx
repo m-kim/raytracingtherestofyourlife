@@ -25,7 +25,7 @@
 #include <vtkm/rendering/raytracing/RayOperations.h>
 #include <vtkm/worklet/DispatcherMapTopology.h>
 #include "SurfaceWorklets.h"
-#include "QuadExtractor.h"
+#include <vtkm/rendering/raytracing/QuadExtractor.h>
 #include "AABBSurface.h"
 
 namespace vtkm

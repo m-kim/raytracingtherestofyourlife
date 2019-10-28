@@ -5,7 +5,7 @@
 #include <vtkm/cont/ArrayHandleCounting.h>
 #include "vtkm/cont/DataSetBuilderExplicit.h"
 #include "pathtracing/SphereExtractor.h"
-#include "pathtracing/QuadExtractor.h"
+#include <vtkm/rendering/raytracing/QuadExtractor.h>
 
 void CornellBox::invert(vtkm::Vec<vec3,4> &pts)
 {

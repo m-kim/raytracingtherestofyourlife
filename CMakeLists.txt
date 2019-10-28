@@ -22,7 +22,6 @@ CornellBox.cpp
 pathtracing/Camera.cxx 
 pathtracing/PathTracer.cxx
 pathtracing/SphereExtractor.cxx 
-pathtracing/QuadExtractor.cxx 
 pathtracing/QuadIntersector.cxx
 pathtracing/SphereIntersector.cxx 
 pathtracing/WhichGenerateDir.cxx 
@@ -30,7 +29,6 @@ CanvasRayTracer.cxx
 MapperPathTracer.cxx 
 MapperQuad.cxx
 MapperQuadAlbedo.cxx
-raytracing/OrigQuadIntersector.cxx
 raytracing/ChannelBuffer.cxx
 raytracing/RayTracerNormals.cxx
 raytracing/RayTracerAlbedo.cxx
@@ -43,7 +41,6 @@ pathtracing/CosineGenerateDir.h
 pathtracing/PathAlgorithms.h
 pathtracing/PathTracer.h
 pathtracing/Pdf.h
-pathtracing/QuadExtractor.h
 pathtracing/QuadGenerateDir.h
 pathtracing/SphereExtractor.h
 pathtracing/SphereIntersector.h

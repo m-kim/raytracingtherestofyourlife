@@ -28,7 +28,7 @@
 #include <vtkm/rendering/raytracing/Camera.h>
 #include <vtkm/rendering/raytracing/Logger.h>
 #include <vtkm/rendering/raytracing/QuadExtractor.h>
-#include "raytracing/OrigQuadIntersector.h"
+#include <vtkm/rendering/raytracing/QuadIntersector.h>
 #include "raytracing/RayTracerNormals.h"
 #include <pathtracing/RayOperations.h>
 
@@ -104,7 +104,7 @@ void MapperQuadNormals::RenderCells(const vtkm::cont::DynamicCellSet& cellset,
   quadExtractor.ExtractCells(cellset);
   if (quadExtractor.GetNumberOfQuads() > 0)
   {
-    vtkm::rendering::raytracing::OrigQuadIntersector* quadIntersector = new vtkm::rendering::raytracing::OrigQuadIntersector();
+    vtkm::rendering::raytracing::QuadIntersector* quadIntersector = new vtkm::rendering::raytracing::QuadIntersector();
     auto qid = quadExtractor.GetQuadIds();
     quadIntersector->SetData(coords, qid);
     this->Internals->Tracer.AddShapeIntersector(quadIntersector);
