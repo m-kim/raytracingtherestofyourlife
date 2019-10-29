@@ -1,7 +1,17 @@
 #ifndef PATHALGORITHMS_H
 #define PATHALGORITHMS_H
 #include <vtkm/cont/ArrayHandle.h>
+#include <vtkm/cont/DeviceAdapterAlgorithm.h>
+#include <vtkm/cont/Algorithm.h>
 
+namespace vtkm
+{
+
+namespace rendering
+{
+
+namespace pathtracing
+{
 namespace details
 {
 template <class T, class OutputPortalType>
@@ -160,7 +170,7 @@ struct BinarySliceTransformIdxKernel : vtkm::exec::FunctorBase
   }
 };
 template <class DerivedAlgorithm, class DeviceAdapterTag>
-struct PathAlgorithms
+struct PathAlgorithmGeneral
 {
 private:
   template <typename T, class CIn>
@@ -269,5 +279,77 @@ public:
     DerivedAlgorithm::Schedule(kernel, inSize);
   }
 };
+
+
+struct SliceTransformFunctor
+{
+  template <typename Device, typename... Args>
+  VTKM_CONT bool operator()(Device, Args&&... args) const
+  {
+    VTKM_IS_DEVICE_ADAPTER_TAG(Device);
+    using MyAlgos = details::PathAlgorithmGeneral<vtkm::cont::DeviceAdapterAlgorithm<Device>, Device>;
+
+    MyAlgos::SliceTransform(
+      vtkm::cont::detail::PrepareArgForExec<Device>(std::forward<Args>(args))...);
+    return true;
+  }
+};
+
+struct CopyFunctor
+{
+  template <typename Device, typename... Args>
+  VTKM_CONT bool operator()(Device, Args&&... args) const
+  {
+    VTKM_IS_DEVICE_ADAPTER_TAG(Device);
+    using MyAlgos = details::PathAlgorithmGeneral<vtkm::cont::DeviceAdapterAlgorithm<Device>, Device>;
+
+    MyAlgos::Copy(
+      vtkm::cont::detail::PrepareArgForExec<Device>(std::forward<Args>(args))...);
+    return true;
+  }
+};
+
 }
+
+struct PathAlgorithm
+{
+    template <
+              typename InputType1,
+              typename InputType2,
+              typename OutputType,
+              typename BinaryFunctorType>
+    static void SliceTransform(vtkm::cont::DeviceAdapterId devId,
+                              std::tuple<vtkm::Id, vtkm::Id> idx1,
+                              const InputType1& input1,
+                              std::tuple<vtkm::Id, vtkm::Id> idx2,
+                              const InputType2& input2,
+                              std::tuple<vtkm::Id, vtkm::Id> outIdx,
+                               OutputType& output,
+                              BinaryFunctorType binaryOperator)
+    {
+        vtkm::cont::TryExecuteOnDevice(devId, details::SliceTransformFunctor(),
+                                       idx1, input1,
+                                       idx2, input2,
+                                       outIdx, output,
+                                       binaryOperator);
+
+    }
+    template <typename T, typename U, class COut>
+    VTKM_CONT static void Copy(vtkm::cont::DeviceAdapterId devId,
+                              T input,
+                               vtkm::cont::ArrayHandle<U, COut>& output)
+    {
+
+        vtkm::cont::TryExecuteOnDevice(devId, details::CopyFunctor(),
+                                       input, output);
+    }
+
+};
+
+
+
+}
+}
+}
+
 #endif

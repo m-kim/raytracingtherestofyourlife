@@ -287,9 +287,6 @@ struct NormalizeFunctor
 void runPath(int nx, int ny, int samplecount, int depthcount,
               vtkm::rendering::Canvas &canvas, vtkm::rendering::Camera &cam)
 {
-  using MyAlgos = details::PathAlgorithms<vtkm::cont::DeviceAdapterAlgorithm<VTKM_DEFAULT_DEVICE_ADAPTER_TAG>, VTKM_DEFAULT_DEVICE_ADAPTER_TAG>;
-  using StorageTag = vtkm::cont::StorageTagBasic;
-  using Device = VTKM_DEFAULT_DEVICE_ADAPTER_TAG;
 
 
   vtkm::rendering::MapperPathTracer mapper(samplecount,
