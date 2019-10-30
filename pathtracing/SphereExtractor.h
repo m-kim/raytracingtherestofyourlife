@@ -26,7 +26,7 @@ namespace vtkm
 {
 namespace rendering
 {
-namespace raytracing
+namespace pathtracing
 {
 
 class SphereExtractor

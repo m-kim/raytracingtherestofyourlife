@@ -38,7 +38,7 @@ class VTKM_RENDERING_EXPORT RayTracerAlbedo
 protected:
   std::vector<ShapeIntersector*> Intersectors;
   Camera camera;
-  const vtkm::cont::Field* ScalarField;
+  vtkm::cont::Field ScalarField;
   vtkm::cont::ArrayHandle<vtkm::Float32> Scalars;
   vtkm::Id NumberOfShapes;
   vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32, 4>> ColorMap;

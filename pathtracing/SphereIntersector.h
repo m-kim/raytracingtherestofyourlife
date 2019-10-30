@@ -86,11 +86,11 @@ public:
 //                           const vtkm::Range& scalarRange);
 
   void IntersectionData(vtkm::rendering::raytracing::Ray<vtkm::Float32>& rays,
-                        const vtkm::cont::Field* scalarField,
+                        const vtkm::cont::Field scalarField,
                         const vtkm::Range& scalarRange) override;
 
   void IntersectionData(vtkm::rendering::raytracing::Ray<vtkm::Float64>& rays,
-                        const vtkm::cont::Field* scalarField,
+                        const vtkm::cont::Field scalarField,
                         const vtkm::Range& scalarRange) override;
 
   vtkm::Id GetNumberOfShapes() const override;

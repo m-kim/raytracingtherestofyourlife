@@ -8,7 +8,7 @@
 // You should have received a copy (see file COPYING.txt) of the CC0 Public Domain Dedication along
 // with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 //==================================================================================================
-
+#include <vtkm/cont/Initialize.h>
 #include <iostream>
 #include <limits>
 #include <vector>
@@ -21,7 +21,7 @@
 #include <vtkm/cont/ArrayHandleCompositeVector.h>
 #include <omp.h>
 #include <vtkm/cont/Algorithm.h>
-#include <vtkm/worklet/Invoker.h>
+#include <vtkm/cont/Invoker.h>
 #include <vtkm/rendering/raytracing/BoundingVolumeHierarchy.h>
 #include <vtkm/cont/ArrayHandleExtractComponent.h>
 
@@ -179,7 +179,7 @@ void runRay(int nx, int ny, int samplecount, int depthcount,
                    ct_12_quad));
   vtkm::rendering::Color background(0,0,0, 1.0f);
   vtkm::rendering::Color foreground(1,1,1, 1.0f);
-  vtkm::rendering::View3D view(scene, mapper, canvas, cam, background, foreground);
+  vtkm::rendering::pathtracing::View3D view(scene, mapper, canvas, cam, background, foreground);
 
   view.Initialize();
   view.Paint();
@@ -198,7 +198,7 @@ void runNorms(int nx, int ny, int samplecount, int depthcount,
                    vtkm::cont::ColorTable{vtkm::cont::ColorTable::Preset::COOL_TO_WARM_EXTENDED}));
   vtkm::rendering::Color background(0,0,0, 1.0f);
   vtkm::rendering::Color foreground(1,1,1, 1.0f);
-  vtkm::rendering::View3D view(scene, mapper, canvas, cam, background, foreground);
+  vtkm::rendering::pathtracing::View3D view(scene, mapper, canvas, cam, background, foreground);
 
   view.Initialize();
   view.Paint();
@@ -241,7 +241,7 @@ void runAlbedo(int nx, int ny, int samplecount, int depthcount,
                    ct_12_quad));
   vtkm::rendering::Color background(0,0,0, 1.0f);
   vtkm::rendering::Color foreground(1,1,1, 1.0f);
-  vtkm::rendering::View3D view(scene, mapper, canvas, cam, background, foreground);
+  vtkm::rendering::pathtracing::View3D view(scene, mapper, canvas, cam, background, foreground);
 
   view.Initialize();
   view.Paint();
@@ -304,7 +304,7 @@ void runPath(int nx, int ny, int samplecount, int depthcount,
   vtkm::cont::Field field;
   vtkm::cont::ColorTable ct;
   vtkm::Range sr;
-  mapper.RenderCells(ds.GetCellSet(0),
+  mapper.RenderCells(ds.GetCellSet(),
                      cb.coord,
                      field,
                      ct,
@@ -627,6 +627,9 @@ int main(int argc, char *argv[]) {
   const bool hemi = std::get<4>(tup);
   const bool direct = std::get<5>(tup);
 
+  vtkm::cont::Initialize();
+  vtkm::cont::GetRuntimeDeviceTracker().ForceDevice(vtkm::cont::DeviceAdapterTagCuda{});
+
   MPI_Init(NULL, NULL);
 
   signal(SIGUSR1, my_function);
@@ -646,7 +649,7 @@ int main(int argc, char *argv[]) {
   vtkm::Float64 elapsedTime1, elapsedTime2, elapsedTime3;
 
   // Decompose
-  vtkm::cont::Timer<> timer;
+  vtkm::cont::Timer timer{vtkm::cont::DeviceAdapterTagSerial()};
 
    ds = cb.buildDataSet();
   if (hemi){

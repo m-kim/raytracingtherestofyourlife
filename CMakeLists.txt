@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.8)
 project(PathTracing VERSION 0.1 LANGUAGES CXX)
 
 find_package(VTKm REQUIRED
-  OPTIONAL_COMPONENTS CUDA)
+  OPTIONAL_COMPONENTS CUDA OpenMP)
 
 find_package(adios2 REQUIRED)
 set(mpilib) #intentionally set mpilib blank
@@ -25,7 +25,6 @@ pathtracing/SphereExtractor.cxx
 pathtracing/QuadIntersector.cxx
 pathtracing/SphereIntersector.cxx 
 pathtracing/WhichGenerateDir.cxx 
-CanvasRayTracer.cxx
 MapperPathTracer.cxx 
 MapperQuad.cxx
 MapperQuadAlbedo.cxx
@@ -79,6 +78,8 @@ add_executable(CornellBox ${PathTracingSrc} ${PathTracingHdr})
 
 set_target_properties(CornellBox PROPERTIES
   CXX_STANDARD 17)
+set_target_properties(CornellBox PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+target_compile_features(CornellBox PRIVATE cxx_std_14)
 
 target_include_directories(CornellBox
   PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
@@ -87,9 +88,10 @@ target_link_libraries(CornellBox PUBLIC vtkm_cont vtkm_rendering OpenMP::OpenMP_
 
 
 if(VTKm_ENABLE_CUDA)
-  vtkm_compile_as_cuda(cudaSource ${PathTracingSrc})
-  add_executable(CornellBox_CUDA ${cudaSource} )
-  target_compile_definitions(CornellBox_CUDA PRIVATE "VTKM_DEVICE_ADAPTER=VTKM_DEVICE_ADAPTER_CUDA")
+  set_source_files_properties(${PathTracingSrc} PROPERTIES LANGUAGE "CUDA")
+  add_executable(CornellBox_CUDA ${PathTracingSrc} )
+  set_target_properties(CornellBox_CUDA PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  #target_compile_definitions(CornellBox_CUDA PRIVATE "VTKM_DEVICE_ADAPTER=VTKM_DEVICE_ADAPTER_CUDA")
   target_include_directories(CornellBox_CUDA
     PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
     )

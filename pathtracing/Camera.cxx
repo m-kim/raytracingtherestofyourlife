@@ -33,7 +33,7 @@
 
 #include <vtkm/worklet/DispatcherMapField.h>
 #include <vtkm/worklet/WorkletMapField.h>
-#include <vtkm/worklet/Invoker.h>
+#include <vtkm/cont/Invoker.h>
 #include <limits>
 
 #include "wangXor.h"
@@ -108,7 +108,7 @@ public:
     return rcp((fabs(f) < 1e-8f) ? 1e-8f : f);
   }
 
-  using ControlSignature = void(FieldOut<>, FieldOut<>);
+  using ControlSignature = void(FieldOut, FieldOut);
 
   using ExecutionSignature = void(WorkIndex, _1, _2);
   VTKM_EXEC
@@ -206,7 +206,7 @@ public:
     vtkm::Normalize(nlook);
   }
 
-  typedef void ControlSignature(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>);
+  typedef void ControlSignature(FieldInOut, FieldInOut, FieldInOut, FieldInOut);
 
   typedef void ExecutionSignature(WorkIndex, _1, _2, _3, _4);
   VTKM_EXEC
@@ -296,7 +296,7 @@ public:
   }
 
   using ControlSignature =
-    void(FieldOut<>, FieldOut<>, FieldOut<>, FieldOut<>, FieldOut<>, FieldOut<>, FieldOut<>);
+    void(FieldOut, FieldOut, FieldOut, FieldOut, FieldOut, FieldOut, FieldOut);
 
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7);
   template <typename Precision>
@@ -387,7 +387,7 @@ public:
     vtkm::Normalize(nlook);
   }
 
-  using ControlSignature = void(FieldOut<>, FieldOut<>, FieldOut<>, FieldOut<>);
+  using ControlSignature = void(FieldOut, FieldOut, FieldOut, FieldOut);
 
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4);
   template <typename Precision>
@@ -475,7 +475,7 @@ public:
     vtkm::Normalize(nlook);
   }
 
-  using ControlSignature = void(FieldOut<>, FieldOut<>, FieldOut<>, FieldInOut<>, FieldOut<>);
+  using ControlSignature = void(FieldOut, FieldOut, FieldOut, FieldInOut, FieldOut);
 
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5);
 
@@ -880,13 +880,13 @@ template <typename Precision>
 VTKM_CONT void Camera::CreateRaysImpl(vtkm::rendering::raytracing::Ray<Precision>& rays, const vtkm::Bounds boundingBox)
 {
   vtkm::rendering::raytracing::Logger* logger = vtkm::rendering::raytracing::Logger::GetInstance();
-  vtkm::cont::Timer<vtkm::cont::DeviceAdapterTagSerial> createTimer;
+  vtkm::cont::Timer createTimer;
   logger->OpenLogEntry("ray_camera");
 
   bool ortho = this->CameraView.GetMode() == vtkm::rendering::Camera::MODE_2D;
   this->UpdateDimensions(rays, boundingBox, ortho);
   this->WriteSettingsToLog();
-  vtkm::cont::Timer<vtkm::cont::DeviceAdapterTagSerial> timer;
+  vtkm::cont::Timer timer;
   //Set the origin of the ray back to the camera position
 
   Precision infinity;
@@ -937,7 +937,7 @@ VTKM_CONT void Camera::CreateRaysImpl(vtkm::rendering::raytracing::Ray<Precision
                   this->Up,
                   0, this->Width, 0, 0);
 
-    vtkm::worklet::Invoker Invoke;
+    vtkm::cont::Invoker Invoke;
     Invoke(raygen, rays.DirX, rays.DirY, rays.DirZ, seeds, rays.PixelIdx);
 
     vtkm::cont::ArrayHandleConstant<Precision> posX(this->Position[0], rays.NumRays);
@@ -1119,7 +1119,7 @@ VTKM_CONT void Camera::UpdateDimensions(vtkm::rendering::raytracing::Ray<Precisi
   if (rays.NumRays != SubsetWidth * SubsetHeight)
   {
     vtkm::rendering::raytracing::RayOperations::Resize(
-      rays, this->SubsetHeight * this->SubsetWidth, VTKM_DEFAULT_DEVICE_ADAPTER_TAG());
+      rays, this->SubsetHeight * this->SubsetWidth,  vtkm::cont::DeviceAdapterTagSerial());
   }
 }
 

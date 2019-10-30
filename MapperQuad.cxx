@@ -92,8 +92,8 @@ void MapperQuad::RenderCells(const vtkm::cont::DynamicCellSet& cellset,
 {
   vtkm::rendering::raytracing::Logger* logger = vtkm::rendering::raytracing::Logger::GetInstance();
   logger->OpenLogEntry("mapper_ray_tracer");
-  vtkm::cont::Timer<> tot_timer;
-  vtkm::cont::Timer<> timer;
+  vtkm::cont::Timer tot_timer;
+  vtkm::cont::Timer timer;
 
 
   //
@@ -104,7 +104,7 @@ void MapperQuad::RenderCells(const vtkm::cont::DynamicCellSet& cellset,
   quadExtractor.ExtractCells(cellset);
   if (quadExtractor.GetNumberOfQuads() > 0)
   {
-    vtkm::rendering::raytracing::QuadIntersector* quadIntersector = new vtkm::rendering::raytracing::QuadIntersector();
+    auto quadIntersector = std::make_shared<vtkm::rendering::raytracing::QuadIntersector>();
     auto qid = quadExtractor.GetQuadIds();
     quadIntersector->SetData(coords, qid);
     this->Internals->Tracer.AddShapeIntersector(quadIntersector);

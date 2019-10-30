@@ -18,17 +18,17 @@ public:
   {
   }
 
-  using ControlSignature = void(FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
+  using ControlSignature = void(FieldInOut,
+  FieldInOut,
+  FieldInOut,
+  FieldInOut,
+  FieldInOut,
+  FieldInOut,
+  FieldInOut,
+  FieldInOut,
   ExecObject surf,
-  WholeArrayIn<>,
-  WholeArrayIn<>
+  WholeArrayIn,
+  WholeArrayIn
   );
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
 
@@ -85,9 +85,9 @@ public:
   }
 
 
-  using ControlSignature = void(FieldInOut<>,
-  WholeArrayInOut<>,
-  WholeArrayInOut<>
+  using ControlSignature = void(FieldInOut,
+  WholeArrayInOut,
+  WholeArrayInOut
   );
   using ExecutionSignature = void(WorkIndex, _1, _2, _3);
 
@@ -121,17 +121,17 @@ public:
 
   QuadIntersect(){}
 
-  using ControlSignature = void(FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
+  using ControlSignature = void(FieldInOut,
+  FieldInOut,
+  FieldInOut,
+  FieldInOut,
+  FieldInOut,
+  FieldInOut,
+  FieldInOut,
+  FieldInOut,
   ExecObject surf,
-  WholeArrayIn<>,
-  WholeArrayIn<>
+  WholeArrayIn,
+  WholeArrayIn
   );
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
 

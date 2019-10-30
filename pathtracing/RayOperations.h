@@ -22,7 +22,7 @@
 
 #include <vtkm/Matrix.h>
 #include <vtkm/rendering/Camera.h>
-#include "CanvasRayTracer.h"
+#include <vtkm/rendering/CanvasRayTracer.h>
 #include "raytracing/ChannelBufferOperations.h"
 #include "raytracing/Ray.h"
 #include <vtkm/rendering/raytracing/Worklets.h>
@@ -41,7 +41,7 @@ class RayStatusFilter : public vtkm::worklet::WorkletMapField
 public:
   VTKM_CONT
   RayStatusFilter() {}
-  using ControlSignature = void(FieldIn<>, FieldInOut<>);
+  using ControlSignature = void(FieldIn, FieldInOut);
   using ExecutionSignature = void(_1, _2);
   VTKM_EXEC
   void operator()(const vtkm::Id& hitIndex, vtkm::UInt8& rayStatus) const
@@ -79,7 +79,7 @@ public:
     DoubleInvWidth = 2.f / static_cast<vtkm::Float32>(width);
   }
 
-  using ControlSignature = void(FieldIn<>, FieldInOut<>, WholeArrayIn<>);
+  using ControlSignature = void(FieldIn, FieldInOut, WholeArrayIn);
   using ExecutionSignature = void(_1, _2, _3);
 
   template <typename Precision, typename DepthPortalType>

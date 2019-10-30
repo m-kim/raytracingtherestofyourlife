@@ -44,7 +44,7 @@ namespace rendering
 class VTKM_RENDERING_EXPORT MapperPathTracer : public Mapper
 {
 public:
-  using MyAlgos = ::details::PathAlgorithms<vtkm::cont::DeviceAdapterAlgorithm<VTKM_DEFAULT_DEVICE_ADAPTER_TAG>, VTKM_DEFAULT_DEVICE_ADAPTER_TAG>;
+  using MyAlgos = vtkm::rendering::pathtracing::PathAlgorithm;
 
   MapperPathTracer(int sc, int dc,
                    vtkm::cont::ArrayHandle<vtkm::Id> *matIdx,

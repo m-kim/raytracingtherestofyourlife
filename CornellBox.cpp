@@ -400,12 +400,16 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   conn.Allocate(pts1.size());
   vtkm::cont::ArrayCopy(vtkm::cont::ArrayHandleCounting<vtkm::Id>(0,1, pts1.size()), conn);
 
+  for (int i=0; i<conn.GetNumberOfValues(); i++){
+      std::cout << conn.GetPortalControl().Get(i) << std::endl;
+
+  }
   vtkm::cont::DataSetBuilderExplicit dsb;
   auto arr = coord.GetData().Cast<vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32,3>>>();
   ds = dsb.Create(arr,
                   vtkm::cont::make_ArrayHandle(shapes, vtkm::CopyFlag::On),
                   vtkm::cont::make_ArrayHandle(numindices, vtkm::CopyFlag::On),
-                  conn, "coords", "cells");
+                  conn, "coords");
 
   field = vtkm::cont::make_ArrayHandle(vecField, vtkm::CopyFlag::On);
   vtkm::cont::Field pfield(
@@ -420,18 +424,18 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
 void CornellBox::extract()
 {
 
-  vtkm::rendering::raytracing::SphereExtractor sphereExtractor;
-  sphereExtractor.ExtractCells(ds.GetCellSet(0), 90.0/555.0);
+  vtkm::rendering::pathtracing::SphereExtractor sphereExtractor;
+  sphereExtractor.ExtractCells(ds.GetCellSet(), 90.0/555.0);
   SphereIds = sphereExtractor.GetPointIds();
   SphereRadii = sphereExtractor.GetRadii();
-  ShapeOffset = ds.GetCellSet(0).Cast<vtkm::cont::CellSetExplicit<>>().GetIndexOffsetArray(vtkm::TopologyElementTagPoint(), vtkm::TopologyElementTagCell());
+  ShapeOffset = ds.GetCellSet().Cast<vtkm::cont::CellSetExplicit<>>().GetOffsetsArray(vtkm::TopologyElementTagPoint(), vtkm::TopologyElementTagCell());
   for (int i=0; i<SphereIds.GetNumberOfValues(); i++){
     std::cout << SphereIds.GetPortalConstControl().Get(i) << std::endl;
     std::cout << SphereRadii.GetPortalConstControl().Get(i) << std::endl;
 
   }
   vtkm::rendering::raytracing::QuadExtractor quadExtractor;
-  quadExtractor.ExtractCells(ds.GetCellSet(0));
+  quadExtractor.ExtractCells(ds.GetCellSet());
   QuadIds = quadExtractor.GetQuadIds();
 
 }

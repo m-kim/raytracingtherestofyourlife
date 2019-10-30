@@ -92,8 +92,8 @@ void MapperQuadNormals::RenderCells(const vtkm::cont::DynamicCellSet& cellset,
 {
   vtkm::rendering::raytracing::Logger* logger = vtkm::rendering::raytracing::Logger::GetInstance();
   logger->OpenLogEntry("mapper_ray_tracer");
-  vtkm::cont::Timer<> tot_timer;
-  vtkm::cont::Timer<> timer;
+  vtkm::cont::Timer tot_timer;
+  vtkm::cont::Timer timer;
 
 
   //

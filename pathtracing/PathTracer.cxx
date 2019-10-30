@@ -78,7 +78,7 @@ public:
     }
 
     using ControlSignature =
-      void(FieldIn<>, FieldIn<>, FieldIn<>, FieldIn<>, WholeArrayInOut<>, WholeArrayIn<>);
+      void(FieldIn, FieldIn, FieldIn, FieldIn, WholeArrayInOut, WholeArrayIn);
     using ExecutionSignature = void(_1, _2, _3, _4, _5, _6, WorkIndex);
 
     template <typename ColorPortalType, typename Precision, typename ColorMapPortalType>
@@ -148,7 +148,7 @@ public:
     VTKM_CONT
     MapScalarToColor() {}
 
-    using ControlSignature = void(FieldIn<>, FieldIn<>, WholeArrayInOut<>, WholeArrayIn<>);
+    using ControlSignature = void(FieldIn, FieldIn, WholeArrayInOut, WholeArrayIn);
     using ExecutionSignature = void(_1, _2, _3, _4, WorkIndex);
 
     template <typename ColorPortalType, typename Precision, typename ColorMapPortalType>
@@ -238,7 +238,7 @@ void PathTracer::AddShapeIntersector(vtkm::rendering::raytracing::ShapeIntersect
 
 void PathTracer::SetField(const vtkm::cont::Field& scalarField, const vtkm::Range& scalarRange)
 {
-  ScalarField = &scalarField;
+  ScalarField = scalarField;
   ScalarRange = scalarRange;
 }
 
@@ -281,7 +281,7 @@ void PathTracer::Clear()
 template <typename Precision>
 void PathTracer::RenderOnDevice(vtkm::rendering::raytracing::Ray<Precision>& rays)
 {
-  using Timer = vtkm::cont::Timer<vtkm::cont::DeviceAdapterTagSerial>;
+  using Timer = vtkm::cont::Timer;
 
   vtkm::rendering::raytracing::Logger* logger = vtkm::rendering::raytracing::Logger::GetInstance();
   Timer renderTimer;

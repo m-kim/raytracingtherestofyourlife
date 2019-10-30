@@ -128,14 +128,14 @@ void SphereIntersector::IntersectRaysImp(vtkm::rendering::raytracing::Ray<Precis
 //}
 
 void SphereIntersector::IntersectionData(vtkm::rendering::raytracing::Ray<vtkm::Float32>& rays,
-                                         const vtkm::cont::Field* scalarField,
+                                         const vtkm::cont::Field scalarField,
                                          const vtkm::Range& scalarRange)
 {
 //  IntersectionDataImp(rays, scalarField, scalarRange);
 }
 
 void SphereIntersector::IntersectionData(vtkm::rendering::raytracing::Ray<vtkm::Float64>& rays,
-                                         const vtkm::cont::Field* scalarField,
+                                         const vtkm::cont::Field scalarField,
                                          const vtkm::Range& scalarRange)
 {
 //  IntersectionDataImp(rays, scalarField, scalarRange);

@@ -102,17 +102,17 @@ public:
   public:
     VTKM_CONT
     Intersector() {}
-    using ControlSignature = void(FieldIn<>,
-                                  FieldIn<>,
-                                  FieldInOut<>,
-                                  FieldInOut<>,
-                                  FieldInOut<>,
-                                  FieldInOut<>,
-                                  FieldInOut<>,
-                                  WholeArrayIn<vtkm::rendering::raytracing::Vec3RenderingTypes>,
+    using ControlSignature = void(FieldIn,
+                                  FieldIn,
+                                  FieldInOut,
+                                  FieldInOut,
+                                  FieldInOut,
+                                  FieldInOut,
+                                  FieldInOut,
+                                  WholeArrayIn,
                                   ExecObject leafIntersector,
-                                  WholeArrayIn<>,
-                                  WholeArrayIn<>);
+                                  WholeArrayIn,
+                                  WholeArrayIn);
     using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
 
 

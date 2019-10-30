@@ -38,7 +38,7 @@ class VTKM_RENDERING_EXPORT PathTracer
 protected:
   std::vector<vtkm::rendering::raytracing::ShapeIntersector*> Intersectors;
   Camera camera;
-  const vtkm::cont::Field* ScalarField;
+  vtkm::cont::Field ScalarField;
   vtkm::cont::ArrayHandle<vtkm::Float32> Scalars;
   vtkm::Id NumberOfShapes;
   vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32, 4>> ColorMap;
