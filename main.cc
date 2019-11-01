@@ -649,7 +649,8 @@ int main(int argc, char *argv[]) {
   vtkm::Float64 elapsedTime1, elapsedTime2, elapsedTime3;
 
   // Decompose
-  vtkm::cont::Timer timer{vtkm::cont::DeviceAdapterTagSerial()};
+  vtkm::cont::Timer timer;
+  timer.Start();
 
    ds = cb.buildDataSet();
   if (hemi){
@@ -742,6 +743,7 @@ int main(int argc, char *argv[]) {
   }
 
   MPI_Finalize();
+  timer.Stop();
   elapsedTime1 = timer.GetElapsedTime();
   std::cout << "Rank: " << rank << " Elapsed time         = " << elapsedTime1 << std::endl;
 }
