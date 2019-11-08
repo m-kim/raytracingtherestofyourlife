@@ -237,6 +237,7 @@ void RayTracerNormals::RenderOnDevice(Ray<Precision>& rays)
 
   Logger* logger = Logger::GetInstance();
   Timer renderTimer;
+  renderTimer.Start();
   vtkm::Float64 time = 0.;
   logger->OpenLogEntry("ray_tracer");
   logger->AddLogData("device", GetDeviceString());
@@ -247,7 +248,7 @@ void RayTracerNormals::RenderOnDevice(Ray<Precision>& rays)
   if (NumberOfShapes > 0)
   {
     Timer timer;
-
+    timer.Start();
     for (size_t i = 0; i < numShapes; ++i)
     {
       Intersectors[i]->IntersectRays(rays);
@@ -255,11 +256,12 @@ void RayTracerNormals::RenderOnDevice(Ray<Precision>& rays)
       logger->AddLogData("intersect", time);
 
       timer.Reset();
+      timer.Start();
       Intersectors[i]->IntersectionData(rays, ScalarField, ScalarRange);
       time = timer.GetElapsedTime();
       logger->AddLogData("intersection_data", time);
       timer.Reset();
-
+      timer.Start();
       // Calculate the color at the intersection  point
       detail::SurfaceNormals surfaceColor;
       surfaceColor.run(rays, ColorMap, camera, this->Shade);
@@ -267,6 +269,7 @@ void RayTracerNormals::RenderOnDevice(Ray<Precision>& rays)
       time = timer.GetElapsedTime();
       logger->AddLogData("shade", time);
       timer.Reset();
+      timer.Start();
     }
   }
 

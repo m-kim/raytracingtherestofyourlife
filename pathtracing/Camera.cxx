@@ -881,12 +881,14 @@ VTKM_CONT void Camera::CreateRaysImpl(vtkm::rendering::raytracing::Ray<Precision
 {
   vtkm::rendering::raytracing::Logger* logger = vtkm::rendering::raytracing::Logger::GetInstance();
   vtkm::cont::Timer createTimer;
+  createTimer.Start();
   logger->OpenLogEntry("ray_camera");
 
   bool ortho = this->CameraView.GetMode() == vtkm::rendering::Camera::MODE_2D;
   this->UpdateDimensions(rays, boundingBox, ortho);
   this->WriteSettingsToLog();
   vtkm::cont::Timer timer;
+  timer.Start();
   //Set the origin of the ray back to the camera position
 
   Precision infinity;
@@ -905,6 +907,7 @@ VTKM_CONT void Camera::CreateRaysImpl(vtkm::rendering::raytracing::Ray<Precision
   vtkm::Float64 time = timer.GetElapsedTime();
   logger->AddLogData("camera_memset", time);
   timer.Reset();
+  timer.Start();
 
   //Reset the camera look vector
   this->Look = this->LookAt - this->Position;

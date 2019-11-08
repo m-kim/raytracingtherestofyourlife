@@ -285,6 +285,8 @@ void PathTracer::RenderOnDevice(vtkm::rendering::raytracing::Ray<Precision>& ray
 
   vtkm::rendering::raytracing::Logger* logger = vtkm::rendering::raytracing::Logger::GetInstance();
   Timer renderTimer;
+
+  renderTimer.Start();
   vtkm::Float64 time = 0.;
   logger->OpenLogEntry("ray_tracer");
   logger->AddLogData("device", vtkm::rendering::raytracing::GetDeviceString());
@@ -296,6 +298,7 @@ void PathTracer::RenderOnDevice(vtkm::rendering::raytracing::Ray<Precision>& ray
   {
     Timer timer;
 
+    timer.Start();
     for (size_t i = 0; i < numShapes; ++i)
     {
       Intersectors[i]->IntersectRays(rays);
@@ -303,11 +306,12 @@ void PathTracer::RenderOnDevice(vtkm::rendering::raytracing::Ray<Precision>& ray
       logger->AddLogData("intersect", time);
 
       timer.Reset();
+      timer.Start();
       Intersectors[i]->IntersectionData(rays, ScalarField, ScalarRange);
       time = timer.GetElapsedTime();
       logger->AddLogData("intersection_data", time);
       timer.Reset();
-
+      timer.Start();
       // Calculate the color at the intersection  point
       detail::SurfaceColor surfaceColor;
       surfaceColor.run(rays, ColorMap, camera, this->Shade);
@@ -315,6 +319,7 @@ void PathTracer::RenderOnDevice(vtkm::rendering::raytracing::Ray<Precision>& ray
       time = timer.GetElapsedTime();
       logger->AddLogData("shade", time);
       timer.Reset();
+      timer.Start();
     }
   }
 

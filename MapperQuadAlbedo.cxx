@@ -95,6 +95,8 @@ void MapperQuadAlbedo::RenderCells(const vtkm::cont::DynamicCellSet& cellset,
   vtkm::cont::Timer tot_timer;
   vtkm::cont::Timer timer;
 
+  tot_timer.Start();
+  timer.Start();
 
   //
   // Add supported shapes
@@ -132,6 +134,7 @@ void MapperQuadAlbedo::RenderCells(const vtkm::cont::DynamicCellSet& cellset,
   this->Internals->Tracer.Render(this->Internals->Rays);
 
   timer.Reset();
+  timer.Start();
   this->Internals->Canvas->WriteToCanvas(
     this->Internals->Rays, this->Internals->Rays.Buffers.at(0).Buffer, camera);
 

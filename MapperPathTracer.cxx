@@ -45,7 +45,7 @@
 #include "pathtracing/ScatterWorklet.h"
 #include "pathtracing/QuadPdf.h"
 #include "pathtracing/SpherePdf.h"
-#include <vtkm/rendering/raytracing/SphereExtractor.h>
+#include "pathtracing/SphereExtractor.h"
 #include <vtkm/rendering/raytracing/QuadExtractor.h>
 
 #include <vtkm/cont/ArrayCopy.h>
@@ -178,7 +178,7 @@ vtkm::rendering::Canvas* MapperPathTracer::GetCanvas() const
 auto MapperPathTracer::extract(const vtkm::cont::DynamicCellSet &cellset) const
 {
 
-  vtkm::rendering::raytracing::SphereExtractor sphereExtractor;
+  vtkm::rendering::pathtracing::SphereExtractor sphereExtractor;
   sphereExtractor.ExtractCells(cellset, 90/555.0);
   auto SphereIds = sphereExtractor.GetPointIds();
   auto SphereRadii = sphereExtractor.GetRadii();
@@ -192,6 +192,10 @@ auto MapperPathTracer::extract(const vtkm::cont::DynamicCellSet &cellset) const
   quadExtractor.ExtractCells(cellset);
   auto QuadIds = quadExtractor.GetQuadIds();
 
+
+  for (int i=0; i<QuadIds.GetPortalControl().GetNumberOfValues(); i++){
+      std::cout << QuadIds.GetPortalControl().Get(i) << std::endl;
+  }
   return std::make_tuple(SphereIds, SphereRadii, ShapeOffset, QuadIds);
 }
 
@@ -365,6 +369,8 @@ void MapperPathTracer::RenderCells(const vtkm::cont::DynamicCellSet& cellset,
   vtkm::cont::Timer tot_timer;
   vtkm::cont::Timer timer;
 
+  tot_timer.Start();
+  timer.Start();
   vtkm::rendering::pathtracing::Camera *cam = &this->Internals->RayCamera;
   cam->SetParameters(camera, *this->Internals->Canvas);
   pathtracing::RayOperations::MapCanvasToRays(

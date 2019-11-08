@@ -344,6 +344,16 @@ struct PathAlgorithm
                                        input, output);
     }
 
+    template <typename T, typename U, class COut>
+    VTKM_CONT static void Copy(
+                              T input,
+                               vtkm::cont::ArrayHandle<U, COut>& output)
+    {
+
+        vtkm::cont::TryExecuteOnDevice(vtkm::cont::DeviceAdapterTagAny(), details::CopyFunctor(),
+                                       input, output);
+    }
+
 };
 
 

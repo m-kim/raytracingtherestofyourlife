@@ -91,12 +91,15 @@ if(VTKm_ENABLE_CUDA)
   set_source_files_properties(${PathTracingSrc} PROPERTIES LANGUAGE "CUDA")
   add_executable(CornellBox_CUDA ${PathTracingSrc} )
   set_target_properties(CornellBox_CUDA PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  set_target_properties(CornellBox PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  target_compile_options(CornellBox_CUDA PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-gencode arch=compute_75,code=sm_75>)
+
   #target_compile_definitions(CornellBox_CUDA PRIVATE "VTKM_DEVICE_ADAPTER=VTKM_DEVICE_ADAPTER_CUDA")
   target_include_directories(CornellBox_CUDA
     PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
     )
   set_target_properties(CornellBox_CUDA PROPERTIES
     CUDA_STANDARD 14)
-  target_link_libraries(CornellBox_CUDA PUBLIC vtkm_cont vtkm_rendering MPI::MPI_CXX adios2::adios2 ${mpilib})
+  target_link_libraries(CornellBox_CUDA PUBLIC vtkm_cont vtkm_rendering vtkm_filter vtkm_worklet MPI::MPI_CXX adios2::adios2 ${mpilib})
 
 endif()

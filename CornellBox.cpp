@@ -400,10 +400,6 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
   conn.Allocate(pts1.size());
   vtkm::cont::ArrayCopy(vtkm::cont::ArrayHandleCounting<vtkm::Id>(0,1, pts1.size()), conn);
 
-  for (int i=0; i<conn.GetNumberOfValues(); i++){
-      std::cout << conn.GetPortalControl().Get(i) << std::endl;
-
-  }
   vtkm::cont::DataSetBuilderExplicit dsb;
   auto arr = coord.GetData().Cast<vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32,3>>>();
   ds = dsb.Create(arr,
