@@ -5,16 +5,8 @@ project(PathTracing VERSION 0.1 LANGUAGES CXX)
 find_package(VTKm REQUIRED
   OPTIONAL_COMPONENTS CUDA OpenMP)
 
-find_package(adios2 REQUIRED)
-set(mpilib) #intentionally set mpilib blank
 #VTKm requires OpenMP because pthreads is required in ColorTable(!!)
   find_package(OpenMP REQUIRED)
-  find_package(MPI REQUIRED)
-
-get_target_property(MPI_pthread MPI::MPI_CXX INTERFACE_COMPILE_OPTIONS)
-list(REMOVE_ITEM MPI_pthread "-pthread")
-get_target_property(OMP_pthread OpenMP::OpenMP_CXX INTERFACE_COMPILE_OPTIONS)
-list(REMOVE_ITEM OMP_pthread "-pthread")
 
 set (PathTracingSrc 
 main.cc 
@@ -84,7 +76,7 @@ target_compile_features(CornellBox PRIVATE cxx_std_14)
 target_include_directories(CornellBox
   PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
   )
-target_link_libraries(CornellBox PUBLIC vtkm_cont vtkm_rendering OpenMP::OpenMP_CXX MPI::MPI_CXX adios2::adios2 ${mpilib} )
+target_link_libraries(CornellBox PUBLIC vtkm_cont vtkm_rendering)
 
 
 if(VTKm_ENABLE_CUDA)
