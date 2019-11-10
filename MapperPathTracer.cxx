@@ -170,7 +170,7 @@ auto MapperPathTracer::extract(const vtkm::cont::DynamicCellSet &cellset) const
 {
 
   vtkm::rendering::raytracing::SphereExtractor sphereExtractor;
-  sphereExtractor.ExtractCells(cellset, 90);
+  sphereExtractor.ExtractCells(cellset, 90/555.0);
   auto SphereIds = sphereExtractor.GetPointIds();
   auto SphereRadii = sphereExtractor.GetRadii();
   auto ShapeOffset = cellset.Cast<vtkm::cont::CellSetExplicit<>>().GetIndexOffsetArray(vtkm::TopologyElementTagPoint(), vtkm::TopologyElementTagCell());
@@ -318,6 +318,10 @@ void MapperPathTracer::RenderCellsImpl(const vtkm::cont::DynamicCellSet& cellset
       vtkm::cont::ArrayHandle<vtkm::Float32>,
       vtkm::cont::ArrayHandle<vtkm::Float32>>;
 
+    vtkm::cont::ArrayHandleConstant<vtkm::Vec<vtkm::Float32,4>> zero(vtkm::Vec<vtkm::Float32,4>(0.0f), canvasSize);
+
+    vtkm::cont::ArrayHandleConstant<vtkm::Vec<vtkm::Float32,4>> reduction(vtkm::Vec<vtkm::Float32,4>(0.1f), canvasSize);
+
     auto attenuation4 = vec4CompositeType(
         rays.GetBuffer("attenuationX").Buffer, rays.GetBuffer("attenuationY").Buffer, rays.GetBuffer("attenuationZ").Buffer
           ,rays.GetBuffer("alphaChannelAE").Buffer);
@@ -329,18 +333,53 @@ void MapperPathTracer::RenderCellsImpl(const vtkm::cont::DynamicCellSet& cellset
         rays.GetBuffer("sumtotlx").Buffer,rays.GetBuffer("sumtotly").Buffer,rays.GetBuffer("sumtotlz").Buffer
         ,rays.GetBuffer("alphaChannel").Buffer);
 
-    vtkm::cont::ArrayHandleConstant<vtkm::Vec<vtkm::Float32,4>> zero(vtkm::Vec<vtkm::Float32,4>(0.0f), canvasSize);
+// Hack for high sample but no refleted
+//    int depth = 1;//depthcount-1;
 
+//    MyAlgos::SliceTransform<
+//        decltype(emitted4),
+//        decltype(zero),
+//        decltype(sumtotl),
+//        decltype(vtkm::Sum())>
+//        (std::make_tuple(depth*canvasSize, depth*canvasSize + canvasSize), emitted4,
+//         std::make_tuple(0, canvasSize), zero,
+//         std::make_tuple(0, canvasSize), sumtotl, vtkm::Sum());
+
+
+//    MyAlgos::SliceTransform<
+//        decltype(attenuation4),
+//        decltype(sumtotl),
+//        decltype(sumtotl),
+//        decltype(vtkm::Multiply())>
+//        (std::make_tuple(0, canvasSize), attenuation4,
+//         std::make_tuple(0, canvasSize), sumtotl,
+//         std::make_tuple(0, canvasSize), sumtotl, vtkm::Multiply());
+
+
+//    MyAlgos::SliceTransform<
+//        decltype(emitted4),
+//        decltype(sumtotl),
+//        decltype(sumtotl),
+//        decltype(vtkm::Sum())>
+//        (std::make_tuple(0, canvasSize), emitted4,
+//         std::make_tuple(0, canvasSize), sumtotl,
+//         std::make_tuple(0, canvasSize), sumtotl, vtkm::Sum());
+// end hack
+
+
+
+    // old code
+    int depth = depthcount-1;
     MyAlgos::SliceTransform<
         decltype(emitted4),
         decltype(zero),
         decltype(sumtotl),
         decltype(vtkm::Sum())>
-        (std::make_tuple((depthcount-1)*canvasSize, (depthcount-1)*canvasSize + canvasSize), emitted4,
+        (std::make_tuple(depth*canvasSize, depth*canvasSize + canvasSize), emitted4,
          std::make_tuple(0, canvasSize), zero,
          std::make_tuple(0, canvasSize), sumtotl, vtkm::Sum());
+   for ( depth = depthcount-2; depth >=0; depth--){
 
-    for (int depth = depthcount-2; depth >=0; depth--){
       MyAlgos::SliceTransform<
           decltype(attenuation4),
           decltype(sumtotl),
@@ -350,6 +389,7 @@ void MapperPathTracer::RenderCellsImpl(const vtkm::cont::DynamicCellSet& cellset
            std::make_tuple(0, canvasSize), sumtotl,
            std::make_tuple(0, canvasSize), sumtotl, vtkm::Multiply());
 
+
       MyAlgos::SliceTransform<
           decltype(emitted4),
           decltype(sumtotl),
@@ -358,9 +398,6 @@ void MapperPathTracer::RenderCellsImpl(const vtkm::cont::DynamicCellSet& cellset
           (std::make_tuple(depth*canvasSize, depth*canvasSize + canvasSize), emitted4,
            std::make_tuple(0, canvasSize), sumtotl,
            std::make_tuple(0, canvasSize), sumtotl, vtkm::Sum());
-
-
-
     }
 
     vtkm::cont::Algorithm::Transform(cols, sumtotl, cols, vtkm::Sum());
