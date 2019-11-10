@@ -24,11 +24,11 @@
 #include <vtkm/cont/TryExecute.h>
 
 #include "raytracing/ChannelBuffer.h"
-#include "CanvasRayTracer.h"
+#include <vtkm/rendering/CanvasRayTracer.h>
 #include <vtkm/rendering/Cylinderizer.h>
 #include "pathtracing/Camera.h"
 #include <vtkm/rendering/raytracing/Logger.h>
-#include <vtkm/worklet/Invoker.h>
+#include <vtkm/cont/Invoker.h>
 #include "pathtracing/RayOperations.h"
 #include <vtkm/cont/Algorithm.h>
 #include <vtkm/cont/Storage.h>
@@ -45,7 +45,7 @@
 #include "pathtracing/ScatterWorklet.h"
 #include "pathtracing/QuadPdf.h"
 #include "pathtracing/SpherePdf.h"
-#include <vtkm/rendering/raytracing/SphereExtractor.h>
+#include "pathtracing/SphereExtractor.h"
 #include <vtkm/rendering/raytracing/QuadExtractor.h>
 
 #include <vtkm/cont/ArrayCopy.h>
@@ -137,6 +137,15 @@ MapperPathTracer::MapperPathTracer(int sc, int dc,
 
   rays.AddBuffer(depthcount, "alphaChannelAE");
   rays.AddBuffer(1, "alphaChannel");
+
+  vtkm::Vec<vtkm::Id, 5> tmp[] = {vtkm::Vec<vtkm::Id,5>(0,8,9,10,11)};
+  light_box_pointids = vtkm::cont::make_ArrayHandle(tmp, 1, vtkm::CopyFlag::On);
+  vtkm::Id tmp2[] = {0};
+  light_box_indices = vtkm::cont::make_ArrayHandle(tmp2, 1,vtkm::CopyFlag::On);
+  vtkm::Id sphere_tmp[] = {vtkm::Id(4*12)};
+  light_sphere_pointids = vtkm::cont::make_ArrayHandle(sphere_tmp, 1,vtkm::CopyFlag::On);
+  vtkm::Id sphere_tmp2[] = {0};
+  light_sphere_indices = vtkm::cont::make_ArrayHandle(sphere_tmp2, 1,vtkm::CopyFlag::On);
 }
 
 MapperPathTracer::~MapperPathTracer()
@@ -169,19 +178,20 @@ vtkm::rendering::Canvas* MapperPathTracer::GetCanvas() const
 auto MapperPathTracer::extract(const vtkm::cont::DynamicCellSet &cellset) const
 {
 
-  vtkm::rendering::raytracing::SphereExtractor sphereExtractor;
+  vtkm::rendering::pathtracing::SphereExtractor sphereExtractor;
   sphereExtractor.ExtractCells(cellset, 90/555.0);
   auto SphereIds = sphereExtractor.GetPointIds();
   auto SphereRadii = sphereExtractor.GetRadii();
-  auto ShapeOffset = cellset.Cast<vtkm::cont::CellSetExplicit<>>().GetIndexOffsetArray(vtkm::TopologyElementTagPoint(), vtkm::TopologyElementTagCell());
-  for (int i=0; i<SphereIds.GetNumberOfValues(); i++){
-    std::cout << SphereIds.GetPortalConstControl().Get(i) << std::endl;
-    std::cout << SphereRadii.GetPortalConstControl().Get(i) << std::endl;
+  auto ShapeOffset = cellset.Cast<vtkm::cont::CellSetExplicit<>>().GetOffsetsArray(vtkm::TopologyElementTagPoint(), vtkm::TopologyElementTagCell());
+  //for (int i=0; i<SphereIds.GetNumberOfValues(); i++){
+  //  std::cout << SphereIds.GetPortalConstControl().Get(i) << std::endl;
+  //  std::cout << SphereRadii.GetPortalConstControl().Get(i) << std::endl;
 
-  }
+  //}
   vtkm::rendering::raytracing::QuadExtractor quadExtractor;
   quadExtractor.ExtractCells(cellset);
   auto QuadIds = quadExtractor.GetQuadIds();
+
 
   return std::make_tuple(SphereIds, SphereRadii, ShapeOffset, QuadIds);
 }
@@ -191,7 +201,6 @@ void MapperPathTracer::RenderCellsImpl(const vtkm::cont::DynamicCellSet& cellset
                              const vtkm::cont::Field& scalarField,
                              const vtkm::rendering::Camera& camera)
 {
-  using StorageTag = vtkm::cont::StorageTagBasic;
   using vec3CompositeType = vtkm::cont::ArrayHandleCompositeVector<
     vtkm::cont::ArrayHandle<vtkm::Float32>,
     vtkm::cont::ArrayHandle<vtkm::Float32>,
@@ -207,20 +216,11 @@ void MapperPathTracer::RenderCellsImpl(const vtkm::cont::DynamicCellSet& cellset
   rayCam.CreateRays(rays, bounds);
 
   constexpr int lightables = 2;
-  vtkm::Vec<vtkm::Id, 5> tmp[] = {vtkm::Vec<vtkm::Id,5>(0,8,9,10,11)};
-  auto light_box_pointids = vtkm::cont::make_ArrayHandle(tmp,1);
-  vtkm::Id tmp2[] = {0};
-  auto light_box_indices = vtkm::cont::make_ArrayHandle(tmp2,1);
-  vtkm::Id sphere_tmp[] = {vtkm::Id(4*12)};
-  auto light_sphere_pointids = vtkm::cont::make_ArrayHandle(sphere_tmp,1);
-  vtkm::Id sphere_tmp2[] = {0};
-  auto light_sphere_indices = vtkm::cont::make_ArrayHandle(sphere_tmp2,1);
 
-  MyAlgos::Copy<vtkm::UInt8, vtkm::UInt8, vtkm::cont::StorageTagBasic>((1UL << 3), rays.Status);
+  MyAlgos::Copy(vtkm::cont::DeviceAdapterTagAny(), (1UL << 3), rays.Status);
 
   auto cols = this->Internals->Canvas->GetColorBuffer();
-  MyAlgos::Copy<vtkm::Vec<vtkm::Float32,4>, vtkm::Vec<vtkm::Float32,4>,vtkm::cont::StorageTagBasic>
-      (vtkm::Vec<vtkm::Float32,4>(0.0), cols);
+  MyAlgos::Copy(vtkm::cont::DeviceAdapterTagAny(), vtkm::Vec<vtkm::Float32,4>(0.0), cols);
 
 
 
@@ -272,38 +272,32 @@ void MapperPathTracer::RenderCellsImpl(const vtkm::cont::DynamicCellSet& cellset
   vtkm::cont::ArrayHandle<vtkm::Float32> SphereRadii = std::get<1>(tup);
   auto ShapeOffset = std::get<2>(tup);
 
-  vtkm::worklet::Invoker Invoke;
+  buildBVH(coords, QuadIds, SphereIds, SphereRadii,
+           matIdArray, texIdArray, MatIdx, TexIdx);
+  vtkm::cont::Invoker Invoke;
   for (int s =0; s<samplecount; s++){
 //    UVGen uvgen(nx, ny, s);
 //    Invoke(uvgen, seeds, uvs);
 
     rayCam.CreateRays(rays, bounds);
-    MyAlgos::Copy<vtkm::UInt8, vtkm::UInt8, StorageTag>((1UL << 3), rays.Status);
+    MyAlgos::Copy(vtkm::cont::DeviceAdapterTagAny(), (1UL << 3), rays.Status);
 
 
     for (int depth=0; depth<depthcount; depth++){
-      MyAlgos::Copy<float, float, StorageTag>(0, sum_values);
+      MyAlgos::Copy(vtkm::cont::DeviceAdapterTagAny(), 0, sum_values);
 
-      intersect(coords, rays,
-                QuadIds, SphereIds, SphereRadii,
-                matIdArray, texIdArray,
-                MatIdx, TexIdx,
+      intersect(rays,
                 tmin, emitted, attenuation, depth);
 
       applyMaterials(rays, hrecs, hids, srecs,
                      Tex, MatType, TexType,
                      emitted, seeds, canvasSize, depth);
       generateRays(coords, SphereRadii,
-                   whichPDF, rays, seeds,
-                   light_box_pointids,light_box_indices,
-                   light_sphere_pointids, light_sphere_indices);
-
+                   whichPDF, rays, seeds);
       applyPDFs(coords, QuadIds, SphereIds, SphereRadii,
                 MatIdx, TexIdx,
                 rays, hrecs, srecs,
                 sum_values, generated_dir, attenuation, seeds,
-                light_box_pointids, light_box_indices,
-                light_sphere_pointids, light_sphere_indices,
                 lightables, canvasSize, depth);
 
       vtkm::cont::ArrayHandleCast<vtkm::Int32, vtkm::cont::ArrayHandle<vtkm::UInt8>> castedStatus(rays.Status);
@@ -318,10 +312,6 @@ void MapperPathTracer::RenderCellsImpl(const vtkm::cont::DynamicCellSet& cellset
       vtkm::cont::ArrayHandle<vtkm::Float32>,
       vtkm::cont::ArrayHandle<vtkm::Float32>>;
 
-    vtkm::cont::ArrayHandleConstant<vtkm::Vec<vtkm::Float32,4>> zero(vtkm::Vec<vtkm::Float32,4>(0.0f), canvasSize);
-
-    vtkm::cont::ArrayHandleConstant<vtkm::Vec<vtkm::Float32,4>> reduction(vtkm::Vec<vtkm::Float32,4>(0.1f), canvasSize);
-
     auto attenuation4 = vec4CompositeType(
         rays.GetBuffer("attenuationX").Buffer, rays.GetBuffer("attenuationY").Buffer, rays.GetBuffer("attenuationZ").Buffer
           ,rays.GetBuffer("alphaChannelAE").Buffer);
@@ -333,76 +323,33 @@ void MapperPathTracer::RenderCellsImpl(const vtkm::cont::DynamicCellSet& cellset
         rays.GetBuffer("sumtotlx").Buffer,rays.GetBuffer("sumtotly").Buffer,rays.GetBuffer("sumtotlz").Buffer
         ,rays.GetBuffer("alphaChannel").Buffer);
 
-// Hack for high sample but no refleted
-//    int depth = 1;//depthcount-1;
+    vtkm::cont::ArrayHandleConstant<vtkm::Vec<vtkm::Float32,4>> zero(vtkm::Vec<vtkm::Float32,4>(0.0f), canvasSize);
 
-//    MyAlgos::SliceTransform<
-//        decltype(emitted4),
-//        decltype(zero),
-//        decltype(sumtotl),
-//        decltype(vtkm::Sum())>
-//        (std::make_tuple(depth*canvasSize, depth*canvasSize + canvasSize), emitted4,
-//         std::make_tuple(0, canvasSize), zero,
-//         std::make_tuple(0, canvasSize), sumtotl, vtkm::Sum());
-
-
-//    MyAlgos::SliceTransform<
-//        decltype(attenuation4),
-//        decltype(sumtotl),
-//        decltype(sumtotl),
-//        decltype(vtkm::Multiply())>
-//        (std::make_tuple(0, canvasSize), attenuation4,
-//         std::make_tuple(0, canvasSize), sumtotl,
-//         std::make_tuple(0, canvasSize), sumtotl, vtkm::Multiply());
-
-
-//    MyAlgos::SliceTransform<
-//        decltype(emitted4),
-//        decltype(sumtotl),
-//        decltype(sumtotl),
-//        decltype(vtkm::Sum())>
-//        (std::make_tuple(0, canvasSize), emitted4,
-//         std::make_tuple(0, canvasSize), sumtotl,
-//         std::make_tuple(0, canvasSize), sumtotl, vtkm::Sum());
-// end hack
-
-
-
-    // old code
-    int depth = depthcount-1;
-    MyAlgos::SliceTransform<
-        decltype(emitted4),
-        decltype(zero),
-        decltype(sumtotl),
-        decltype(vtkm::Sum())>
-        (std::make_tuple(depth*canvasSize, depth*canvasSize + canvasSize), emitted4,
+    vtkm::rendering::pathtracing::PathAlgorithm::SliceTransform(vtkm::cont::DeviceAdapterTagAny(),
+         std::make_tuple((depthcount-1)*canvasSize, (depthcount-1)*canvasSize + canvasSize), emitted4,
          std::make_tuple(0, canvasSize), zero,
          std::make_tuple(0, canvasSize), sumtotl, vtkm::Sum());
-   for ( depth = depthcount-2; depth >=0; depth--){
 
-      MyAlgos::SliceTransform<
-          decltype(attenuation4),
-          decltype(sumtotl),
-          decltype(sumtotl),
-          decltype(vtkm::Multiply())>
-          (std::make_tuple(depth*canvasSize, depth*canvasSize + canvasSize), attenuation4,
+    for (int depth = depthcount-2; depth >=0; depth--){
+       vtkm::rendering::pathtracing::PathAlgorithm::SliceTransform
+               (vtkm::cont::DeviceAdapterTagAny(),
+           std::make_tuple(depth*canvasSize, depth*canvasSize + canvasSize), attenuation4,
            std::make_tuple(0, canvasSize), sumtotl,
            std::make_tuple(0, canvasSize), sumtotl, vtkm::Multiply());
 
-
-      MyAlgos::SliceTransform<
-          decltype(emitted4),
-          decltype(sumtotl),
-          decltype(sumtotl),
-          decltype(vtkm::Sum())>
-          (std::make_tuple(depth*canvasSize, depth*canvasSize + canvasSize), emitted4,
+       vtkm::rendering::pathtracing::PathAlgorithm::SliceTransform
+          (vtkm::cont::DeviceAdapterTagAny(),
+           std::make_tuple(depth*canvasSize, depth*canvasSize + canvasSize), emitted4,
            std::make_tuple(0, canvasSize), sumtotl,
            std::make_tuple(0, canvasSize), sumtotl, vtkm::Sum());
+
+
+
     }
 
     vtkm::cont::Algorithm::Transform(cols, sumtotl, cols, vtkm::Sum());
 
-    std::cout << "ns: " << s <<" " << vtkm::cont::Algorithm::Reduce(sumtotl, vtkm::Vec<vtkm::Float32,4>(0.0)) << std::endl;
+//    std::cout << "ns: " << s <<" " << vtkm::cont::Algorithm::Reduce(sumtotl, vtkm::Vec<vtkm::Float32,4>(0.0)) << std::endl;
 
   }
 }
@@ -416,9 +363,11 @@ void MapperPathTracer::RenderCells(const vtkm::cont::DynamicCellSet& cellset,
 
   raytracing::Logger* logger = raytracing::Logger::GetInstance();
   logger->OpenLogEntry("mapper_ray_tracer");
-  vtkm::cont::Timer<> tot_timer;
-  vtkm::cont::Timer<> timer;
+  vtkm::cont::Timer tot_timer;
+  vtkm::cont::Timer timer;
 
+  tot_timer.Start();
+  timer.Start();
   vtkm::rendering::pathtracing::Camera *cam = &this->Internals->RayCamera;
   cam->SetParameters(camera, *this->Internals->Canvas);
   pathtracing::RayOperations::MapCanvasToRays(
@@ -442,7 +391,7 @@ void MapperPathTracer::StartScene()
 {
   // Nothing needs to be done.
   auto &rays = this->Internals->Rays;
-  MyAlgos::Copy<vtkm::UInt8, vtkm::UInt8, vtkm::cont::StorageTagBasic>((1UL << 3), rays.Status);
+  MyAlgos::Copy(vtkm::cont::DeviceAdapterTagAny(), (1UL << 3), rays.Status);
 
 }
 
@@ -458,42 +407,25 @@ vtkm::rendering::Mapper* MapperPathTracer::NewCopy() const
 
 template<typename emittedType,
          typename attenType>
-void MapperPathTracer::intersect(const vtkm::cont::CoordinateSystem &coord,
+void MapperPathTracer::intersect(
                                vtkm::rendering::raytracing::Ray<vtkm::Float32> &rays,
-                               vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> &QuadIds,
-                               vtkm::cont::ArrayHandle<vtkm::Id> &SphereIds,
-                               vtkm::cont::ArrayHandle<vtkm::Float32> &SphereRadii,
-                               vtkm::cont::ArrayHandle<vtkm::Int32> &matIdArray,
-                               vtkm::cont::ArrayHandle<vtkm::Int32> &texIdArray,
-                               vtkm::cont::ArrayHandle<vtkm::Id> *matIdx,
-                               vtkm::cont::ArrayHandle<vtkm::Id> *texIdx,
                                vtkm::cont::ArrayHandle<float> &tmin,
                                emittedType &emitted,
                                attenType &attenuation,
-                               const vtkm::Id depth) const
+                               const vtkm::Id depth)
 {
-  using StorageTag = vtkm::cont::StorageTagBasic;
-  using MyAlgos = ::details::PathAlgorithms<vtkm::cont::DeviceAdapterAlgorithm<VTKM_DEFAULT_DEVICE_ADAPTER_TAG>, VTKM_DEFAULT_DEVICE_ADAPTER_TAG>;
+  using MyAlgos = vtkm::rendering::pathtracing::PathAlgorithm;
 
-  MyAlgos::Copy<float, float, StorageTag>(std::numeric_limits<float>::max(), rays.Distance);
-  MyAlgos::Copy<float, float, StorageTag>(0.001, tmin);
-  vtkm::worklet::Invoker Invoke;
+  MyAlgos::Copy(vtkm::cont::DeviceAdapterTagAny(), std::numeric_limits<float>::max(), rays.Distance);
+  MyAlgos::Copy(vtkm::cont::DeviceAdapterTagAny(), 0.001, tmin);
+  vtkm::cont::Invoker Invoke;
 
   vtkm::Id canvasSize = rays.DirX.GetNumberOfValues();
 
 
-
-  vtkm::cont::ArrayHandle<vtkm::Int32> nodes;
-  MyAlgos::Copy<vtkm::Int32, vtkm::Int32>(0, nodes);
-
-  vtkm::rendering::pathtracing::QuadIntersector quadIntersector;
-
-  quadIntersector.SetData(coord, QuadIds, matIdx[0], texIdx[0], matIdArray, texIdArray);
   quadIntersector.IntersectRays(rays);
 
-  vtkm::rendering::pathtracing::SphereIntersector sphereIntersector;
 
-  sphereIntersector.SetData(coord, SphereIds, SphereRadii, matIdx[1], texIdx[1], matIdArray, texIdArray);
   sphereIntersector.IntersectRays(rays);
 
   CollectIntersecttWorklet collectIntersect(canvasSize, depth);
@@ -502,25 +434,39 @@ void MapperPathTracer::intersect(const vtkm::cont::CoordinateSystem &coord,
 
 }
 
+void MapperPathTracer::buildBVH(const vtkm::cont::CoordinateSystem &coord,
+                               vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> &QuadIds,
+                               vtkm::cont::ArrayHandle<vtkm::Id> &SphereIds,
+                               vtkm::cont::ArrayHandle<vtkm::Float32> &SphereRadii,
+                               vtkm::cont::ArrayHandle<vtkm::Int32> &matIdArray,
+                               vtkm::cont::ArrayHandle<vtkm::Int32> &texIdArray,
+                               vtkm::cont::ArrayHandle<vtkm::Id> *matIdx,
+                               vtkm::cont::ArrayHandle<vtkm::Id> *texIdx)
+{
+
+  quadIntersector.SetData(coord, QuadIds, matIdx[0], texIdx[0], matIdArray, texIdArray);
+  sphereIntersector.SetData(coord, SphereIds, SphereRadii, matIdx[1], texIdx[1], matIdArray, texIdArray);
+}
+
 template<typename HitRecord, typename HitId, typename ScatterRecord,
          typename emittedType>
 void MapperPathTracer::applyMaterials(vtkm::rendering::raytracing::Ray<vtkm::Float32> &rays,
                                     HitRecord &hrecs,
                                     HitId &hids,
                                     ScatterRecord &srecs,
-                                    vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32,3>> tex,
-                                    vtkm::cont::ArrayHandle<int> matType,
-                                    vtkm::cont::ArrayHandle<int> texType,
+                                    vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Float32,3>> &tex,
+                                    vtkm::cont::ArrayHandle<int> &matType,
+                                    vtkm::cont::ArrayHandle<int> &texType,
                                     emittedType &emitted,
                                     vtkm::cont::ArrayHandle<unsigned int> &seeds,
                                     vtkm::Id canvasSize,
-                                    vtkm::Id depth) const
+                                    vtkm::Id depth)
 {
   LambertianWorklet lmbWorklet( canvasSize, depth);
   DiffuseLightWorklet dlWorklet(canvasSize ,depth);
   DielectricWorklet deWorklet( canvasSize ,depth, 1.5, canvasSize);
 
-  vtkm::worklet::Invoker Invoke;
+  vtkm::cont::Invoker Invoke;
   Invoke(lmbWorklet, rays.Origin, rays.Dir, hrecs, hids, srecs, rays.Status,
               tex, matType, texType, emitted);
 
@@ -536,12 +482,8 @@ void MapperPathTracer::generateRays(const vtkm::cont::CoordinateSystem &coord,
                                     vtkm::cont::ArrayHandle<vtkm::Float32> &SphereRadii,
                                     vtkm::cont::ArrayHandle<int> &whichPDF,
                                     vtkm::rendering::raytracing::Ray<vtkm::Float32> &rays,
-                                    vtkm::cont::ArrayHandle<vtkm::UInt32> &seeds,
-                                    vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>>  light_box_pointids,
-                                    vtkm::cont::ArrayHandle<vtkm::Id> light_box_indices,
-                                    vtkm::cont::ArrayHandle<vtkm::Id> &light_sphere_pointids,
-                                    vtkm::cont::ArrayHandle<vtkm::Id> & light_sphere_indices
-                                    ) const
+                                    vtkm::cont::ArrayHandle<vtkm::UInt32> &seeds
+                                    )
 {
   WhichGenerateDir whichGen;
   whichGen.SetData(coord, seeds, light_sphere_indices, whichPDF);
@@ -563,28 +505,24 @@ void MapperPathTracer::generateRays(const vtkm::cont::CoordinateSystem &coord,
 template<typename HitRecord, typename ScatterRecord,
          typename attenType, typename GenDirType>
 void MapperPathTracer::applyPDFs(const vtkm::cont::CoordinateSystem &coord,
-                                 vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> QuadIds,
+                                 vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>> &QuadIds,
                                  vtkm::cont::ArrayHandle<vtkm::Id> &SphereIds,
                                  vtkm::cont::ArrayHandle<vtkm::Float32> &SphereRadii,
                                  vtkm::cont::ArrayHandle<vtkm::Id> *matIdx,
                                  vtkm::cont::ArrayHandle<vtkm::Id> *texIdx,
                                  vtkm::rendering::raytracing::Ray<vtkm::Float32> &rays,
                                  HitRecord &hrecs,
-                                 ScatterRecord srecs,
+                                 ScatterRecord &srecs,
                                  vtkm::cont::ArrayHandle<vtkm::Float32> &sum_values,
                                  GenDirType generated_dir,
                                  attenType &attenuation,
                                  vtkm::cont::ArrayHandle<unsigned int> &seeds,
-                                 vtkm::cont::ArrayHandle<vtkm::Vec<vtkm::Id,5>>  light_box_pointids,
-                                 vtkm::cont::ArrayHandle<vtkm::Id> light_box_indices,
-                                 vtkm::cont::ArrayHandle<vtkm::Id> &light_sphere_pointids,
-                                 vtkm::cont::ArrayHandle<vtkm::Id> & light_sphere_indices,
                                  int lightables,
                                  vtkm::Id canvasSize,
                                  vtkm::Id depth
-                                 ) const
+                                 )
 {
-  vtkm::worklet::Invoker Invoke;
+  vtkm::cont::Invoker Invoke;
   QuadPdf quadPdf(QuadIds, light_box_pointids);
   quadPdf.SetData(coord, matIdx[0], texIdx[0],
       seeds, light_box_indices, lightables);

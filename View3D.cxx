@@ -18,13 +18,15 @@
 //  this software.
 //============================================================================
 
-#include <vtkm/rendering/View3D.h>
+#include "View3D.h"
 
 namespace vtkm
 {
 namespace rendering
 {
 
+namespace pathtracing
+{
 View3D::View3D(const vtkm::rendering::Scene& scene,
                const vtkm::rendering::Mapper& mapper,
                const vtkm::rendering::Canvas& canvas,
@@ -142,3 +144,4 @@ void View3D::RenderWorldAnnotations()
 }
 }
 } // namespace vtkm::rendering
+}

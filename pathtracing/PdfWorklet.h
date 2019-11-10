@@ -11,7 +11,7 @@ public:
   VTKM_EXEC_CONT
   WorketletGenerateDir(int ts) : type_size(ts){}
 
-  using ControlSignature = void(FieldInOut<>, FieldInOut<>);
+  using ControlSignature = void(FieldInOut, FieldInOut);
   using ExecutionSignature = void( _1, _2);
 
   VTKM_EXEC
@@ -50,10 +50,10 @@ public:
       float y = sin(phi)*2*sqrt(r2);
       return vec3(x, y, z);
   }
-  using ControlSignature = void(FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>
+  using ControlSignature = void(FieldInOut,
+  FieldInOut,
+  FieldInOut,
+  FieldInOut
   );
   using ExecutionSignature = void(_1, _2, _3, _4);
 
@@ -94,13 +94,13 @@ public:
       return random_point - o;
   }
 
-  using ControlSignature = void(FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  WholeArrayIn<>,
-  WholeArrayIn<>,
-  WholeArrayIn<>
+  using ControlSignature = void(FieldInOut,
+  FieldInOut,
+  FieldInOut,
+  FieldInOut,
+  WholeArrayIn,
+  WholeArrayIn,
+  WholeArrayIn
 
   );
   using ExecutionSignature = void(_1, _2, _3, _4, _5, _6, _7);
@@ -171,14 +171,14 @@ public:
        uvw.build_from_w(direction);
        return de_nan(uvw.local(random_to_sphere(radius, distance_squared, r1,r2)));
   }
-  using ControlSignature = void(FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  WholeArrayIn<>,
-  WholeArrayIn<>,
-  WholeArrayIn<>,
-  WholeArrayIn<>
+  using ControlSignature = void(FieldInOut,
+  FieldInOut,
+  FieldInOut,
+  FieldInOut,
+  WholeArrayIn,
+  WholeArrayIn,
+  WholeArrayIn,
+  WholeArrayIn
 
   );
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8);
@@ -247,17 +247,17 @@ public:
   }
 
 
-  using ControlSignature = void(FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
+  using ControlSignature = void(FieldInOut,
+  FieldInOut,
+  FieldInOut,
+  FieldInOut,
+  FieldInOut,
+  FieldInOut,
+  FieldInOut,
   ExecObject surf,
-  WholeArrayIn<>,
-  WholeArrayIn<>,
-  WholeArrayIn<>
+  WholeArrayIn,
+  WholeArrayIn,
+  WholeArrayIn
 
   );
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
@@ -346,18 +346,18 @@ public:
   }
 
 
-  using ControlSignature = void(FieldIn<>,
-  FieldIn<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
-  FieldInOut<>,
+  using ControlSignature = void(FieldIn,
+  FieldIn,
+  FieldInOut,
+  FieldInOut,
+  FieldInOut,
+  FieldInOut,
+  FieldInOut,
   ExecObject surf,
-  WholeArrayIn<>,
-  WholeArrayIn<>,
-  WholeArrayIn<>,
-  WholeArrayIn<>
+  WholeArrayIn,
+  WholeArrayIn,
+  WholeArrayIn,
+  WholeArrayIn
   );
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12);
 

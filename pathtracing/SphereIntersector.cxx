@@ -44,8 +44,8 @@ SphereIntersector::~SphereIntersector()
 }
 
 void SphereIntersector::SetData(const vtkm::cont::CoordinateSystem& coords,
-                                vtkm::cont::ArrayHandle<vtkm::Id> pointIds,
-                                vtkm::cont::ArrayHandle<vtkm::Float32> radii,
+                                vtkm::cont::ArrayHandle<vtkm::Id> &pointIds,
+                                vtkm::cont::ArrayHandle<vtkm::Float32> &radii,
                                 vtkm::cont::ArrayHandle<vtkm::Id> &matIdx,
                                 vtkm::cont::ArrayHandle<vtkm::Id> &texIdx,
                                 IdArray &matIdArray,
@@ -128,14 +128,14 @@ void SphereIntersector::IntersectRaysImp(vtkm::rendering::raytracing::Ray<Precis
 //}
 
 void SphereIntersector::IntersectionData(vtkm::rendering::raytracing::Ray<vtkm::Float32>& rays,
-                                         const vtkm::cont::Field* scalarField,
+                                         const vtkm::cont::Field scalarField,
                                          const vtkm::Range& scalarRange)
 {
 //  IntersectionDataImp(rays, scalarField, scalarRange);
 }
 
 void SphereIntersector::IntersectionData(vtkm::rendering::raytracing::Ray<vtkm::Float64>& rays,
-                                         const vtkm::cont::Field* scalarField,
+                                         const vtkm::cont::Field scalarField,
                                          const vtkm::Range& scalarRange)
 {
 //  IntersectionDataImp(rays, scalarField, scalarRange);

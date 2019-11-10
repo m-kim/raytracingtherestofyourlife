@@ -1,55 +1,38 @@
 cmake_minimum_required(VERSION 3.8)
 
-set(ENV{CUDA_BIN_PATH} "/usr/local/cuda-10.1")
-set(ENV{CUDAXX} "/usr/local/cuda-10.1/bin/nvcc")
-set(ENV{PATH} "/usr/local/cuda-10.1/bin:/home/sam/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin")
-set(ENV{LD_LIBRARY_PATH} "/usr/local/cuda-10.1/lib64")
-set(ENV{ADIOS2_DIR} "/home/sam/anaconda3/envs/pathtracer/lib/cmake/adios2")
-##/home/sam/anaconda3/envs/pathtracer/lib/cmake/adios2
-
-project(PathTracing VERSION 0.1 LANGUAGES CUDA CXX)
-
-#bpls is file directory
-#bpls -lva attributes ect.. (var)
-
-include(CheckLanguage)
-enable_language(CUDA)
+project(PathTracing VERSION 0.1 LANGUAGES CXX)
 
 find_package(VTKm REQUIRED
-  OPTIONAL_COMPONENTS CUDA) #set path and LD_library path to cuda10
+  OPTIONAL_COMPONENTS CUDA OpenMP)
 
-  # requiures 1.2
-  #VTKm requires OpenMP because pthreads is required in ColorTable(!!)
+find_package(adios2 REQUIRED)
+set(mpilib) #intentionally set mpilib blank
+#VTKm requires OpenMP because pthreads is required in ColorTable(!!)
   find_package(OpenMP REQUIRED)
+  find_package(MPI REQUIRED)
 
-  #get_target_property(pthread OpenMP::OpenMP_CXX INTERFACE_LINK_LIBRARIES)
-  #list(REMOVE_ITEM pthread "-pthread")
+get_target_property(MPI_pthread MPI::MPI_CXX INTERFACE_COMPILE_OPTIONS)
+list(REMOVE_ITEM MPI_pthread "-pthread")
+get_target_property(OMP_pthread OpenMP::OpenMP_CXX INTERFACE_COMPILE_OPTIONS)
+list(REMOVE_ITEM OMP_pthread "-pthread")
 
-  # push diff then
-  # add submodule from non-master branch
-
-  find_package(ADIOS2 REQUIRED)
-  set(mpilib)
-
-set (PathTracingSrc
-CornellBox.cpp
-pathtracing/Camera.cxx
+set (PathTracingSrc 
+main.cc 
+CornellBox.cpp 
+pathtracing/Camera.cxx 
 pathtracing/PathTracer.cxx
-pathtracing/SphereExtractor.cxx
-pathtracing/QuadExtractor.cxx
+pathtracing/SphereExtractor.cxx 
 pathtracing/QuadIntersector.cxx
-pathtracing/SphereIntersector.cxx
-pathtracing/WhichGenerateDir.cxx
-CanvasRayTracer.cxx
-MapperPathTracer.cxx
+pathtracing/SphereIntersector.cxx 
+pathtracing/WhichGenerateDir.cxx 
+MapperPathTracer.cxx 
 MapperQuad.cxx
-raytracing/OrigQuadIntersector.cxx
+MapperQuadAlbedo.cxx
 raytracing/ChannelBuffer.cxx
 raytracing/RayTracerNormals.cxx
 raytracing/RayTracerAlbedo.cxx
 MapperQuadNormals.cxx
-MapperQuadAlbedo.cxx
-View3D.cxx)
+View3D.cxx )
 set (PathTracingHdr
 pathtracing/Camera.h
 
@@ -57,23 +40,22 @@ pathtracing/CosineGenerateDir.h
 pathtracing/PathAlgorithms.h
 pathtracing/PathTracer.h
 pathtracing/Pdf.h
-pathtracing/QuadExtractor.h
 pathtracing/QuadGenerateDir.h
 pathtracing/SphereExtractor.h
 pathtracing/SphereIntersector.h
 pathtracing/SphereGenerateDir.h
 pathtracing/SpherePdf.h
 pathtracing/WhichGenerateDir.h
-pathtracing/Worklets.h
+pathtracing/Worklets.h 
 pathtracing/QuadIntersector.h
-pathtracing/AABBSurface.h
+pathtracing/AABBSurface.h 
 pathtracing/BVHTraverser.h
-pathtracing/EmitWorklet.h
-pathtracing/ScatterWorklet.h
-pathtracing/SurfaceWorklets.h
-pathtracing/Surface.h
-pathtracing/PdfWorklet.h
-pathtracing/Record.h
+pathtracing/EmitWorklet.h 
+pathtracing/ScatterWorklet.h 
+pathtracing/SurfaceWorklets.h 
+pathtracing/Surface.h 
+pathtracing/PdfWorklet.h 
+pathtracing/Record.h 
 pathtracing/onb.h
 MapperPathTracer.h
 MapperQuad.h
@@ -81,102 +63,39 @@ raytracing/ChannelBuffer.h
 raytracing/ChannelBufferOperations.h
 raytracing/Ray.h
 raytracing/RayTracerNormals.h
-raytracing/RayTracerAlbedo.h
 MapperQuadNormals.h
-MapperQuadAlbedo.h
-CornellBox.h
-pathtracing/vec3.h
-pathtracing/wangXor.h
-pathtracing/GenerateDir.h
-pathtracing/QuadPdf.h
+CornellBox.h 
+pathtracing/vec3.h 
+pathtracing/wangXor.h 
+pathtracing/GenerateDir.h 
+pathtracing/QuadPdf.h 
 pathtracing/SpherePdf.h
 View3D.h
-pathtracing/RayOperations.h
-PAVE.h
-)
+pathtracing/RayOperations.h)
+
+add_executable(CornellBox ${PathTracingSrc} ${PathTracingHdr})
 
 
-#python module without cuda, python3 required for adios2
-
-#find_package( PythonInterp 3.6 REQUIRED )
-find_package(PythonLibs 3.6 REQUIRED )  #requires python-dev e.g. /usr/lib/x86_64-linux-gnu/libpython3.6m.so
-include_directories(${PYTHON_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR})# ##
-add_subdirectory(pybind11) ##
-#pybind11_add_module(trainingTracer SHARED ${PathTracingSrc} ${PathTracingHdr})#trainingTracer.cxx)##
-add_library(trainingTracer MODULE trainingTracer.cxx ${PathTracingSrc} ${PathTracingHdr})
-set_target_properties(trainingTracer PROPERTIES PREFIX "${PYTHON_MODULE_PREFIX}")
-set_target_properties(trainingTracer PROPERTIES SUFFIX "${PYTHON_MODULE_EXTENSION}")
-set_target_properties(trainingTracer PROPERTIES
-  POSITION_INDEPENDENT_CODE ON
-  CXX_STANDARD 17)
-target_link_libraries(trainingTracer PUBLIC vtkm_cont vtkm_rendering OpenMP::OpenMP_CXX )
-target_link_libraries(trainingTracer PRIVATE pybind11::module adios2::adios2  ${mpilib})# ${PYTHON_LIBRARIES})
-
-# CornellBox without Cuda
-add_executable(CornellBox main.cc ${PathTracingSrc} ${PathTracingHdr}) ##executable
 set_target_properties(CornellBox PROPERTIES
   CXX_STANDARD 17)
+set_target_properties(CornellBox PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+target_compile_features(CornellBox PRIVATE cxx_std_14)
+
 target_include_directories(CornellBox
   PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
   )
-target_link_libraries(CornellBox PUBLIC vtkm_cont vtkm_rendering OpenMP::OpenMP_CXX)
-target_link_libraries(CornellBox PRIVATE adios2::adios2  ${mpilib})
+target_link_libraries(CornellBox PUBLIC vtkm_cont vtkm_rendering OpenMP::OpenMP_CXX MPI::MPI_CXX adios2::adios2 ${mpilib} )
 
-# for adding cuda to vtkm (set to build path of local build)
+
 if(VTKm_ENABLE_CUDA)
+  set_source_files_properties(${PathTracingSrc} PROPERTIES LANGUAGE "CUDA")
+  set_target_properties(CornellBox PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  target_compile_options(CornellBox PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-gencode arch=compute_50,code=sm_50>)
 
-  vtkm_compile_as_cuda(cudaSource ${PathTracingSrc}) #
-  vtkm_compile_as_cuda(mainSource main.cc)
-  vtkm_compile_as_cuda(ttSource trainingTracer.cxx)
-
-  add_executable(CornellBox_CUDA ${mainSource}  ${cudaSource}) ##executable with cu source files
-  target_compile_definitions(CornellBox_CUDA PRIVATE "VTKM_DEVICE_ADAPTER=VTKM_DEVICE_ADAPTER_CUDA")
-  target_include_directories(CornellBox_CUDA
+  target_include_directories(CornellBox
     PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
     )
-  set_target_properties(CornellBox_CUDA PROPERTIES ## specify cuda type
+  set_target_properties(CornellBox PROPERTIES
     CUDA_STANDARD 14)
-
-target_link_libraries(CornellBox_CUDA PUBLIC vtkm_cont vtkm_rendering)
-target_link_libraries(CornellBox_CUDA PRIVATE adios2::adios2  ${mpilib})
-
-#python with cuda
-  get_target_property(modifacecopts module INTERFACE_COMPILE_OPTIONS)
-  list(REMOVE_ITEM modifacecopts "-fvisibility=hidden")
-  set_target_properties(module PROPERTIES INTERFACE_COMPILE_OPTIONS "${modifacecopts}")
-
-  ##pthread hack #for another day #-lpthreads or -Xcompiler (nvcc)
-  # get_target_property(pthreadmodule OpenMP::OpenMP_CXX INTERFACE_LINK_LIBRARIES)
-  # list(REMOVE_ITEM pthreadmodule "-pthread")
-  # get_target_property(pthreadmodule_comp OpenMP::OpenMP_CXX INTERFACE_COMPILE_OPTIONS)
-  #list(REMOVE_ITEM pthreadmodule_comp "-pthread")
-  #set_target_properties(module PROPERTIES INTERFACE_LINK_LIBRARIES "-lpthread")
-  #set_target_properties(module PROPERTIES INTERFACE_COMPILE_OPTIONS "-Xcompiler -pthread")
-  #set_target_properties(module PROPERTIES INTERFACE_LINK_LIBRARIES "-Xcompiler -pthread")
-
-  set_source_files_properties( ${ttSource} PROPERTIES LANGUAGE "CUDA")
-  set_source_files_properties( ${cudaSource}  PROPERTIES LANGUAGE "CUDA")
-  add_library(trainingTracer_cuda MODULE ${ttSource} ${cudaSource})
-  set_target_properties(trainingTracer_cuda PROPERTIES PREFIX "${PYTHON_MODULE_PREFIX}"
-                                            POSITION_INDEPENDENT_CODE ON#if put fpick in target
-                                            CUDA_VISIBILITY_PRESET "hidden"
-                                            CXX_VISIBILITY_PRESET "hidden"
-                                            INTERPROCEDURAL_OPTIMIZATION TRUE
-                                            SUFFIX "${PYTHON_MODULE_EXTENSION}")
-                                           #INTERFACE_COMPILE_OPTIONS "-Xcompiler -pthread")
-  target_compile_definitions(trainingTracer_cuda PRIVATE "VTKM_DEVICE_ADAPTER=VTKM_DEVICE_ADAPTER_CUDA")
-  target_include_directories(trainingTracer_cuda
-    PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
-    )
-  set_target_properties(trainingTracer_cuda PROPERTIES
-    POSITION_INDEPENDENT_CODE ON
-    LANGUAGE "CUDA"
-    CUDA_STANDARD 14)
-
-  target_link_libraries(trainingTracer_cuda PUBLIC  vtkm_cont vtkm_rendering OpenMP::OpenMP_CXX)
-  target_link_libraries(trainingTracer_cuda PRIVATE pybind11::module)
-  target_link_libraries(trainingTracer_cuda PRIVATE adios2::adios2  ${mpilib})
-
+  target_link_libraries(CornellBox PUBLIC vtkm::cuda)
 endif()
-
-

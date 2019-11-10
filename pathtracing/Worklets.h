@@ -1,7 +1,7 @@
 #ifndef WORKLETS_H
 #define WORKLETS_H
 
-#include <vtkm/worklet/Invoker.h>
+#include <vtkm/cont/Invoker.h>
 #include <vtkm/worklet/DispatcherMapField.h>
 #include <vtkm/worklet/WorkletMapField.h>
 #include <vtkm/cont/ArrayHandleCounting.h>
@@ -24,7 +24,7 @@ public:
   {
   }
 
-  using ControlSignature = void(FieldInOut<>, FieldOut<>);
+  using ControlSignature = void(FieldInOut, FieldOut);
 
   using ExecutionSignature = void(WorkIndex, _1, _2);
   template <typename Precision>
@@ -100,7 +100,7 @@ public:
     vtkm::Normalize(nlook);
   }
 
-  using ControlSignature = void(FieldOut<>, FieldOut<>, FieldOut<>, FieldInOut<>, FieldOut<>);
+  using ControlSignature = void(FieldOut, FieldOut, FieldOut, FieldInOut, FieldOut);
 
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5);
 

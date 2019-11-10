@@ -78,7 +78,7 @@ public:
     }
 
     using ControlSignature =
-      void(FieldIn<>, FieldIn<>, FieldIn<>, FieldIn<>, WholeArrayInOut<>, WholeArrayIn<>);
+      void(FieldIn, FieldIn, FieldIn, FieldIn, WholeArrayInOut, WholeArrayIn);
     using ExecutionSignature = void(_1, _2, _3, _4, _5, _6, WorkIndex);
 
     template <typename ColorPortalType, typename Precision, typename ColorMapPortalType>
@@ -193,7 +193,7 @@ void RayTracerAlbedo::AddShapeIntersector(ShapeIntersector* intersector)
 
 void RayTracerAlbedo::SetField(const vtkm::cont::Field& scalarField, const vtkm::Range& scalarRange)
 {
-  ScalarField = &scalarField;
+  ScalarField = scalarField;
   ScalarRange = scalarRange;
 }
 
@@ -236,10 +236,12 @@ void RayTracerAlbedo::Clear()
 template <typename Precision>
 void RayTracerAlbedo::RenderOnDevice(Ray<Precision>& rays)
 {
-  using Timer = vtkm::cont::Timer<vtkm::cont::DeviceAdapterTagSerial>;
+  using Timer = vtkm::cont::Timer;
 
   Logger* logger = Logger::GetInstance();
   Timer renderTimer;
+  renderTimer.Start();
+
   vtkm::Float64 time = 0.;
   logger->OpenLogEntry("ray_tracer");
   logger->AddLogData("device", GetDeviceString());
@@ -250,7 +252,7 @@ void RayTracerAlbedo::RenderOnDevice(Ray<Precision>& rays)
   if (NumberOfShapes > 0)
   {
     Timer timer;
-
+    timer.Start();
     for (size_t i = 0; i < numShapes; ++i)
     {
       Intersectors[i]->IntersectRays(rays);
@@ -258,11 +260,12 @@ void RayTracerAlbedo::RenderOnDevice(Ray<Precision>& rays)
       logger->AddLogData("intersect", time);
 
       timer.Reset();
+      timer.Start();
       Intersectors[i]->IntersectionData(rays, ScalarField, ScalarRange);
       time = timer.GetElapsedTime();
       logger->AddLogData("intersection_data", time);
       timer.Reset();
-
+      timer.Start();
       // Calculate the color at the intersection  point
       detail::SurfaceAlbedo surfaceColor;
       surfaceColor.run(rays, ColorMap, camera, this->Shade);
@@ -270,6 +273,7 @@ void RayTracerAlbedo::RenderOnDevice(Ray<Precision>& rays)
       time = timer.GetElapsedTime();
       logger->AddLogData("shade", time);
       timer.Reset();
+      timer.Start();
     }
   }
 

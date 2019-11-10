@@ -1,5 +1,6 @@
 #ifndef AABBSURFACE_H
 #define AABBSURFACE_H
+#include <vtkm/worklet/WorkletMapField.h>
 #include <vtkm/rendering/raytracing/RayTracingTypeDefs.h>
 namespace detail
 {
@@ -10,14 +11,14 @@ class FindQuadAABBs : public vtkm::worklet::WorkletMapField
 public:
   VTKM_CONT
   FindQuadAABBs() {}
-  typedef void ControlSignature(FieldIn<>,
-                                FieldOut<>,
-                                FieldOut<>,
-                                FieldOut<>,
-                                FieldOut<>,
-                                FieldOut<>,
-                                FieldOut<>,
-                                WholeArrayIn<vtkm::rendering::raytracing::Vec3RenderingTypes>);
+  typedef void ControlSignature(FieldIn,
+                                FieldOut,
+                                FieldOut,
+                                FieldOut,
+                                FieldOut,
+                                FieldOut,
+                                FieldOut,
+                                WholeArrayIn);
   typedef void ExecutionSignature(_1, _2, _3, _4, _5, _6, _7, _8);
   template <typename PointPortalType>
   VTKM_EXEC void operator()(const vtkm::Vec<vtkm::Id, 5> quadId,
@@ -83,15 +84,15 @@ class FindSphereAABBs : public vtkm::worklet::WorkletMapField
 public:
   VTKM_CONT
   FindSphereAABBs() {}
-  typedef void ControlSignature(FieldIn<>,
-                                FieldIn<>,
-                                FieldOut<>,
-                                FieldOut<>,
-                                FieldOut<>,
-                                FieldOut<>,
-                                FieldOut<>,
-                                FieldOut<>,
-                                WholeArrayIn<vtkm::rendering::raytracing::Vec3RenderingTypes>);
+  typedef void ControlSignature(FieldIn,
+                                FieldIn,
+                                FieldOut,
+                                FieldOut,
+                                FieldOut,
+                                FieldOut,
+                                FieldOut,
+                                FieldOut,
+                                WholeArrayIn);
   typedef void ExecutionSignature(_1, _2, _3, _4, _5, _6, _7, _8, _9);
   template <typename PointPortalType>
   VTKM_EXEC void operator()(const vtkm::Id pointId,

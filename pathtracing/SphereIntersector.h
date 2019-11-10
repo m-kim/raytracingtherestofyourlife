@@ -63,8 +63,8 @@ public:
   virtual ~SphereIntersector() override;
 
   void SetData(const vtkm::cont::CoordinateSystem& coords,
-               vtkm::cont::ArrayHandle<vtkm::Id> pointIds,
-               vtkm::cont::ArrayHandle<vtkm::Float32> radii,
+               vtkm::cont::ArrayHandle<vtkm::Id> &pointIds,
+               vtkm::cont::ArrayHandle<vtkm::Float32> &SphereIntersectorradii,
                vtkm::cont::ArrayHandle<vtkm::Id> &matIdx,
                vtkm::cont::ArrayHandle<vtkm::Id> &texIdx,
                IdArray &matIdArray,
@@ -86,11 +86,11 @@ public:
 //                           const vtkm::Range& scalarRange);
 
   void IntersectionData(vtkm::rendering::raytracing::Ray<vtkm::Float32>& rays,
-                        const vtkm::cont::Field* scalarField,
+                        const vtkm::cont::Field scalarField,
                         const vtkm::Range& scalarRange) override;
 
   void IntersectionData(vtkm::rendering::raytracing::Ray<vtkm::Float64>& rays,
-                        const vtkm::cont::Field* scalarField,
+                        const vtkm::cont::Field scalarField,
                         const vtkm::Range& scalarRange) override;
 
   vtkm::Id GetNumberOfShapes() const override;

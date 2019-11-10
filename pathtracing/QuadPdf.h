@@ -5,7 +5,7 @@
 #include "raytracing/Ray.h"
 
 #include "PdfWorklet.h"
-#include <vtkm/worklet/Invoker.h>
+#include <vtkm/cont/Invoker.h>
 
 class QuadPdf : public Pdf
 {
@@ -19,7 +19,7 @@ public:
 
   void apply(vtkm::rendering::raytracing::Ray<vtkm::Float32> &rays)
   {
-    vtkm::worklet::Invoker Invoke;
+    vtkm::cont::Invoker Invoke;
     QuadPDFWorklet quadPDFWorklet(this->lightables);
     QuadExecWrapper quadSurf(QuadIds, MatIdx, TexIdx);
     using vec3CompositeType = vtkm::cont::ArrayHandleCompositeVector<

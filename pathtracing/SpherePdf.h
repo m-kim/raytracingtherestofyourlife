@@ -5,7 +5,7 @@
 #include "raytracing/Ray.h"
 
 #include "PdfWorklet.h"
-#include <vtkm/worklet/Invoker.h>
+#include <vtkm/cont/Invoker.h>
 
 class SpherePdf : public Pdf
 {
@@ -22,7 +22,7 @@ public:
 
   void apply(vtkm::rendering::raytracing::Ray<vtkm::Float32> &rays)
   {
-    vtkm::worklet::Invoker Invoke;
+    vtkm::cont::Invoker Invoke;
     SpherePDFWorklet spherePDFWorklet(lightables);
     SphereExecWrapper surf(SphereIds, SphereRadii, MatIdx, TexIdx);
     using vec3CompositeType = vtkm::cont::ArrayHandleCompositeVector<

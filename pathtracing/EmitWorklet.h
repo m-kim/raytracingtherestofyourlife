@@ -1,6 +1,6 @@
 #ifndef EMITWORKLET_H
 #define EMITWORKLET_H
-#include <vtkm/worklet/Invoker.h>
+#include <vtkm/cont/Invoker.h>
 #include <vtkm/worklet/DispatcherMapField.h>
 #include <vtkm/worklet/WorkletMapField.h>
 #include <vtkm/cont/ArrayHandleCounting.h>
@@ -31,7 +31,7 @@ public:
   VTKM_EXEC
   vec3 emit(const vec3 &origin, const vec3 &direction, const HitRecord& rec, vec3 emit) const { return vec3(0,0,0); }
 
-  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>,FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>,WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
+  using ControlSignature = void(FieldInOut, FieldInOut, FieldInOut,FieldInOut, FieldInOut, FieldInOut, WholeArrayInOut,WholeArrayInOut, WholeArrayInOut, WholeArrayInOut);
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8,_9, _10);
   template<typename VecArrayType,
           typename ColorArrayType,
@@ -99,7 +99,7 @@ public:
           return vec3(0,0,0);
   }
 
-  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
+  using ControlSignature = void(FieldInOut, FieldInOut, FieldInOut, FieldInOut, FieldInOut, FieldInOut, WholeArrayInOut, WholeArrayInOut, WholeArrayInOut, WholeArrayInOut);
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10);
   template<typename VecArrayType,
           typename ColorArrayType,
@@ -228,7 +228,7 @@ public:
   VTKM_EXEC
   vec3 emit(const vec3 &origin, const vec3 &direction, const HitRecord& rec, vec3 emit) const { return vec3(0,0,0); }
 
-  using ControlSignature = void(FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, FieldInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>, WholeArrayInOut<>);
+  using ControlSignature = void(FieldInOut, FieldInOut, FieldInOut, FieldInOut, FieldInOut, FieldInOut, FieldInOut, WholeArrayInOut, WholeArrayInOut, WholeArrayInOut, WholeArrayInOut);
   using ExecutionSignature = void(WorkIndex, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
   template<typename VecArrayType,
           typename ColorArrayType,

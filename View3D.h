@@ -31,7 +31,9 @@ namespace vtkm
 namespace rendering
 {
 
-class VTKM_RENDERING_EXPORT View3D : public vtkm::rendering::View
+namespace pathtracing
+{
+class View3D : public vtkm::rendering::View
 {
 public:
   View3D(const vtkm::rendering::Scene& scene,
@@ -65,5 +67,6 @@ private:
 };
 }
 } // namespace vtkm::rendering
+}
 
 #endif //vtk_m_rendering_View3D_h

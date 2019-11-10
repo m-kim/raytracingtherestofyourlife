@@ -28,7 +28,7 @@
 #include <vtkm/rendering/raytracing/Camera.h>
 #include <vtkm/rendering/raytracing/Logger.h>
 #include <vtkm/rendering/raytracing/QuadExtractor.h>
-#include "raytracing/OrigQuadIntersector.h"
+#include <vtkm/rendering/raytracing/QuadIntersector.h>
 #include "raytracing/RayTracerNormals.h"
 #include <pathtracing/RayOperations.h>
 
@@ -92,9 +92,11 @@ void MapperQuadNormals::RenderCells(const vtkm::cont::DynamicCellSet& cellset,
 {
   vtkm::rendering::raytracing::Logger* logger = vtkm::rendering::raytracing::Logger::GetInstance();
   logger->OpenLogEntry("mapper_ray_tracer");
-  vtkm::cont::Timer<> tot_timer;
-  vtkm::cont::Timer<> timer;
+  vtkm::cont::Timer tot_timer;
+  vtkm::cont::Timer timer;
 
+  tot_timer.Start();
+  timer.Start();
 
   //
   // Add supported shapes
@@ -104,8 +106,9 @@ void MapperQuadNormals::RenderCells(const vtkm::cont::DynamicCellSet& cellset,
   quadExtractor.ExtractCells(cellset);
   if (quadExtractor.GetNumberOfQuads() > 0)
   {
-    vtkm::rendering::raytracing::OrigQuadIntersector* quadIntersector = new vtkm::rendering::raytracing::OrigQuadIntersector();
-    quadIntersector->SetData(coords, quadExtractor.GetQuadIds());
+    vtkm::rendering::raytracing::QuadIntersector* quadIntersector = new vtkm::rendering::raytracing::QuadIntersector();
+    auto qid = quadExtractor.GetQuadIds();
+    quadIntersector->SetData(coords, qid);
     this->Internals->Tracer.AddShapeIntersector(quadIntersector);
     shapeBounds.Include(quadIntersector->GetShapeBounds());
   }
@@ -131,6 +134,7 @@ void MapperQuadNormals::RenderCells(const vtkm::cont::DynamicCellSet& cellset,
   this->Internals->Tracer.Render(this->Internals->Rays);
 
   timer.Reset();
+  timer.Start();
   this->Internals->Canvas->WriteToCanvas(
     this->Internals->Rays, this->Internals->Rays.Buffers.at(0).Buffer, camera);
 
