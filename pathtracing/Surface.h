@@ -311,8 +311,8 @@ public:
   void get_sphere_uv(const vec3& p, float& u, float& v) const {
       float phi = atan2(p[2], p[0]);
       float theta = asin(p[1]);
-      u = 1-(phi + M_PI) / (2*M_PI);
-      v = (theta + M_PI/2) / M_PI;
+      u = 1-(phi + vtkm::Pi()) / (2*vtkm::Pi());
+      v = (theta + vtkm::Pi()/2) / vtkm::Pi();
   }
 
   template<typename HitRecord, typename HitId>

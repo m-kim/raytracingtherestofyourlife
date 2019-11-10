@@ -1,5 +1,6 @@
 #ifndef PDFWORKLET_H
 #define PDFWORKLET_H
+#include <vtkm/Math.h>
 #include <float.h>
 #include "onb.h"
 #include "Surface.h"
@@ -45,7 +46,7 @@ public:
   VTKM_EXEC
   inline vec3 random_cosine_direction(float r1, float r2) const {
       float z = sqrt(1-r2);
-      float phi = 2*M_PI*r1;
+      float phi = 2*vtkm::Pi()*r1;
       float x = cos(phi)*2*sqrt(r2);
       float y = sin(phi)*2*sqrt(r2);
       return vec3(x, y, z);
@@ -157,7 +158,7 @@ public:
   //    float r1 = drand48();
   //    float r2 = drand48();
       float z = 1 + r2*(sqrt(1-radius*radius/distance_squared) - 1);
-      float phi = 2*M_PI*r1;
+      float phi = 2*vtkm::Pi()*r1;
       float x = cos(phi)*sqrt(1-z*z);
       float y = sin(phi)*sqrt(1-z*z);
       return vec3(x, y, z);
@@ -337,7 +338,7 @@ public:
     int matId,texId;
     if (surf.hit(o, v, rec, hid, 0.001, FLT_MAX, center, radius, matId, texId )) {
         float cos_theta_max = sqrt(1 - radius*radius/vtkm::MagnitudeSquared(center-o));
-        float solid_angle = 2*M_PI*(1-cos_theta_max);
+        float solid_angle = 2*vtkm::Pi()*(1-cos_theta_max);
         return  1 / solid_angle;
     }
     else

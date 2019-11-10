@@ -11,7 +11,7 @@ class cosine_pdf {
   VTKM_EXEC_CONT
   inline vec3 random_cosine_direction(float r1, float r2) const {
       float z = sqrt(1-r2);
-      float phi = 2*M_PI*r1;
+      float phi = 2*vtkm::Pi()*r1;
       float x = cos(phi)*2*sqrt(r2);
       float y = sin(phi)*2*sqrt(r2);
       return vec3(x, y, z);
@@ -22,7 +22,7 @@ class cosine_pdf {
   float value(const vec3& direction) const {
       float cosine = dot(unit_vector(direction), uvw.w());
       if (cosine > 0)
-          return cosine/M_PI;
+          return cosine/vtkm::Pi();
       else
           return 0;
   }
@@ -54,7 +54,7 @@ public:
       float cosine = dot(n, unit_vector(scattered_direction));
       if (cosine < 0)
           return 0;
-      return cosine / M_PI;
+      return cosine / vtkm::Pi();
   }
 
   using ControlSignature = void(FieldInOut, FieldInOut, FieldInOut, FieldInOut, FieldInOut, FieldInOut, FieldInOut, FieldInOut, FieldInOut, WholeArrayInOut);
