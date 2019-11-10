@@ -628,7 +628,7 @@ int main(int argc, char *argv[]) {
   const bool direct = std::get<5>(tup);
 
   vtkm::cont::Initialize();
-  vtkm::cont::GetRuntimeDeviceTracker().ForceDevice(vtkm::cont::DeviceAdapterTagSerial{});
+  vtkm::cont::GetRuntimeDeviceTracker().ForceDevice(vtkm::cont::DeviceAdapterTagCuda{});
 
   MPI_Init(NULL, NULL);
 

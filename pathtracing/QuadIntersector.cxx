@@ -120,9 +120,6 @@ void QuadIntersector::SetData(const vtkm::cont::CoordinateSystem& coords,
   this->QuadIds = quadIds;
   this->CoordsHandle = coords;
   vtkm::rendering::raytracing::AABBs AABB;
-  for (int i=0; i<AABB.xmaxs.GetNumberOfValues(); i++){
-      std::cout << AABB.xmaxs.GetPortalControl().Get(i) << std::endl;
-  }
 
   vtkm::worklet::DispatcherMapField<::detail::FindQuadAABBs> faabbsInvoker;
   faabbsInvoker.Invoke(this->QuadIds,
@@ -134,9 +131,6 @@ void QuadIntersector::SetData(const vtkm::cont::CoordinateSystem& coords,
                        AABB.zmaxs,
                        CoordsHandle);
 
-  for (int i=0; i<AABB.xmaxs.GetNumberOfValues(); i++){
-      std::cout << AABB.xmaxs.GetPortalControl().Get(i) << std::endl;
-  }
   this->SetAABBs(AABB);
 }
 

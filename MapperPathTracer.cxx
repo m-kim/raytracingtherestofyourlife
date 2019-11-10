@@ -193,9 +193,6 @@ auto MapperPathTracer::extract(const vtkm::cont::DynamicCellSet &cellset) const
   auto QuadIds = quadExtractor.GetQuadIds();
 
 
-  for (int i=0; i<QuadIds.GetPortalControl().GetNumberOfValues(); i++){
-      std::cout << QuadIds.GetPortalControl().Get(i) << std::endl;
-  }
   return std::make_tuple(SphereIds, SphereRadii, ShapeOffset, QuadIds);
 }
 
