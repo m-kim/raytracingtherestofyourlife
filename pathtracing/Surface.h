@@ -21,11 +21,11 @@ public:
   QuadLeafIntersector(const Id5Handle& pointIds,
                         const IdHandle& matIdx,
                         const IdHandle& texIdx)
-    : PointIds(pointIds.PrepareForInput(Device()))
-    , MatIdx(matIdx.PrepareForInput(Device()))
-    , TexIdx(texIdx.PrepareForInput(Device()))
   {
-
+    vtkm::cont::Token token;
+    PointIds = pointIds.PrepareForInput(Device(), token);
+    MatIdx = matIdx.PrepareForInput(Device(), token);
+    TexIdx = texIdx.PrepareForInput(Device(),token);
   }
   template <typename vec3, typename Precision>
   VTKM_EXEC bool hit(const vec3& ray_origin,
@@ -299,11 +299,12 @@ public:
                         const FloatHandle &radii,
                         const IdHandle& matIdx,
                         const IdHandle& texIdx)
-    : PointIds(pointIds.PrepareForInput(Device()))
-    , Radii(radii.PrepareForInput(Device()))
-    , MatIdx(matIdx.PrepareForInput(Device()))
-    , TexIdx(texIdx.PrepareForInput(Device()))
   {
+    vtkm::cont::Token token;
+    PointIds = pointIds.PrepareForInput(Device(), token);
+    Radii = radii.PrepareForInput(Device(), token);
+    MatIdx = matIdx.PrepareForInput(Device(), token);
+    TexIdx = texIdx.PrepareForInput(Device(), token);
 
   }
 

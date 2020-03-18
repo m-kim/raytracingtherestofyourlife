@@ -47,8 +47,8 @@
 // For path traced images:
 //./CornellBox_CUDA -x 256 -y 256 -samplecount 300 -raydepth 20 -hemisphere
 using ArrayType = vtkm::cont::ArrayHandle<vec3>;
-CornellBox cb;
-vtkm::cont::DataSet ds;
+std::unique_ptr<CornellBox> cb;
+
 
 
 const auto
@@ -175,9 +175,9 @@ void runRay(int nx, int ny, int samplecount, int depthcount,
                             vtkm::Vec<double,3>(0,0,0),
                             pallet, alpha);
   scene.AddActor(vtkm::rendering::Actor(
-                   ds.GetCellSet(),
-                   ds.GetCoordinateSystem(),
-                   ds.GetField("point_var"),
+                   cb->ds.GetCellSet(),
+                   cb->ds.GetCoordinateSystem(),
+                   cb->ds.GetField("point_var"),
                    ct_12_quad));
   vtkm::rendering::Color background(0,0,0, 1.0f);
   vtkm::rendering::Color foreground(1,1,1, 1.0f);
@@ -194,9 +194,9 @@ void runNorms(int nx, int ny, int samplecount, int depthcount,
   vtkm::rendering::Scene scene;
 
   scene.AddActor(vtkm::rendering::Actor(
-                   ds.GetCellSet(),
-                   ds.GetCoordinateSystem(),
-                   ds.GetField("point_var"),
+                   cb->ds.GetCellSet(),
+                   cb->ds.GetCoordinateSystem(),
+                   cb->ds.GetField("point_var"),
                    vtkm::cont::ColorTable{vtkm::cont::ColorTable::Preset::COOL_TO_WARM_EXTENDED}));
   vtkm::rendering::Color background(0,0,0, 1.0f);
   vtkm::rendering::Color foreground(1,1,1, 1.0f);
@@ -237,9 +237,9 @@ void runAlbedo(int nx, int ny, int samplecount, int depthcount,
                             pallet, alpha);
 
   scene.AddActor(vtkm::rendering::Actor(
-                   ds.GetCellSet(),
-                   ds.GetCoordinateSystem(),
-                   ds.GetField("point_var"),
+                   cb->ds.GetCellSet(),
+                   cb->ds.GetCoordinateSystem(),
+                   cb->ds.GetField("point_var"),
                    ct_12_quad));
   vtkm::rendering::Color background(0,0,0, 1.0f);
   vtkm::rendering::Color foreground(1,1,1, 1.0f);
@@ -293,11 +293,11 @@ void runPath(int nx, int ny, int samplecount, int depthcount,
 
   vtkm::rendering::MapperPathTracer mapper(samplecount,
                                            depthcount,
-                                           cb.matIdx,
-                                           cb.texIdx,
-                                           cb.matType,
-                                           cb.texType,
-                                           cb.tex);
+                                           cb->matIdx,
+                                           cb->texIdx,
+                                           cb->matType,
+                                           cb->texType,
+                                           cb->tex);
 
   mapper.SetCanvas(&canvas);
 
@@ -306,8 +306,8 @@ void runPath(int nx, int ny, int samplecount, int depthcount,
   vtkm::cont::Field field;
   vtkm::cont::ColorTable ct;
   vtkm::Range sr;
-  mapper.RenderCells(ds.GetCellSet(),
-                     cb.coord,
+  mapper.RenderCells(cb->ds.GetCellSet(),
+                     cb->coord,
                      field,
                      ct,
                      cam,
@@ -367,7 +367,7 @@ void save(std::stringstream &fnstream,
   if (fs.is_open()){
     fs << "P3\n" << nx << " "  << ny << " 255" << std::endl;
     for (int i=0; i<cols.GetNumberOfValues(); i++){
-      auto col = cols.GetPortalConstControl().Get(i);
+      auto col = cols.ReadPortal().Get(i);
       if (col != col)
         col = 0.0f;
       save(fs, samplecount, col);
@@ -570,6 +570,7 @@ int main(int argc, char *argv[]) {
 
   
 
+  cb = std::make_unique<CornellBox>(CornellBox());
   const int phiCount = std::get<6>(tup);
   const int thetaCount = std::get<7>(tup);
 
@@ -580,7 +581,7 @@ int main(int argc, char *argv[]) {
   vtkm::cont::Timer timer;
   timer.Start();
 
-   ds = cb.buildDataSet();
+  cb->buildDataSet();
   if (hemi){
     float phiBegin, phiEnd;
     phiBegin = 0.0;//rPhi * static_cast<float>(rank);

@@ -51,7 +51,7 @@ void QuadIntersector::IntersectRays(vtkm::rendering::raytracing::Ray<vtkm::Float
   IntersectRaysImp(rays, returnCellIndex);
 }
 
-void QuadIntersector::IntersectRays(vtkm::rendering::raytracing::Ray<vtkm::Float64>& rays, bool returnCellIndex)
+void QuadIntersector::IntersectRays(vtkm::rendering::raytracing::Ray<vtkm::Float64>&  vtkmNotUsed(rays), bool returnCellIndex)
 {
 //  IntersectRaysImp(rays, returnCellIndex);
 }

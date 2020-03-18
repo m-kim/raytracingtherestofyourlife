@@ -173,21 +173,23 @@ template <class DerivedAlgorithm, class DeviceAdapterTag>
 struct PathAlgorithmGeneral
 {
 private:
+
   template <typename T, class CIn>
   VTKM_CONT static T GetExecutionValue(const vtkm::cont::ArrayHandle<T, CIn>& input, vtkm::Id index)
   {
     using OutputArrayType = vtkm::cont::ArrayHandle<T, vtkm::cont::StorageTagBasic>;
 
+    vtkm::cont::Token token;
     OutputArrayType output;
-    auto inputPortal = input.PrepareForInput(DeviceAdapterTag());
-    auto outputPortal = output.PrepareForOutput(1, DeviceAdapterTag());
+    auto inputPortal = input.PrepareForInput(DeviceAdapterTag(), token);
+    auto outputPortal = output.PrepareForOutput(1, DeviceAdapterTag(), token);
 
     vtkm::cont::internal::CopyKernel<decltype(inputPortal), decltype(outputPortal)> kernel(
       inputPortal, outputPortal, index);
 
     DerivedAlgorithm::Schedule(kernel, 1);
 
-    return output.GetPortalConstControl().Get(0);
+    return output.ReadPortal().Get(0);
   }
 public:
   template <typename IndexType1,
@@ -206,13 +208,14 @@ public:
                              OutputType& output,
                             BinaryFunctorType binaryOperator)
   {
+    vtkm::cont::Token token;
     const vtkm::Id inSize = index1.GetNumberOfValues();
-    auto index1Portal  = index1.PrepareForInput(DeviceAdapterTag());
-    auto index2Portal  = index2.PrepareForInput(DeviceAdapterTag());
-    auto input1Portal = input1.PrepareForInput(DeviceAdapterTag());
-    auto input2Portal = input2.PrepareForInput(DeviceAdapterTag());
-    auto outIndexPortal = outIndex.PrepareForInput(DeviceAdapterTag());
-    auto outputPortal = output.PrepareForOutput(inSize, DeviceAdapterTag());
+    auto index1Portal  = index1.PrepareForInput(DeviceAdapterTag(), token);
+    auto index2Portal  = index2.PrepareForInput(DeviceAdapterTag(), token);
+    auto input1Portal = input1.PrepareForInput(DeviceAdapterTag(), token);
+    auto input2Portal = input2.PrepareForInput(DeviceAdapterTag(), token);
+    auto outIndexPortal = outIndex.PrepareForInput(DeviceAdapterTag(), token);
+    auto outputPortal = output.PrepareForOutput(inSize, DeviceAdapterTag(), token);
 
     BinarySliceTransformKernel<decltype(index1Portal),
                                decltype(input1Portal),
@@ -237,10 +240,11 @@ public:
                              OutputType& output,
                             BinaryFunctorType binaryOperator)
   {
+    vtkm::cont::Token token;
     const vtkm::Id inSize = output.GetNumberOfValues();
-    auto input1Portal  = input1.PrepareForInput(DeviceAdapterTag());
-    auto input2Portal = input2.PrepareForInput(DeviceAdapterTag());
-    auto outputPortal = output.PrepareForOutput(inSize, DeviceAdapterTag());
+    auto input1Portal  = input1.PrepareForInput(DeviceAdapterTag(), token);
+    auto input2Portal = input2.PrepareForInput(DeviceAdapterTag(), token);
+    auto outputPortal = output.PrepareForOutput(inSize, DeviceAdapterTag(), token);
 
     BinarySliceTransformIdxKernel<
                                decltype(input1Portal),
@@ -256,10 +260,11 @@ public:
                             const vtkm::cont::ArrayHandle<T, CIn>& input,
                              vtkm::cont::ArrayHandle<U, COut>& output)
   {
+    vtkm::cont::Token token;
     const vtkm::Id inSize = index.GetNumberOfValues();
-    auto indexPortal  = index.PrepareForInput(DeviceAdapterTag());
-    auto inputPortal = input.PrepareForInput(DeviceAdapterTag());
-    auto outputPortal = output.PrepareForOutput(inSize, DeviceAdapterTag());
+    auto indexPortal  = index.PrepareForInput(DeviceAdapterTag(), token);
+    auto inputPortal = input.PrepareForInput(DeviceAdapterTag(), token);
+    auto outputPortal = output.PrepareForOutput(inSize, DeviceAdapterTag(),token);
 
     details::SliceCopyKernel<decltype(indexPortal),
                              decltype(inputPortal),
@@ -272,8 +277,9 @@ public:
                             T input,
                              vtkm::cont::ArrayHandle<U, COut>& output)
   {
+    vtkm::cont::Token token;
     const vtkm::Id inSize = output.GetNumberOfValues();
-    auto outputPortal = output.PrepareForOutput(inSize, DeviceAdapterTag());
+    auto outputPortal = output.PrepareForOutput(inSize, DeviceAdapterTag(), token);
 
     CopyKernel<T, decltype(outputPortal)> kernel(input, outputPortal);
     DerivedAlgorithm::Schedule(kernel, inSize);
@@ -288,9 +294,9 @@ struct SliceTransformFunctor
   {
     VTKM_IS_DEVICE_ADAPTER_TAG(Device);
     using MyAlgos = details::PathAlgorithmGeneral<vtkm::cont::DeviceAdapterAlgorithm<Device>, Device>;
-
+  vtkm::cont::Token token;
     MyAlgos::SliceTransform(
-      vtkm::cont::detail::PrepareArgForExec<Device>(std::forward<Args>(args))...);
+      vtkm::cont::detail::PrepareArgForExec<Device>(std::forward<Args>(args), token)...);
     return true;
   }
 };
@@ -302,9 +308,9 @@ struct CopyFunctor
   {
     VTKM_IS_DEVICE_ADAPTER_TAG(Device);
     using MyAlgos = details::PathAlgorithmGeneral<vtkm::cont::DeviceAdapterAlgorithm<Device>, Device>;
-
+vtkm::cont::Token token;
     MyAlgos::Copy(
-      vtkm::cont::detail::PrepareArgForExec<Device>(std::forward<Args>(args))...);
+      vtkm::cont::detail::PrepareArgForExec<Device>(std::forward<Args>(args), token)...);
     return true;
   }
 };

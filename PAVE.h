@@ -50,7 +50,7 @@ public:
 
     std::vector<OutArrayType> arrayOut(cols.GetNumberOfValues()*4);
     for (int i=0; i<cols.GetNumberOfValues(); i++){
-      auto col = cols.GetPortalConstControl().Get(i);
+      auto col = cols.ReadPortal().Get(i);
       arrayOut[i*4] = col[0];
       arrayOut[i*4 + 1] = col[1];
       arrayOut[i*4 + 2] = col[2];
@@ -71,7 +71,7 @@ public:
 
     std::vector<OutArrayType> arrayOut(cols.GetNumberOfValues()*4);
     for (int i=0; i<cols.GetNumberOfValues(); i++){
-      auto col = cols.GetPortalConstControl().Get(i);
+      auto col = cols.ReadPortal().Get(i);
       arrayOut[i*4] = col[0];
       arrayOut[i*4 + 1] = col[1];
       arrayOut[i*4 + 2] = col[2];

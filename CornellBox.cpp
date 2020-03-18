@@ -141,24 +141,24 @@ void CornellBox::buildBox(const vec3 &near,
 vtkm::cont::DataSet CornellBox::buildDataSet()
 {
   tex.Allocate(4);
-  tex.GetPortalControl().Set(0, vec3(0.65, 0.05, 0.05));
-  tex.GetPortalControl().Set(1, vec3(0.73, 0.73, 0.73));
-  tex.GetPortalControl().Set(2, vec3(0.12, 0.45, 0.15));
-  tex.GetPortalControl().Set(3, vec3(15, 15, 15));
+  tex.WritePortal().Set(0, vec3(0.65, 0.05, 0.05));
+  tex.WritePortal().Set(1, vec3(0.73, 0.73, 0.73));
+  tex.WritePortal().Set(2, vec3(0.12, 0.45, 0.15));
+  tex.WritePortal().Set(3, vec3(15, 15, 15));
 
   matType.Allocate(5);
-  matType.GetPortalControl().Set(0, 0); //lambertian
-  matType.GetPortalControl().Set(1, 0); //lambertian
-  matType.GetPortalControl().Set(2, 0); //lambertian
-  matType.GetPortalControl().Set(3, 1); //light
-  matType.GetPortalControl().Set(4, 2); //dielectric
+  matType.WritePortal().Set(0, 0); //lambertian
+  matType.WritePortal().Set(1, 0); //lambertian
+  matType.WritePortal().Set(2, 0); //lambertian
+  matType.WritePortal().Set(3, 1); //light
+  matType.WritePortal().Set(4, 2); //dielectric
 
   texType.Allocate(5);
-  texType.GetPortalControl().Set(0, 0); //red
-  texType.GetPortalControl().Set(1, 1); //white
-  texType.GetPortalControl().Set(2, 2); //green
-  texType.GetPortalControl().Set(3, 3); //super bright
-  texType.GetPortalControl().Set(4, 0); //dielectric
+  texType.WritePortal().Set(0, 0); //red
+  texType.WritePortal().Set(1, 1); //white
+  texType.WritePortal().Set(2, 2); //green
+  texType.WritePortal().Set(3, 3); //super bright
+  texType.WritePortal().Set(4, 0); //dielectric
 
 
   std::vector<vtkm::UInt8> shapes;
@@ -426,8 +426,8 @@ void CornellBox::extract()
   SphereRadii = sphereExtractor.GetRadii();
   ShapeOffset = ds.GetCellSet().Cast<vtkm::cont::CellSetExplicit<>>().GetOffsetsArray(vtkm::TopologyElementTagPoint(), vtkm::TopologyElementTagCell());
   for (int i=0; i<SphereIds.GetNumberOfValues(); i++){
-    std::cout << SphereIds.GetPortalConstControl().Get(i) << std::endl;
-    std::cout << SphereRadii.GetPortalConstControl().Get(i) << std::endl;
+    std::cout << SphereIds.ReadPortal().Get(i) << std::endl;
+    std::cout << SphereRadii.ReadPortal().Get(i) << std::endl;
 
   }
   vtkm::rendering::raytracing::QuadExtractor quadExtractor;

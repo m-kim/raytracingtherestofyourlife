@@ -139,7 +139,6 @@ public:
                               const LeafPortalType& leafs) const
     {
       Precision closestDistance = tmax;
-      Precision distance = tmax;
       //hitIndex = -1;
 
       vtkm::Vec<Precision, 3> invDir;

@@ -35,7 +35,7 @@ namespace pathtracing
 namespace detail
 {
 
-class CountPoints : public vtkm::worklet::WorkletMapPointToCell
+class CountPoints : public vtkm::worklet::WorkletVisitCellsWithPoints
 {
 public:
   VTKM_CONT
@@ -63,10 +63,14 @@ public:
   {
     points = 0;
   }
+  void operator()(vtkm::CellShapeTagWedge vtkmNotUsed(shapeType), vtkm::Id& points) const
+  {
+    points = 0;
+  }
 
 }; // ClassCountPoints
 
-class Pointify : public vtkm::worklet::WorkletMapPointToCell
+class Pointify : public vtkm::worklet::WorkletVisitCellsWithPoints
 {
 
 public:
@@ -105,6 +109,14 @@ public:
     {
       outputIndices.Set(pointOffset, cellIndices[pointOffset]);
     }
+  }
+  template <typename VecType, typename OutputPortal>
+  VTKM_EXEC void operator()(const vtkm::Id& vtkmNotUsed(pointOffset),
+                            vtkm::CellShapeTagWedge vtkmNotUsed(shapeType),
+                            const VecType& vtkmNotUsed(cellIndices),
+                            const vtkm::Id& vtkmNotUsed(cellId),
+                            OutputPortal& vtkmNotUsed(outputIndices)) const
+  {
   }
 }; //class pointify
 
@@ -258,12 +270,12 @@ void SphereExtractor::SetVaryingRadius(const vtkm::Float32 minRadius,
     throw vtkm::cont::ErrorBadValue("Sphere Extractor: scalar field must have one component");
   }
 
-  vtkm::Range range = rangeArray.GetPortalConstControl().Get(0);
+  vtkm::Range range = rangeArray.ReadPortal().Get(0);
 
   Radii.Allocate(this->PointIds.GetNumberOfValues());
   vtkm::worklet::DispatcherMapField<detail::FieldRadius>(
     detail::FieldRadius(minRadius, maxRadius, range))
-    .Invoke(this->PointIds, this->Radii, field.GetData().ResetTypes(vtkm::TypeListTagFieldScalar()));
+    .Invoke(this->PointIds, this->Radii, field.GetData().ResetTypes(vtkm::TypeListFieldScalar()));
 }
 
 vtkm::cont::ArrayHandle<vtkm::Id> SphereExtractor::GetPointIds()
