@@ -332,6 +332,10 @@ void save(std::fstream &fs,
           int samplecount,
           vtkm::Vec<vtkm::Float32,4> &col)
 {
+  if ((col[0] != col[0]) || (col[1] != col[1]) || (col[2] != col[2])){
+    col = 0.0f;
+  }
+
   int ir = int(255.99*col[0]);
   int ig = int(255.99*col[1]);
   int ib = int(255.99*col[2]);
@@ -368,8 +372,7 @@ void save(std::stringstream &fnstream,
     fs << "P3\n" << nx << " "  << ny << " 255" << std::endl;
     for (int i=0; i<cols.GetNumberOfValues(); i++){
       auto col = cols.ReadPortal().Get(i);
-      if (col != col)
-        col = 0.0f;
+
       save(fs, samplecount, col);
     }
     fs.close();
