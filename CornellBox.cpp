@@ -60,8 +60,8 @@ void CornellBox::buildQuad(vtkm::Vec<vec3,4> &pts,
 
 }
 
-void CornellBox::buildBox(const vec3 &near,
-              const vec3 &far,
+void CornellBox::buildBox(const vec3 &near_pt,
+              const vec3 &far_pt,
               std::vector<vtkm::UInt8> &shapes,
               std::vector<vtkm::IdComponent> &numindices,
               std::vector<vec3> &pts1,
@@ -72,10 +72,10 @@ void CornellBox::buildBox(const vec3 &near,
                                      int tidx)
 {
   vtkm::Vec<vec3,4> pts;
-  pts[0] = vec3(near[0], near[1], near[2]);
-  pts[1] = vec3(far[0], near[1], near[2]);
-  pts[2] = vec3(far[0], far[1], near[2]);
-  pts[3] = vec3(near[0], far[1], near[2]);
+  pts[0] = vec3(near_pt[0], near_pt[1], near_pt[2]);
+  pts[1] = vec3(far_pt[0], near_pt[1], near_pt[2]);
+  pts[2] = vec3(far_pt[0], far_pt[1], near_pt[2]);
+  pts[3] = vec3(near_pt[0], far_pt[1], near_pt[2]);
   buildQuad(pts,
             shapes,
             numindices,
@@ -85,10 +85,10 @@ void CornellBox::buildBox(const vec3 &near,
             vecTexIdx,
       midx, tidx);
 
-  pts[0] = vec3(near[0], near[1], far[2]);
-  pts[1] = vec3(far[0], near[1], far[2]);
-  pts[2] = vec3(far[0], far[1], far[2]);
-  pts[3] = vec3(near[0], far[1], far[2]);
+  pts[0] = vec3(near_pt[0], near_pt[1], far_pt[2]);
+  pts[1] = vec3(far_pt[0], near_pt[1], far_pt[2]);
+  pts[2] = vec3(far_pt[0], far_pt[1], far_pt[2]);
+  pts[3] = vec3(near_pt[0], far_pt[1], far_pt[2]);
   buildQuad(pts,
             shapes,
             numindices,
@@ -99,10 +99,10 @@ void CornellBox::buildBox(const vec3 &near,
       midx,tidx);
 
 
-  pts[0] = vec3(near[0], far[1], near[2]);
-  pts[1] = vec3(far[0], far[1], near[2]);
-  pts[2] = vec3(far[0], far[1], far[2]);
-  pts[3] = vec3(near[0], far[1], far[2]);
+  pts[0] = vec3(near_pt[0], far_pt[1], near_pt[2]);
+  pts[1] = vec3(far_pt[0], far_pt[1], near_pt[2]);
+  pts[2] = vec3(far_pt[0], far_pt[1], far_pt[2]);
+  pts[3] = vec3(near_pt[0], far_pt[1], far_pt[2]);
   buildQuad(pts,
             shapes,
             numindices,
@@ -111,10 +111,10 @@ void CornellBox::buildBox(const vec3 &near,
             vecMatIdx,
             vecTexIdx,
       midx,tidx);
-  pts[0] = vec3(near[0], near[1], near[2]);
-  pts[1] = vec3(far[0], near[1], near[2]);
-  pts[2] = vec3(far[0], far[1], near[2]);
-  pts[3] = vec3(near[0], far[1], near[2]);
+  pts[0] = vec3(near_pt[0], near_pt[1], near_pt[2]);
+  pts[1] = vec3(far_pt[0], near_pt[1], near_pt[2]);
+  pts[2] = vec3(far_pt[0], far_pt[1], near_pt[2]);
+  pts[3] = vec3(near_pt[0], far_pt[1], near_pt[2]);
   buildQuad(pts,
             shapes,
             numindices,
@@ -123,10 +123,10 @@ void CornellBox::buildBox(const vec3 &near,
             vecMatIdx,
             vecTexIdx,
       midx,tidx);
-  pts[0] = vec3(near[0], near[1], far[2]);
-  pts[1] = vec3(far[0], near[1], far[2]);
-  pts[2] = vec3(far[0], far[1], far[2]);
-  pts[3] = vec3(near[0], far[1], far[2]);
+  pts[0] = vec3(near_pt[0], near_pt[1], far_pt[2]);
+  pts[1] = vec3(far_pt[0], near_pt[1], far_pt[2]);
+  pts[2] = vec3(far_pt[0], far_pt[1], far_pt[2]);
+  pts[3] = vec3(near_pt[0], far_pt[1], far_pt[2]);
   buildQuad(pts,
             shapes,
             numindices,
@@ -366,9 +366,9 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
 
 
   vec3 box_center(135,90, 290);
-  vec3 near(box_center[0] - sphere_radii, 0, box_center[2] - sphere_radii);
-  vec3 far(box_center[0] + sphere_radii, 180,box_center[2] + sphere_radii);
-  buildBox(near,far,
+  vec3 near_pt(box_center[0] - sphere_radii, 0, box_center[2] - sphere_radii);
+  vec3 far_pt(box_center[0] + sphere_radii, 180,box_center[2] + sphere_radii);
+  buildBox(near_pt,far_pt,
            shapes, numindices,
            pts1, vecField,
            vecMatIdx[0], vecTexIdx[0],
@@ -376,10 +376,10 @@ vtkm::cont::DataSet CornellBox::buildDataSet()
 
   //------------------------------------------------------------------------
 
-  near = vec3(50, 0, 50);
-  far = vec3(450, 100, 100);
+  near_pt = vec3(50, 0, 50);
+  far_pt = vec3(450, 100, 100);
 
-  buildBox(near,far,
+  buildBox(near_pt, far_pt,
            shapes, numindices,
            pts1, vecField,
            vecMatIdx[0], vecTexIdx[0],
